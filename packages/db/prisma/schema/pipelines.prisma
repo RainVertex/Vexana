@@ -1,0 +1,79 @@
+// CI/CD pipeline visibility. Workflow runs and deployments are pulled from
+// GitHub via two paths:
+//   1. Real-time webhooks (workflow_run, deployment, deployment_status) into
+//      features/catalog/backend/src/github-sync/webhook.ts → upsertWorkflowRun /
+//      upsertDeployment in features/catalog/backend/src/pipelines/upsert.ts.
+//   2. A periodic cron sweep (catalog.pipelinesSync) that backfills new
+//      entities and reconciles anything the webhooks missed. Per-entity
+//      cursors live on PipelineSyncCursor so the sweep can fetch incrementally.
+
+model WorkflowRun {
+  id           String        @id @default(cuid())
+  entityId     String
+  // GitHub's run id; unique so webhook re-deliveries and the cron sweep
+  // converge on the same row instead of duplicating.
+  githubRunId  BigInt        @unique
+  workflowName String
+  workflowPath String
+  runNumber    Int
+  // GitHub's "event" string (push | pull_request | workflow_dispatch | schedule | ...).
+  event        String
+  // queued | in_progress | completed
+  status       String
+  // success | failure | cancelled | skipped | timed_out | action_required |
+  // neutral. Null while status != completed.
+  conclusion   String?
+  headBranch   String?
+  headSha      String
+  actorLogin   String?
+  htmlUrl      String
+  runStartedAt DateTime?
+  runUpdatedAt DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  entity       CatalogEntity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+
+  @@index([entityId, runUpdatedAt(sort: Desc)])
+  @@index([entityId, headBranch])
+  @@index([entityId, conclusion])
+}
+
+model Deployment {
+  id                 String        @id @default(cuid())
+  entityId           String
+  // GitHub's deployment id; unique for the same reason as WorkflowRun.
+  githubDeploymentId BigInt        @unique
+  environment        String
+  ref                String
+  sha                String
+  // pending | in_progress | success | failure | error | inactive | queued.
+  // Derived from the latest deployment_status — Deployment itself has no state.
+  state              String
+  actorLogin         String?
+  description        String?
+  htmlUrl            String?
+  logUrl             String?
+  // updated_at of the latest deployment_status, used to sort "most recent
+  // deploys per environment".
+  deployedAt         DateTime?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  entity             CatalogEntity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+
+  @@index([entityId, environment, deployedAt(sort: Desc)])
+  @@index([entityId, state])
+}
+
+model PipelineSyncCursor {
+  entityId             String        @id
+  // Last GitHub `updated_at` we successfully ingested. The cron uses this as
+  // the `created:>=...` filter on listWorkflowRunsForRepo so each sweep only
+  // fetches new/changed runs.
+  lastWorkflowSyncAt   DateTime?
+  lastDeploymentSyncAt DateTime?
+  lastWebhookAt        DateTime?
+  lastErrorAt          DateTime?
+  lastError            String?
+  updatedAt            DateTime      @updatedAt
+  entity               CatalogEntity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+}

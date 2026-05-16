@@ -1,0 +1,217 @@
+enum ScaffoldTaskStatus {
+  pending
+  running
+  succeeded
+  failed
+  cancelled
+  rolled_back
+}
+
+enum ScaffoldPlanMode {
+  create
+  update
+  no_op
+}
+
+enum ScaffoldDriftStatus {
+  open
+  ignored
+  applied
+  superseded
+}
+
+model ScaffoldPlan {
+  id               String           @id @default(cuid())
+  templateId       String
+  templateVersion  String
+  templateHash     String
+  params           Json
+  paramsHash       String
+  mode             ScaffoldPlanMode
+  target           String           @default("main")
+  capabilities     String[]
+  irreversible     Boolean          @default(false)
+  bindingId        String?
+  artifact         Json
+  requiresApproval Json
+  approvalsGranted Json             @default("[]")
+  createdByUserId  String
+  actorKind        String           @default("human")
+  requestId        String?
+  createdAt        DateTime         @default(now())
+  expiresAt        DateTime
+  appliedTaskId    String?          @unique
+  binding          ScaffoldBinding? @relation(fields: [bindingId], references: [id], onDelete: SetNull)
+  task             ScaffoldTask?    @relation(name: "PlanApply", fields: [appliedTaskId], references: [id], onDelete: SetNull)
+  createdBy        User             @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+
+  @@index([templateId, createdAt])
+  @@index([createdByUserId])
+  @@index([bindingId])
+}
+
+model ScaffoldTask {
+  id                String             @id @default(cuid())
+  planId            String             @unique
+  status            ScaffoldTaskStatus @default(pending)
+  startedAt         DateTime           @default(now())
+  finishedAt        DateTime?
+  error             String?
+  compensations     Json               @default("[]")
+  triggeredByUserId String
+  actorKind         String             @default("human")
+  requestId         String?
+  output            Json?
+  steps             ScaffoldTaskStep[]
+  logs              ScaffoldTaskLog[]
+  plan              ScaffoldPlan?      @relation(name: "PlanApply")
+  triggeredBy       User               @relation(fields: [triggeredByUserId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([triggeredByUserId])
+}
+
+model ScaffoldTaskStep {
+  id         String             @id @default(cuid())
+  taskId     String
+  stepId     String
+  action     String
+  status     ScaffoldTaskStatus @default(pending)
+  startedAt  DateTime?
+  finishedAt DateTime?
+  output     Json?
+  error      String?
+  task       ScaffoldTask       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+}
+
+model ScaffoldTaskLog {
+  id        String       @id @default(cuid())
+  taskId    String
+  stepId    String?
+  level     String
+  body      String
+  requestId String?
+  createdAt DateTime     @default(now())
+  task      ScaffoldTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId, createdAt])
+}
+
+model ScaffoldBinding {
+  id              String          @id @default(cuid())
+  templateId      String
+  templateVersion String
+  templateHash    String
+  paramsHash      String
+  params          Json
+  targetKind      String
+  targetRef       String
+  target          String
+  branchName      String?
+  prUrl           String?
+  ownerTeamId     String?
+  catalogEntityId String?
+  active          Boolean         @default(true)
+  appliedByUserId String
+  appliedAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  appliedBy       User            @relation(fields: [appliedByUserId], references: [id], onDelete: Cascade)
+  drifts          ScaffoldDrift[]
+  plans           ScaffoldPlan[]
+
+  @@unique([templateId, targetRef])
+  @@index([templateId])
+  @@index([ownerTeamId])
+}
+
+model TemplateHashSnapshot {
+  templateId      String   @id
+  templateVersion String
+  templateHash    String
+  observedAt      DateTime @default(now())
+}
+
+enum AclSubject {
+  user
+  team
+  everyone
+}
+
+model TemplateAcl {
+  id          String     @id @default(cuid())
+  templateId  String
+  subjectType AclSubject
+  subjectId   String
+  canView     Boolean    @default(true)
+  canExecute  Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+
+  @@unique([templateId, subjectType, subjectId])
+  @@index([templateId])
+}
+
+enum TemplateAccessRequestStatus {
+  pending
+  approved
+  rejected
+  cancelled
+}
+
+enum TemplateAccessPermission {
+  view
+  execute
+}
+
+model TemplateAccessRequest {
+  id                String                      @id @default(cuid())
+  templateId        String
+  requestedByUserId String
+  permission        TemplateAccessPermission
+  reason            String?
+  status            TemplateAccessRequestStatus @default(pending)
+  reviewedByUserId  String?
+  reviewedAt        DateTime?
+  rejectionReason   String?
+  createdAclId      String?
+  createdAt         DateTime                    @default(now())
+  updatedAt         DateTime                    @updatedAt
+
+  requestedBy User  @relation("TemplateAccessRequestRequester", fields: [requestedByUserId], references: [id], onDelete: Cascade)
+  reviewedBy  User? @relation("TemplateAccessRequestReviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([templateId, status])
+  @@index([requestedByUserId])
+  @@index([status, createdAt])
+}
+
+model ScaffoldDrift {
+  id          String              @id @default(cuid())
+  bindingId   String
+  fromVersion String
+  toVersion   String
+  diffSummary Json
+  status      ScaffoldDriftStatus @default(open)
+  prUrl       String?
+  detectedAt  DateTime            @default(now())
+  resolvedAt  DateTime?
+  binding     ScaffoldBinding     @relation(fields: [bindingId], references: [id], onDelete: Cascade)
+
+  @@index([bindingId])
+  @@index([status])
+}
+
+model ScaffolderMcpToken {
+  id         String    @id @default(cuid())
+  userId     String
+  name       String
+  tokenHash  String    @unique
+  scopes     String[]
+  lastUsedAt DateTime?
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}

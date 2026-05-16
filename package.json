@@ -1,0 +1,51 @@
+{
+  "name": "modular-engineering-platform",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "yarn@1.22.22",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "features/*/*"
+  ],
+  "scripts": {
+    "prepare": "husky",
+    "dev": "concurrently \"yarn workspace @internal/app dev\" \"yarn workspace @internal/backend dev\" \"yarn dev:tunnel\"",
+    "dev:app": "yarn workspace @internal/app dev",
+    "dev:backend": "yarn workspace @internal/backend dev",
+    "dev:tunnel": "node scripts/start-tunnel.mjs",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "create-feature": "node tooling/scaffolder/create-feature.mjs",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "db:generate": "yarn workspace @internal/db prisma:generate",
+    "db:migrate": "yarn workspace @internal/db prisma:migrate",
+    "db:deploy": "yarn workspace @internal/db prisma:deploy",
+    "db:studio": "yarn workspace @internal/db prisma:studio",
+    "db:seed": "yarn workspace @internal/db db:seed"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@ngrok/ngrok": "^1.7.0",
+    "@types/node": "^25.6.0",
+    "concurrently": "^9.2.1",
+    "eslint": "^10.2.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.5.0",
+    "husky": "^9.1.7",
+    "prettier": "^3.8.3",
+    "turbo": "^2.9.14",
+    "typescript": "^6.0.2",
+    "typescript-eslint": "^8.59.0"
+  }
+}

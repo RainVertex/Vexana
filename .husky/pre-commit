@@ -1,0 +1,21 @@
+STAGED=$(git diff --cached --name-only --diff-filter=ACM)
+
+echo "...RUNNING PRETTIER..."
+PRETTIER_FILES=$(echo "$STAGED" | grep -E '\.(ts|tsx|js|jsx|json|md|css)$' || true)
+if [ -z "$PRETTIER_FILES" ]; then
+  echo "No files to format"
+else
+  echo "$PRETTIER_FILES" | xargs yarn prettier --write || exit 1
+  echo "$PRETTIER_FILES" | xargs git add
+  echo "+-+-+ PRETTIER FORMATTING DONE +-+-+"
+fi
+
+echo "...RUNNING ESLINT..."
+ESLINT_FILES=$(echo "$STAGED" | grep -E '\.(ts|tsx|js|jsx)$' || true)
+if [ -z "$ESLINT_FILES" ]; then
+  echo "No files to lint"
+else
+  echo "$ESLINT_FILES" | xargs -I {} yarn eslint --fix "{}" || exit 1
+  echo "$ESLINT_FILES" | xargs -I {} git add "{}"
+  echo "+-+-+ ESLINT DONE +-+-+"
+fi

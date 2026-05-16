@@ -1,0 +1,9 @@
+import { PageLayout } from "@internal/shared-ui";
+
+export function ${{ values.name | pascalCase }}Page() {
+  return (
+    <PageLayout title="${{ values.name | titleCase }}">
+      <p className="text-sm text-gray-600">Feature scaffold for ${{ values.name }}.</p>
+    </PageLayout>
+  );
+}

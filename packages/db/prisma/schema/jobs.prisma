@@ -1,0 +1,32 @@
+enum JobRunStatus {
+  running
+  succeeded
+  failed
+  cancelled
+}
+
+model JobRun {
+  id                String       @id @default(cuid())
+  jobName           String
+  triggeredBy       String
+  triggeredByUserId String?
+  startedAt         DateTime     @default(now())
+  finishedAt        DateTime?
+  status            JobRunStatus @default(running)
+  durationMs        Int?
+  error             String?
+  requestId         String?
+
+  @@index([jobName, startedAt])
+  @@index([status])
+}
+
+model JobState {
+  name          String    @id
+  enabled       Boolean   @default(true)
+  lastRunAt     DateTime?
+  lastSuccessAt DateTime?
+  lastError     String?
+  cursor        Json?
+  updatedAt     DateTime  @updatedAt
+}

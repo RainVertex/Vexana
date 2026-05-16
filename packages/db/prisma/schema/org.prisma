@@ -1,0 +1,29 @@
+enum DeptRole {
+  admin
+  member
+}
+
+model Department {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?
+  createdAt   DateTime  @default(now())
+  deletedAt   DateTime?
+
+  teams       Team[]
+  memberships DepartmentMembership[]
+}
+
+model DepartmentMembership {
+  departmentId String
+  userId       String
+  role         DeptRole @default(member)
+  joinedAt     DateTime @default(now())
+
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([departmentId, userId])
+  @@index([userId])
+}

@@ -1,0 +1,70 @@
+enum DocSyncStatus {
+  ok
+  partial
+  failed
+}
+
+model DocPage {
+  id            String           @id @default(cuid())
+  entityId      String
+  slug          String
+  path          String
+  title         String
+  body          String
+  frontmatter   Json?
+  sourceRef     String
+  lastCommitSha String?
+  lastCommitAt  DateTime?
+  lastCommitBy  String?
+  verifiedAt    DateTime?
+  verifiedBy    String?
+  syncedAt      DateTime         @default(now())
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  entity        CatalogEntity    @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  comments      DocComment[]
+  staleReports  DocStaleReport[]
+
+  @@unique([entityId, slug])
+  @@index([entityId])
+  @@index([lastCommitAt])
+}
+
+model DocComment {
+  id        String   @id @default(cuid())
+  pageId    String
+  authorId  String
+  body      String
+  anchor    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  page      DocPage  @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([pageId, createdAt])
+  @@index([authorId])
+}
+
+model DocStaleReport {
+  id         String    @id @default(cuid())
+  pageId     String
+  reporterId String
+  reason     String?
+  resolvedAt DateTime?
+  createdAt  DateTime  @default(now())
+  page       DocPage   @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  reporter   User      @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@index([pageId])
+  @@index([resolvedAt])
+}
+
+model DocSyncState {
+  entityId       String        @id
+  status         DocSyncStatus
+  lastSyncedAt   DateTime?
+  lastError      String?
+  pageCount      Int           @default(0)
+  resolvedSource Json?
+  entity         CatalogEntity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+}

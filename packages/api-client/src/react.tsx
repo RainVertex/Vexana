@@ -1,0 +1,89 @@
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type PropsWithChildren,
+} from "react";
+import { createApiClient, type ApiClient } from "./index";
+
+const ApiContext = createContext<ApiClient | null>(null);
+
+export interface ApiProviderProps extends PropsWithChildren {
+  baseUrl?: string;
+}
+
+export function ApiProvider({ baseUrl = "", children }: ApiProviderProps) {
+  const client = useMemo(() => createApiClient({ baseUrl }), [baseUrl]);
+  return <ApiContext.Provider value={client}>{children}</ApiContext.Provider>;
+}
+
+export function useApi(): ApiClient {
+  const client = useContext(ApiContext);
+  if (!client) throw new Error("useApi must be used inside <ApiProvider>");
+  return client;
+}
+
+interface StarredContextValue {
+  starredIds: string[];
+  loading: boolean;
+  toggle: (id: string) => void;
+  isStarred: (id: string) => boolean;
+}
+
+const StarredContext = createContext<StarredContextValue | null>(null);
+
+export function StarredProvider({ children }: PropsWithChildren) {
+  const api = useApi();
+  const [ids, setIds] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    api.catalog
+      .listStars()
+      .then((res) => {
+        if (!cancelled) setIds(res.items);
+      })
+      .catch((err) => {
+        if (!cancelled) console.error("Failed to load starred entities", err);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [api]);
+
+  const toggle = useCallback(
+    (id: string) => {
+      const wasStarred = ids.includes(id);
+      setIds((prev) => (wasStarred ? prev.filter((x) => x !== id) : [...prev, id]));
+      const op = wasStarred ? api.catalog.unstar(id) : api.catalog.star(id);
+      op.catch((err) => {
+        console.error("Failed to toggle star", err);
+        setIds((prev) =>
+          wasStarred ? (prev.includes(id) ? prev : [...prev, id]) : prev.filter((x) => x !== id),
+        );
+      });
+    },
+    [api, ids],
+  );
+
+  const isStarred = useCallback((id: string) => ids.includes(id), [ids]);
+
+  const value = useMemo<StarredContextValue>(
+    () => ({ starredIds: ids, loading, toggle, isStarred }),
+    [ids, loading, toggle, isStarred],
+  );
+  return <StarredContext.Provider value={value}>{children}</StarredContext.Provider>;
+}
+
+export function useStarred(): StarredContextValue {
+  const ctx = useContext(StarredContext);
+  if (!ctx) throw new Error("useStarred must be used inside <StarredProvider>");
+  return ctx;
+}

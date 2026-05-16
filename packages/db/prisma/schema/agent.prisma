@@ -1,0 +1,179 @@
+enum AgentStatus {
+  idle
+  running
+  succeeded
+  failed
+}
+
+// Configured upstream the platform can reach (Ollama, OpenAI, Anthropic via
+// its OpenAI-compatible endpoint, vLLM, etc.). Every provider is talked to
+// via the OpenAI SDK; only baseUrl + the optional env-var-referenced API key
+// differ. Secrets stay in env, not the database.
+model LlmProvider {
+  id           String     @id @default(cuid())
+  slug         String     @unique
+  displayName  String
+  baseUrl      String
+  apiKeyEnvVar String?
+  kind         String
+  enabled      Boolean    @default(true)
+  models       LlmModel[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+// A registered model an Agent can be pointed at. `modelName` is the wire
+// identifier sent to the upstream API (e.g. "qwen2.5:7b-instruct-q4_K_M",
+// "claude-sonnet-4-6"). costPer1k* is null for self-hosted models.
+model LlmModel {
+  id             String      @id @default(cuid())
+  slug           String      @unique
+  displayName    String
+  providerId     String
+  modelName      String
+  contextWindow  Int
+  supportsTools  Boolean     @default(true)
+  supportsVision Boolean     @default(false)
+  costPer1kIn    Decimal?    @db.Decimal(10, 6)
+  costPer1kOut   Decimal?    @db.Decimal(10, 6)
+  enabled        Boolean     @default(true)
+  provider       LlmProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  agents         Agent[]
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([providerId])
+}
+
+model Agent {
+  id           String      @id @default(cuid())
+  name         String
+  description  String?
+  kind         String
+  status       AgentStatus @default(idle)
+  modelId      String
+  instructions String
+  toolIds      Json        @default("[]")
+  ownerUserId  String?
+  owningTeamId String?
+  maxToolCalls Int         @default(10)
+  tokenBudget  Int?
+
+  // Class-table-inheritance link to the backing User (userKind='agent'). 1:1.
+  // Created by the agents_section_and_identity migration for existing rows;
+  // required for new agents. Cascades on User delete so removing the identity
+  // also removes the configuration row.
+  userId String @unique
+
+  // Adapter selector. Free-text so adapters can be added without a migration.
+  // v1 values: 'openai_compat', 'anthropic', 'gemini'.
+  modelProvider String @default("openai_compat")
+
+  // Per-tool approval policy:
+  //   { "<toolName>": "auto"|"requires_approval"|"forbidden",
+  //     "_sectionDefaults": { "<section>": "auto"|"requires_approval"|"forbidden" } }
+  // Lookup order in approvalPolicy.ts: per-tool entry → section default →
+  // global default ("requires_approval"). Empty {} preserves today's behavior
+  // (no gates) for existing agents until an admin opts in via the UI.
+  toolApprovalPolicy Json @default("{}")
+
+  // Monthly aggregate budgets. tokenBudget (per-run cap) above stays unchanged.
+  tokenBudgetMonthly Int?
+  tokenBudgetUsed    Int      @default(0)
+  costBudgetMonthly  Decimal? @db.Decimal(10, 6)
+  costBudgetUsed     Decimal  @default(0) @db.Decimal(10, 6)
+
+  // When true (default), every action requires an invoking human and the
+  // agent's effective permissions become min(agent.role, invoker.role).
+  // Admin opt-in to false enables fully-autonomous runs (cron, webhook).
+  onBehalfOfRequired Boolean @default(true)
+
+  // Optional override for which Secret holds this agent's provider API key.
+  // Falls back to LlmProvider.apiKeyEnvVar when null.
+  secretId String?
+
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  runs              AgentRun[]
+  llmModel          LlmModel           @relation(fields: [modelId], references: [id])
+  owner             User?              @relation("AgentOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  owningTeam        Team?              @relation("AgentOwningTeam", fields: [owningTeamId], references: [id], onDelete: SetNull)
+  user              User               @relation("AgentBackingUser", fields: [userId], references: [id], onDelete: Cascade)
+  secret            Secret?            @relation(fields: [secretId], references: [id], onDelete: SetNull)
+  chatConversations ChatConversation[]
+
+  @@index([modelId])
+  @@index([owningTeamId])
+  @@index([ownerUserId])
+}
+
+// Encrypted-at-rest API keys (provider keys, etc.). Scope:
+//   - personal: ownerUserId set, ownerTeamId null
+//   - team:     ownerTeamId set, ownerUserId null
+//   - org:      both null (admin-managed shared secret)
+// The XOR is enforced by a CHECK constraint in the migration.
+//
+// encryptedValue is AES-256-GCM(plaintext, key=APP_SECRET_MASTER_KEY) with a
+// per-secret IV prepended. See features/agents/backend/src/secrets.ts.
+model Secret {
+  id             String   @id @default(cuid())
+  ownerUserId    String?
+  ownerTeamId    String?
+  name           String
+  encryptedValue Bytes
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  ownerUser      User?    @relation("SecretOwnerUser", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  ownerTeam      Team?    @relation("SecretOwnerTeam", fields: [ownerTeamId], references: [id], onDelete: Cascade)
+  agents         Agent[]
+
+  @@index([ownerUserId])
+  @@index([ownerTeamId])
+}
+
+// Pending tool calls from autonomous (non-chat) agent runs that hit a
+// `requires_approval` policy. Chat-driven approvals continue to use the
+// existing ChatActionPreview / *_prepare-*_submit flow.
+//
+// agentUserId points at the backing User (userKind='agent') of the agent
+// requesting the action. decidedByUserId is the human who approved/rejected
+// — null until decided.
+model AgentApprovalRequest {
+  id              String    @id @default(cuid())
+  agentUserId     String
+  toolName        String
+  parsedParams    Json
+  status          String    @default("pending")
+  requestedAt     DateTime  @default(now())
+  decidedByUserId String?
+  decidedAt       DateTime?
+  expiresAt       DateTime
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  agentUser       User      @relation("AgentApprovalAgent", fields: [agentUserId], references: [id], onDelete: Cascade)
+  decidedBy       User?     @relation("AgentApprovalDecider", fields: [decidedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([agentUserId, status])
+  @@index([status, expiresAt])
+}
+
+model AgentRun {
+  id             String      @id @default(cuid())
+  agentId        String
+  status         AgentStatus
+  input          Json
+  output         Json?
+  error          String?
+  tokensInput    Int?
+  tokensOutput   Int?
+  costUsd        Decimal?    @db.Decimal(10, 6)
+  containsWrites Boolean     @default(false)
+  startedAt      DateTime    @default(now())
+  finishedAt     DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  agent          Agent       @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([agentId])
+  @@index([status])
+}

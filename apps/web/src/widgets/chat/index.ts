@@ -1,0 +1,1 @@
+export { ChatAssistantWidget } from "./ChatAssistantWidget";

@@ -1,0 +1,144 @@
+enum UserRole {
+  admin
+  member
+  guest
+}
+
+enum GrantTarget {
+  team
+  catalog_entity
+  template
+}
+
+enum UserTaskStatus {
+  pending
+  completed
+  dismissed
+}
+
+// Class-table-inheritance marker. A 'human' row is a real person logged in
+// via SSO. An 'agent' row is a synthetic identity created when an Agent is
+// configured; every Agent has exactly one backing User with userKind='agent'.
+// Auth, role checks, team membership, audit, and grants treat both kinds
+// uniformly — the agent runs through the same middleware a human does.
+enum UserKind {
+  human
+  agent
+}
+
+model User {
+  id                              String                  @id @default(cuid())
+  githubId                        String                  @unique
+  githubLogin                     String                  @unique
+  email                           String                  @unique
+  displayName                     String
+  avatarUrl                       String?
+  role                            UserRole                @default(member)
+  userKind                        UserKind                @default(human)
+  status                          String                  @default("active")
+  lastLoginAt                     DateTime?
+  createdAt                       DateTime                @default(now())
+  updatedAt                       DateTime                @updatedAt
+  sessions                        Session[]
+  memberships                     TeamMembership[]
+  auditEvents                     AuditEvent[]
+  scaffoldPlans                   ScaffoldPlan[]
+  scaffoldTasks                   ScaffoldTask[]
+  scaffoldBindings                ScaffoldBinding[]
+  scaffolderMcpTokens             ScaffolderMcpToken[]
+  devDocComments                  DocComment[]
+  devDocStaleReports              DocStaleReport[]
+  starredEntities                 StarredEntity[]
+  notifications                   Notification[]
+  planeUserMappings               PlaneUserMapping[]
+  webhookSubscriptions            WebhookSubscription[]
+  teamRequestsSubmitted           TeamRequest[]           @relation("TeamRequestRequester")
+  teamRequestsReviewed            TeamRequest[]           @relation("TeamRequestReviewer")
+  pages                           Page[]
+  onboardingTasks                 UserTask[]
+  departmentMemberships           DepartmentMembership[]
+  receivedGrants                  GuestGrant[]            @relation("ReceivedGrants")
+  issuedGrants                    GuestGrant[]            @relation("IssuedGrants")
+  templateAccessRequestsSubmitted TemplateAccessRequest[] @relation("TemplateAccessRequestRequester")
+  templateAccessRequestsReviewed  TemplateAccessRequest[] @relation("TemplateAccessRequestReviewer")
+  maintainerRequestsSubmitted     MaintainerRequest[]     @relation("MaintainerRequestRequester")
+  maintainerRequestsReviewed      MaintainerRequest[]     @relation("MaintainerRequestReviewer")
+  ownedAgents                     Agent[]                 @relation("AgentOwner")
+  // 1:1 back-relation when this User row IS an agent (userKind='agent').
+  // Null for human users.
+  agentProfile                    Agent?                  @relation("AgentBackingUser")
+  chatConversations               ChatConversation[]
+  ownedSecrets                    Secret[]                @relation("SecretOwnerUser")
+  // When this User row is itself an agent (userKind='agent'), the approval
+  // requests this agent has emitted. Empty for human users.
+  agentApprovalsRequested         AgentApprovalRequest[]  @relation("AgentApprovalAgent")
+  agentApprovalDecisions          AgentApprovalRequest[]  @relation("AgentApprovalDecider")
+
+  @@index([userKind])
+}
+
+model GuestGrant {
+  id           String      @id @default(cuid())
+  granteeId    String
+  resourceType GrantTarget
+  resourceId   String
+  permissions  String[]
+  grantedById  String
+  expiresAt    DateTime?
+  createdAt    DateTime    @default(now())
+  revokedAt    DateTime?
+
+  grantee   User @relation("ReceivedGrants", fields: [granteeId], references: [id], onDelete: Cascade)
+  grantedBy User @relation("IssuedGrants", fields: [grantedById], references: [id], onDelete: Cascade)
+
+  @@index([granteeId, resourceType, resourceId])
+  @@index([grantedById])
+}
+
+model UserTask {
+  id          String         @id @default(cuid())
+  userId      String
+  kind        String
+  status      UserTaskStatus @default(pending)
+  payload     Json?
+  createdAt   DateTime       @default(now())
+  completedAt DateTime?
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Each kind is seeded at most once per user. The unique key prevents
+  // duplicate rows if seeding races (e.g. two parallel `GET /tasks`).
+  @@unique([userId, kind])
+  @@index([userId, status])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  userAgent String?
+  ip        String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model AuditEvent {
+  id          String   @id @default(cuid())
+  actorUserId String?
+  actorIp     String?
+  kind        String
+  targetKind  String?
+  targetId    String?
+  requestId   String?
+  payload     Json
+  createdAt   DateTime @default(now())
+  actor       User?    @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([kind])
+  @@index([actorUserId])
+  @@index([targetKind, targetId])
+}

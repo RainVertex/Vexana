@@ -1,0 +1,49 @@
+{
+  "name": "@internal/app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@feature/agents-frontend": "0.1.0",
+    "@feature/catalog-frontend": "0.1.0",
+    "@feature/chat-frontend": "0.1.0",
+    "@feature/devdocs-frontend": "0.1.0",
+    "@feature/dora-metrics-frontend": "0.1.0",
+    "@feature/integrations-frontend": "0.1.0",
+    "@feature/notifications-frontend": "0.1.0",
+    "@feature/observability-frontend": "0.1.0",
+    "@feature/onboarding-frontend": "0.1.0",
+    "@feature/requests-frontend": "0.1.0",
+    "@feature/scaffolder-frontend": "0.1.0",
+    "@feature/scorecards-frontend": "0.1.0",
+    "@feature/search-frontend": "0.1.0",
+    "@feature/teams-frontend": "0.1.0",
+    "@feature/webhooks-frontend": "0.1.0",
+    "@feature/workspace-frontend": "0.1.0",
+    "@internal/api-client": "0.1.0",
+    "@internal/shared-types": "0.1.0",
+    "@internal/shared-ui": "0.1.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-is": "^19.2.5",
+    "react-markdown": "^10.1.0",
+    "react-router-dom": "^7.14.0",
+    "recharts": "^3.8.1",
+    "remark-gfm": "^4.0.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/forms": "^0.5.11",
+    "@tailwindcss/postcss": "^4.2.2",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "autoprefixer": "^10.5.0",
+    "postcss": "^8.5.8",
+    "vite": "^8.0.3"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}

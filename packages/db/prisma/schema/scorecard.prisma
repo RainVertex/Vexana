@@ -1,0 +1,52 @@
+enum ScorecardTierStyle {
+  stage
+  threshold
+}
+
+model Scorecard {
+  id          String              @id @default(cuid())
+  slug        String              @unique
+  name        String
+  description String?
+  appliesTo   CatalogEntityKind[] @default([])
+  tierStyle   ScorecardTierStyle
+  enabled     Boolean             @default(true)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  rules       ScorecardRule[]
+  results     ScorecardResult[]
+}
+
+model ScorecardRule {
+  id          String            @id @default(cuid())
+  scorecardId String
+  key         String
+  label       String
+  kind        String
+  config      Json
+  weight      Int               @default(1)
+  tier        String
+  scorecard   Scorecard         @relation(fields: [scorecardId], references: [id], onDelete: Cascade)
+  results     ScorecardResult[]
+
+  @@unique([scorecardId, key])
+  @@index([scorecardId])
+}
+
+model ScorecardResult {
+  id          String        @id @default(cuid())
+  scorecardId String
+  ruleId      String
+  entityId    String
+  passed      Boolean
+  reason      String?
+  evidence    Json?
+  evaluatedAt DateTime      @default(now())
+  scorecard   Scorecard     @relation(fields: [scorecardId], references: [id], onDelete: Cascade)
+  rule        ScorecardRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  entity      CatalogEntity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+
+  @@unique([entityId, ruleId])
+  @@index([scorecardId, entityId])
+  @@index([entityId])
+}

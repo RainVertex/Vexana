@@ -1,0 +1,33 @@
+{
+  "name": "@feature/chat-backend",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "dependencies": {
+    "@feature/agents-backend": "0.1.0",
+    "@feature/catalog-backend": "0.1.0",
+    "@feature/notifications-backend": "0.1.0",
+    "@feature/teams-backend": "0.1.0",
+    "@feature/workspace-backend": "0.1.0",
+    "@internal/db": "0.1.0",
+    "@internal/shared-types": "0.1.0",
+    "express": "^5.2.1",
+    "openai": "^6.37.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.6.0",
+    "typescript": "^6.0.2"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}

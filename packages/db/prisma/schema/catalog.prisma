@@ -1,0 +1,159 @@
+enum CatalogEntityKind {
+  service
+  api
+  library
+  website
+  database
+  infrastructure
+}
+
+enum Lifecycle {
+  experimental
+  production
+  deprecated
+}
+
+enum ServiceStatus {
+  healthy
+  degraded
+  down
+}
+
+enum CatalogEntitySource {
+  manual
+  scaffolder
+  discovery
+  agent
+  seed
+}
+
+enum CatalogDriftStatus {
+  open
+  ignored
+  applied
+  superseded
+}
+
+enum CatalogAgentTaskType {
+  resolve_ownership
+  generate_yaml
+  open_pr
+}
+
+enum CatalogAgentTaskStatus {
+  pending
+  running
+  done
+  failed
+  skipped
+}
+
+model CatalogEntity {
+  id               String                @id @default(cuid())
+  name             String
+  description      String?
+  kind             CatalogEntityKind
+  lifecycle        Lifecycle             @default(production)
+  repoUrl          String?
+  tags             String[]              @default([])
+  source           CatalogEntitySource   @default(manual)
+  sourceRef        String?
+  lastSeenAt       DateTime              @default(now())
+  staleSince       DateTime?
+  yamlSpec         Json?
+  autoApply        Boolean               @default(false)
+  // GitHub App auto-import bookkeeping. installationId links the entity to
+  // the App installation that discovered it (used for cascade-stale on
+  // uninstall). githubRepoId is GitHub's stable numeric repo id — preferred
+  // over (name, kind) for upserts when present so renames don't fork the row.
+  // needsOnboarding flips false the moment a valid catalog-info.yaml is seen;
+  // unowned flips false when the agent (or a manual edit) attaches owners.
+  needsOnboarding  Boolean               @default(false)
+  unowned          Boolean               @default(false)
+  installationId   Int?
+  githubRepoId     Int?                  @unique
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  owners             CatalogEntityOwner[]
+  healthSamples      ServiceHealthSample[]
+  doraSnapshots      DoraMetricsSnapshot[]
+  drifts             CatalogDrift[]
+  scorecardResults   ScorecardResult[]
+  docPages           DocPage[]
+  docSync            DocSyncState?
+  starredBy          StarredEntity[]
+  agentTasks         CatalogAgentTask[]
+  workflowRuns       WorkflowRun[]
+  deployments        Deployment[]
+  pipelineSyncCursor PipelineSyncCursor?
+
+  @@unique([name, kind])
+  @@index([kind])
+  @@index([staleSince])
+  @@index([needsOnboarding])
+  @@index([unowned])
+  @@index([installationId])
+}
+
+model StarredEntity {
+  userId    String
+  entityId  String
+  createdAt DateTime      @default(now())
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entity    CatalogEntity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+
+  @@id([userId, entityId])
+  @@index([entityId])
+}
+
+model CatalogEntityOwner {
+  entityId  String
+  teamId    String
+  createdAt DateTime      @default(now())
+  entity    CatalogEntity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  team      Team          @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@id([entityId, teamId])
+  @@index([teamId])
+}
+
+model CatalogDrift {
+  id         String             @id @default(cuid())
+  entityId   String
+  kind       String
+  diff       Json
+  status     CatalogDriftStatus @default(open)
+  proposedBy String
+  agentRunId String?
+  detectedAt DateTime           @default(now())
+  resolvedAt DateTime?
+  entity     CatalogEntity      @relation(fields: [entityId], references: [id], onDelete: Cascade)
+
+  @@index([entityId])
+  @@index([status])
+}
+
+// Work queue for the Catalog Agent. Bulk sync enqueues `resolve_ownership`
+// for any entity that lacks owners; on success the worker chains
+// `generate_yaml` → `open_pr`. Each task carries a small JSON payload
+// (e.g. { prUrl, branchName, generatedYaml }). Status transitions:
+//   pending → running → done | failed | skipped
+// Failed tasks are retried with exponential backoff up to a per-handler cap.
+model CatalogAgentTask {
+  id          String                 @id @default(cuid())
+  entityId    String
+  type        CatalogAgentTaskType
+  status      CatalogAgentTaskStatus @default(pending)
+  attempts    Int                    @default(0)
+  payload     Json                   @default("{}")
+  lastError   String?
+  scheduledAt DateTime               @default(now())
+  startedAt   DateTime?
+  finishedAt  DateTime?
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+  entity      CatalogEntity          @relation(fields: [entityId], references: [id], onDelete: Cascade)
+
+  @@index([status, scheduledAt])
+  @@index([entityId])
+}

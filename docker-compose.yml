@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: platform-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: platform
+      POSTGRES_PASSWORD: platform
+      POSTGRES_DB: platform
+    ports:
+      - "${POSTGRES_PORT:-5435}:5432"
+    volumes:
+      - platform-pg:/var/lib/postgresql/data
+
+volumes:
+  platform-pg:

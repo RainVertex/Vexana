@@ -1,0 +1,32 @@
+{
+  "name": "@feature/devdocs-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "dependencies": {
+    "@internal/api-client": "0.1.0",
+    "@internal/shared-types": "0.1.0",
+    "@internal/shared-ui": "0.1.0",
+    "react": "^19.2.4",
+    "react-markdown": "^10.1.0",
+    "react-router-dom": "^7.14.0",
+    "rehype-autolink-headings": "^7.1.0",
+    "rehype-highlight": "^7.0.2",
+    "rehype-slug": "^6.0.0",
+    "remark-gfm": "^4.0.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "typescript": "^6.0.2"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}

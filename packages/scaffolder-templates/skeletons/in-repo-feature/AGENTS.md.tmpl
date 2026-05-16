@@ -1,0 +1,35 @@
+# ${{ values.name }} — agent guide
+
+Read this BEFORE editing anything in this feature.
+
+## Purpose
+
+<one-line description — fill this in on first edit>
+
+## Public API
+
+This feature exposes ONLY what these two files re-export:
+
+- `frontend/src/index.ts`
+- `backend/src/index.ts`
+
+Anything not in those barrels is internal. Do not import internals from outside
+the feature; if a consumer needs something, promote it through the barrel.
+
+## Boundary rules (enforced by `yarn lint`)
+
+- `frontend/` may import from `@internal/api-client`, `@internal/shared-types`,
+  `@internal/shared-ui`, and other `packages/*` — nothing else.
+  - Especially: NOT `@internal/app` / `apps/web/src/**`, NOT other `@feature/*`.
+- `backend/` may import from `@internal/db`, `@internal/shared-types`, other
+  `packages/*`, and other `@feature/*-backend` packages.
+  - NOT `@internal/backend` / `apps/api/src/**`, NOT any `@feature/*-frontend`.
+
+If you find yourself wanting to break a rule, lift the shared bit into
+`packages/` or `@internal/shared-ui` instead.
+
+## Where it plugs in
+
+- Backend router mounted in `apps/api` at `/api/${{ values.name }}`.
+- Frontend route declared in `apps/web/src/AppRoutes.tsx` at `/${{ values.name }}`.
+- If this feature is a widget, register it in `apps/web/src/widgets/registry.tsx`.

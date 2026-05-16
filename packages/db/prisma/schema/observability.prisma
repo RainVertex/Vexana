@@ -1,0 +1,30 @@
+model ServiceHealthSample {
+  id        String        @id @default(cuid())
+  entityId  String
+  status    ServiceStatus
+  latencyMs Int?
+  errorRate Float?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  entity    CatalogEntity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+
+  @@index([entityId])
+  @@index([createdAt])
+}
+
+model DoraMetricsSnapshot {
+  id                    String        @id @default(cuid())
+  entityId              String
+  periodStart           DateTime
+  periodEnd             DateTime
+  deployFrequencyPerDay Float
+  leadTimeHours         Float
+  changeFailureRate     Float
+  mttrHours             Float
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  entity                CatalogEntity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+
+  @@index([entityId])
+  @@index([periodEnd])
+}

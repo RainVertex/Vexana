@@ -1,0 +1,49 @@
+enum PageSection {
+  catalog
+  selfservice
+  requests
+  workspace
+  teams
+  observability
+  admin
+  agents
+}
+
+enum PageType {
+  LINK
+  DASHBOARD
+}
+
+enum PageScope {
+  PERSONAL
+  SHARED
+}
+
+model Page {
+  id          String      @id @default(cuid())
+  ownerUserId String
+  section     PageSection
+  parentId    String?
+  title       String
+  icon        String?
+  // null for DASHBOARD pages and folders; LINK pages always have a url.
+  url         String?
+  order       Float
+  isFolder    Boolean     @default(false)
+  type        PageType    @default(LINK)
+  scope       PageScope   @default(PERSONAL)
+  // WidgetInstance[] for DASHBOARD pages; null otherwise.
+  layout      Json?
+  deletedAt   DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  owner    User   @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  parent   Page?  @relation("PageChildren", fields: [parentId], references: [id], onDelete: Cascade)
+  children Page[] @relation("PageChildren")
+
+  @@index([ownerUserId, section, parentId, order])
+  @@index([ownerUserId, section, deletedAt])
+  @@index([scope, section, parentId, order])
+  @@index([parentId])
+}
