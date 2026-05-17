@@ -425,6 +425,12 @@ agentsRouter.patch("/:id", async (req, res) => {
       return res.status(400).json({ error: (err as Error).message });
     }
   }
+  // Toggling an agent to autonomous matches the create-time admin gate in
+  // creationGuard.ts — the runtime blast radius is the same regardless of
+  // when the bit gets flipped.
+  if (data.onBehalfOfRequired === false && req.user.role !== "admin") {
+    return res.status(403).json({ error: "Only admins can set onBehalfOfRequired=false" });
+  }
 
   const updated = await prisma.agent.update({
     where: { id: req.params.id },
@@ -438,6 +444,8 @@ agentsRouter.patch("/:id", async (req, res) => {
       owningTeamId: data.owningTeamId,
       maxToolCalls: data.maxToolCalls,
       tokenBudget: data.tokenBudget,
+      toolApprovalPolicy: data.toolApprovalPolicy as Prisma.InputJsonValue | undefined,
+      onBehalfOfRequired: data.onBehalfOfRequired,
     },
   });
   res.json(updated);

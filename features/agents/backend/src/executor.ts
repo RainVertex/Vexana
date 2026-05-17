@@ -9,6 +9,7 @@ import {
 import { selectAdapter } from "./llm/adapters";
 import { resolveProviderApiKey } from "./secrets";
 import { decidePolicy } from "./approvalPolicy";
+import { buildAgentRequestContext } from "./agentRequestContext";
 import { resolveTools, type ToolContext } from "./llm/toolRegistry";
 
 // Generic agent execution. The agent row carries everything driving the loop:
@@ -93,19 +94,11 @@ export async function runAgent(
       selectAdapter(agent.modelProvider).stream({ ...req, apiKey } as Parameters<
         ReturnType<typeof selectAdapter>["stream"]
       >[0]));
-  const toolCtx: ToolContext = {
-    userId: opts.callerUserId ?? null,
-    isAdmin: opts.callerIsAdmin ?? false,
-    teamIds: opts.callerTeamIds ?? [],
-    signal: opts.signal,
-  };
-
   // Per-tool approval policy in effect for this run. Read once from the
   // Agent row so we don't re-fetch on every tool call. The policy is the
   // JSONB column populated via the wizard (Pass 4) — empty for legacy rows
   // which preserves the pre-Pass-3 "no gates" behavior for chat.
   const policy = (agent.toolApprovalPolicy ?? {}) as Parameters<typeof decidePolicy>[0];
-  const isAutonomousRun = opts.callerUserId == null;
   const toolIds = Array.isArray(agent.toolIds) ? (agent.toolIds as unknown as string[]) : [];
   const tools = resolveTools(toolIds);
   const openaiTools: OpenAI.Chat.Completions.ChatCompletionFunctionTool[] = tools.map(
@@ -125,6 +118,22 @@ export async function runAgent(
   const model = agent.llmModel as ResolvedModel;
 
   try {
+    // Resolve the effective request context: enforces onBehalfOfRequired
+    // (autonomous invocations of a "needs invoker" agent throw here and
+    // land in the catch below as a clean run-failed row) and computes
+    // min(agent.role, invoker.role) + team intersection for ToolContext.
+    const agentCtx = await buildAgentRequestContext({
+      agentUserId: agent.userId,
+      invokerUserId: opts.callerUserId ?? null,
+    });
+    const toolCtx: ToolContext = {
+      userId: agentCtx.invokerUserId ?? agentCtx.agentUserId,
+      isAdmin: agentCtx.effectiveRole === "admin",
+      teamIds: agentCtx.effectiveTeamIds,
+      signal: opts.signal,
+    };
+    const isAutonomousRun = agentCtx.invokerUserId == null;
+
     for (let step = 0; step < agent.maxToolCalls; step++) {
       const result = await chatFn({
         model,
