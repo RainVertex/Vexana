@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import type { ChatMessageDto, ChatPreviewEvent } from "@internal/shared-types";
+import type { ChatMessageDto } from "@internal/shared-types";
 import { MessageBubble } from "./MessageBubble";
 import type { ChatStreamState } from "./chatStream";
 
@@ -8,8 +8,6 @@ interface Props {
   /** Optimistic user message rendered while the current turn is streaming. */
   pendingUserMessage?: ChatMessageDto | null;
   stream: ChatStreamState;
-  onConfirmPreview: (preview: ChatPreviewEvent) => void;
-  onCancelPreview: (preview: ChatPreviewEvent) => void;
   /** Current user, used by MessageBubble to render the right-side avatar. */
   userName?: string;
   userAvatarUrl?: string | null;
@@ -19,8 +17,6 @@ export function MessageList({
   messages,
   pendingUserMessage,
   stream,
-  onConfirmPreview,
-  onCancelPreview,
   userName,
   userAvatarUrl,
 }: Props) {
@@ -29,7 +25,7 @@ export function MessageList({
   // Autoscroll on new tokens / new messages.
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages, stream.text, stream.reasoning, stream.toolCalls.length, stream.previews.length]);
+  }, [messages, stream.text, stream.reasoning, stream.toolCalls.length]);
 
   return (
     <div className="flex-1 space-y-3 overflow-y-auto p-4">
@@ -56,10 +52,7 @@ export function MessageList({
       {(stream.status === "streaming" ||
         stream.status === "done" ||
         (stream.status !== "idle" &&
-          (stream.text ||
-            stream.reasoning ||
-            stream.toolCalls.length > 0 ||
-            stream.previews.length > 0))) && (
+          (stream.text || stream.reasoning || stream.toolCalls.length > 0))) && (
         <MessageBubble
           message={{
             id: "live",
@@ -69,11 +62,7 @@ export function MessageList({
             reasoningStartedAt: stream.reasoningStartedAt,
             reasoningDurationMs: stream.reasoningDurationMs,
           }}
-          previews={stream.previews}
           liveCalls={stream.toolCalls}
-          previewsDisabled={stream.submitInFlight}
-          onConfirmPreview={onConfirmPreview}
-          onCancelPreview={onCancelPreview}
           userName={userName}
           userAvatarUrl={userAvatarUrl}
         />

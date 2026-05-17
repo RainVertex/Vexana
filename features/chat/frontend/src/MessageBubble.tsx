@@ -1,19 +1,13 @@
-import type { ChatMessageDto, ChatPreviewEvent } from "@internal/shared-types";
+import type { ChatMessageDto } from "@internal/shared-types";
 import { ProfileAvatar } from "@internal/shared-ui";
 import { ToolCallChip } from "./ToolCallChip";
-import { PreviewCard } from "./PreviewCard";
 import { ReasoningSection } from "./ReasoningSection";
 import { AssistantAvatar } from "./AssistantAvatar";
 import type { ChatToolCallView } from "./chatStream";
 
 interface Props {
   message: ChatMessageDto | LiveAssistantMessage;
-  previews?: ChatPreviewEvent[];
   liveCalls?: ChatToolCallView[];
-  onConfirmPreview?: (preview: ChatPreviewEvent) => void;
-  onCancelPreview?: (preview: ChatPreviewEvent) => void;
-  /** Disable preview confirm/cancel buttons (e.g. */
-  previewsDisabled?: boolean;
   /** Current user info, used to render the right-side avatar on user messages. */
   userName?: string;
   userAvatarUrl?: string | null;
@@ -35,16 +29,7 @@ function isLive(m: Props["message"]): m is LiveAssistantMessage {
   return m.id === "live";
 }
 
-export function MessageBubble({
-  message,
-  previews = [],
-  liveCalls = [],
-  onConfirmPreview,
-  onCancelPreview,
-  previewsDisabled,
-  userName,
-  userAvatarUrl,
-}: Props) {
+export function MessageBubble({ message, liveCalls = [], userName, userAvatarUrl }: Props) {
   const isUser = message.role === "user";
 
   // For assistant messages: pull reasoning from the live shape when present,
@@ -113,16 +98,6 @@ export function MessageBubble({
           </div>
         )}
         {message.content && <div className="whitespace-pre-wrap">{message.content}</div>}
-        {!isUser &&
-          previews.map((p) => (
-            <PreviewCard
-              key={p.shortHandle}
-              preview={p}
-              disabled={previewsDisabled}
-              onConfirm={() => onConfirmPreview?.(p)}
-              onCancel={() => onCancelPreview?.(p)}
-            />
-          ))}
       </div>
     </div>
   );

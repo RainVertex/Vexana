@@ -1,16 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type {
-  ChatPreviewEvent,
-  ChatToolCallStartEvent,
-  ChatToolCallEndEvent,
-} from "@internal/shared-types";
+import type { ChatToolCallStartEvent, ChatToolCallEndEvent } from "@internal/shared-types";
 
 // Hand-rolled SSE consumer for /api/chat/conversations/:id/messages. The
 // browser EventSource doesn't support POST bodies, so we use fetch() with a
 // streaming response and parse `event:`/`data:` frames manually. The hook
 // exposes everything the UI needs to render a turn: the streaming token text,
-// the tool-call timeline (both reads and writes), structured preview cards,
-// and a final "done" signal.
+// the tool-call timeline (both reads and writes), and a final "done" signal.
+// Backend still emits `preview` SSE frames for *_prepare tools, but the UI
+// no longer renders them — confirmation happens in prose ("yes"/"confirm"),
+// detected server-side by looksLikeConfirmation().
 
 export type ChatStreamStatus = "idle" | "streaming" | "done" | "error";
 
@@ -34,8 +32,6 @@ export interface ChatStreamState {
   /** Server-reported total ms once reasoning has fully ended; null while still reasoning. */
   reasoningDurationMs: number | null;
   toolCalls: ChatToolCallView[];
-  /** Structured preview events emitted by *_prepare tools. */
-  previews: ChatPreviewEvent[];
   /** True while a *_submit tool call is mid-execution; UI uses this to disable the Stop button */
   submitInFlight: boolean;
   error?: string;
@@ -48,7 +44,6 @@ const initial: ChatStreamState = {
   reasoningStartedAt: null,
   reasoningDurationMs: null,
   toolCalls: [],
-  previews: [],
   submitInFlight: false,
 };
 
@@ -203,8 +198,7 @@ function handleFrame(
       break;
     }
     case "preview": {
-      const e = data as ChatPreviewEvent;
-      setState((s) => ({ ...s, previews: [...s.previews, e] }));
+      // Backend still emits this for *_prepare tools; UI no longer renders it.
       break;
     }
     case "error": {

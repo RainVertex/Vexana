@@ -6,7 +6,6 @@ import type {
   ChatConversationDetailDto,
   ChatConversationSummaryDto,
   ChatMessageDto,
-  ChatPreviewEvent,
 } from "@internal/shared-types";
 import { ConversationList } from "./ConversationList";
 import { MessageList } from "./MessageList";
@@ -25,9 +24,9 @@ interface ChatPageProps {
 // Streaming + abort: useChatStream owns the SSE consumer. When a message is
 // in flight, the Composer renders a Stop button; while a *_submit is running,
 // Stop is disabled (stream.submitInFlight) so we don't orphan a GitHub team
-// mid-runApproval. The card "Confirm" button sends the literal text
-// "Confirm submission" as the next user message, keeping the confirmation
-// flow inside the transcript and the audit trail.
+// mid-runApproval. Confirmation of *_prepare actions happens in prose — the
+// user replies "confirm"/"cancel" as the next message and the backend's
+// looksLikeConfirmation() routes the pending preview to its *_submit.
 
 export function ChatPage({ userName, userAvatarUrl }: ChatPageProps = {}) {
   const api = useApi();
@@ -193,19 +192,6 @@ export function ChatPage({ userName, userAvatarUrl }: ChatPageProps = {}) {
     [api, conversationId, navigate, send],
   );
 
-  const handleConfirm = useCallback(
-    (_p: ChatPreviewEvent) => {
-      void send("Confirm submission");
-    },
-    [send],
-  );
-  const handleCancel = useCallback(
-    (_p: ChatPreviewEvent) => {
-      void send("Cancel, let me change something");
-    },
-    [send],
-  );
-
   return (
     <Group
       orientation="horizontal"
@@ -250,8 +236,6 @@ export function ChatPage({ userName, userAvatarUrl }: ChatPageProps = {}) {
                   : null
               }
               stream={stream}
-              onConfirmPreview={handleConfirm}
-              onCancelPreview={handleCancel}
               userName={userName}
               userAvatarUrl={userAvatarUrl}
             />

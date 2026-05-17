@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApi } from "@internal/api-client/react";
-import type { ChatConversationDetailDto, ChatPreviewEvent } from "@internal/shared-types";
+import type { ChatConversationDetailDto } from "@internal/shared-types";
 import { MessageList } from "./MessageList";
 import { Composer } from "./Composer";
 import { useChatStream } from "./chatStream";
@@ -92,15 +92,6 @@ export function ChatAssistantPanel({ userId, userName, userAvatarUrl }: Props) {
     reset();
   }, [reset]);
 
-  const handleConfirm = useCallback(
-    (_p: ChatPreviewEvent) => void send("Confirm submission"),
-    [send],
-  );
-  const handleCancel = useCallback(
-    (_p: ChatPreviewEvent) => void send("Cancel, let me change something"),
-    [send],
-  );
-
   return (
     // -m-4 cancels WidgetFrame's inner padding so MessageList/Composer sit
     // flush — Composer has its own border-t to separate from messages.
@@ -130,8 +121,6 @@ export function ChatAssistantPanel({ userId, userName, userAvatarUrl }: Props) {
         <MessageList
           messages={active?.messages ?? []}
           stream={stream}
-          onConfirmPreview={handleConfirm}
-          onCancelPreview={handleCancel}
           userName={userName}
           userAvatarUrl={userAvatarUrl}
         />

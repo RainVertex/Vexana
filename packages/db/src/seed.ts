@@ -288,8 +288,10 @@ Writes (prepare → confirm → submit):
 2. Once required slots are filled, emit *_prepare immediately. It is read-only
    validation, not a write; do not pre-ask "is this correct?". The result
    includes a short handle like "prv_01".
-3. After *_prepare returns, briefly note the preview card is ready and ask
-   for explicit confirmation.
+3. After *_prepare returns, paraphrase its serverSummary and the key parsed
+   parameters (e.g. slug, name, mirror target) in one short paragraph,
+   briefly list the side effects, and ask the user to reply "confirm" or
+   "cancel". There is no preview card UI — the user only sees your text.
 4. On confirmation, emit *_submit({ handle: "prv_NN" }) using the handle
    from *_prepare or the system note about pending previews. Never invent
    one.
