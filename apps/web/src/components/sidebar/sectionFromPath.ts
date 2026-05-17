@@ -30,5 +30,7 @@ export function sectionFromPath(pathname: string): SidebarSection {
 }
 
 export function sectionHasTree(section: SidebarSection): section is PageSection {
-  return section !== "home" && section !== "account" && section !== "integrations";
+  return (
+    section !== "home" && section !== "account" && section !== "integrations" && section !== "chat"
+  );
 }
