@@ -39,8 +39,8 @@ export class PrivateBaseUrlError extends Error {
 /**
  * Throws PrivateBaseUrlError if baseUrl resolves to a private/loopback/
  * link-local address, unless ALLOW_PRIVATE_GRAFANA_BASEURL=true. No-op for
- * URLs that fail to parse or resolve — the surrounding caller will get a
- * useful error from the actual fetch.
+ * URLs that fail to parse or resolve
+ * the surrounding caller will get a useful error from the actual fetch.
  */
 export async function assertNonPrivateHost(baseUrl: string): Promise<void> {
   if (process.env.ALLOW_PRIVATE_GRAFANA_BASEURL === "true") return;

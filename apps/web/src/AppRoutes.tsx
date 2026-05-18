@@ -29,7 +29,7 @@ import {
 } from "@feature/catalog-frontend";
 import { ScorecardEditPage, ScorecardsPage } from "@feature/scorecards-frontend";
 import { DoraMetricsPage } from "@feature/dora-metrics-frontend";
-import { IntegrationsPage } from "@feature/integrations-frontend";
+import { IntegrationManagePage, IntegrationsPage } from "@feature/integrations-frontend";
 import { ObservabilityConfigPage, ObservabilityPage } from "@feature/observability-frontend";
 import {
   ScaffolderBindingsPage,
@@ -90,6 +90,7 @@ export function AppRoutes() {
       <Route path="/scorecards/:id" element={<ScorecardEditPage />} />
       <Route path="/dora-metrics" element={<DoraMetricsPage />} />
       <Route path="/integrations" element={<IntegrationsPage />} />
+      <Route path="/integrations/:id" element={<IntegrationManagePage />} />
       <Route path="/observability" element={<ObservabilityPage />} />
       <Route path="/observability/config" element={<ObservabilityConfigPage />} />
       <Route path="/scaffolder" element={<ScaffolderPage />} />

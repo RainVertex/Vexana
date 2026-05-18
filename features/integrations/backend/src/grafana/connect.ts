@@ -5,7 +5,7 @@
 
 import { randomBytes } from "node:crypto";
 import { Router } from "express";
-import { prisma, encryptSecret } from "@internal/db";
+import { prisma, encryptSecret, decryptSecret } from "@internal/db";
 import { createGrafanaClient, GrafanaApiError } from "@internal/grafana-client";
 import type { GrafanaDataSource } from "@internal/grafana-client";
 import { assertNonPrivateHost, PrivateBaseUrlError } from "./ssrf";
@@ -357,6 +357,172 @@ grafanaConnectRouter.patch("/:id/credentials", async (req, res, next) => {
       createdAt: updated.createdAt.toISOString(),
       updatedAt: updated.updatedAt.toISOString(),
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/integrations/grafana/:id/probe
+// Re-probe using the *stored* token. Lets the configure UI render the
+// datasource picker without making the admin re-enter credentials. Same
+// response shape as POST /probe.
+grafanaConnectRouter.get("/:id/probe", async (req, res, next) => {
+  try {
+    if (!req.user || req.user.role !== "admin") {
+      res.status(403).json({ error: "Admin only" });
+      return;
+    }
+    const existing = await prisma.integration.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, kind: true, config: true },
+    });
+    if (!existing || existing.kind !== "grafana") {
+      res.status(404).json({ error: "Grafana integration not found" });
+      return;
+    }
+    const cfg = readGrafanaIntegrationConfig(existing.config);
+    const baseUrl = typeof cfg.baseUrl === "string" ? cfg.baseUrl : "";
+    const apiTokenEnc = typeof cfg.apiToken === "string" ? cfg.apiToken : "";
+    if (!baseUrl || !apiTokenEnc) {
+      res.status(400).json({ error: "Integration config is incomplete; re-create required" });
+      return;
+    }
+    const httpsError = rejectInsecureBaseUrl(baseUrl);
+    if (httpsError) {
+      res.status(400).json({ error: httpsError });
+      return;
+    }
+    if (!(await runSsrfGuard(res, baseUrl))) return;
+
+    const apiToken = decryptSecret(apiTokenEnc);
+    const client = createGrafanaClient({ baseUrl, apiToken });
+    let datasources: GrafanaDataSource[];
+    try {
+      datasources = await client.listDataSources();
+    } catch (err) {
+      if (err instanceof GrafanaApiError) {
+        res.status(400).json({
+          error: `Grafana rejected the stored credentials (${err.status}). Rotate the API token.`,
+        });
+        return;
+      }
+      res.status(502).json({
+        error: `Could not reach Grafana: ${err instanceof Error ? err.message : String(err)}`,
+      });
+      return;
+    }
+
+    const buckets = bucketDatasources(datasources);
+    const imageRendererAvailable = await client.checkImageRenderer();
+    res.json({ datasources: buckets, imageRendererAvailable });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /api/integrations/grafana/:id/config
+// Updates non-secret Grafana config: dsUid map and alertRefireSuppressionMs.
+// Token and webhook secret are untouched. dsUid (when provided) is re-validated
+// against listDataSources() using the stored token so we never persist a UID
+// that will fail at scrape time.
+grafanaConnectRouter.patch("/:id/config", async (req, res, next) => {
+  try {
+    if (!req.user || req.user.role !== "admin") {
+      res.status(403).json({ error: "Admin only" });
+      return;
+    }
+    const existing = await prisma.integration.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, kind: true, config: true },
+    });
+    if (!existing || existing.kind !== "grafana") {
+      res.status(404).json({ error: "Grafana integration not found" });
+      return;
+    }
+    const cfg = readGrafanaIntegrationConfig(existing.config);
+    const baseUrl = typeof cfg.baseUrl === "string" ? cfg.baseUrl : "";
+
+    const dsUidRaw = req.body?.dsUid;
+    const dsProvided = dsUidRaw && typeof dsUidRaw === "object" && !Array.isArray(dsUidRaw);
+    const suppressionRaw = req.body?.alertRefireSuppressionMs;
+    const suppressionProvided =
+      typeof suppressionRaw === "number" && Number.isFinite(suppressionRaw) && suppressionRaw >= 0;
+
+    if (!dsProvided && !suppressionProvided) {
+      res.status(400).json({ error: "Provide dsUid and/or alertRefireSuppressionMs" });
+      return;
+    }
+
+    const nextConfig: Record<string, unknown> = { ...cfg };
+
+    if (dsProvided) {
+      const ds = dsUidRaw as Record<string, unknown>;
+      const dsUid = {
+        prometheus: trimmedString(ds.prometheus),
+        loki: trimmedString(ds.loki),
+        tempo: trimmedString(ds.tempo),
+      };
+      if (!dsUid.prometheus) {
+        res
+          .status(400)
+          .json({ error: "A Prometheus datasource UID is required (the scrape job needs it)" });
+        return;
+      }
+      const apiTokenEnc = typeof cfg.apiToken === "string" ? cfg.apiToken : "";
+      if (!baseUrl || !apiTokenEnc) {
+        res.status(400).json({ error: "Integration config is incomplete; re-create required" });
+        return;
+      }
+      const httpsError = rejectInsecureBaseUrl(baseUrl);
+      if (httpsError) {
+        res.status(400).json({ error: httpsError });
+        return;
+      }
+      if (!(await runSsrfGuard(res, baseUrl))) return;
+
+      const apiToken = decryptSecret(apiTokenEnc);
+      const client = createGrafanaClient({ baseUrl, apiToken });
+      let datasources: GrafanaDataSource[];
+      try {
+        datasources = await client.listDataSources();
+      } catch (err) {
+        if (err instanceof GrafanaApiError) {
+          res.status(400).json({
+            error: `Grafana rejected the stored token (${err.status}). Rotate the API token first.`,
+          });
+          return;
+        }
+        res.status(502).json({
+          error: `Could not reach Grafana: ${err instanceof Error ? err.message : String(err)}`,
+        });
+        return;
+      }
+      const validUids = new Set(datasources.map((d) => d.uid));
+      const missing: string[] = [];
+      if (!validUids.has(dsUid.prometheus)) missing.push(`prometheus uid=${dsUid.prometheus}`);
+      if (dsUid.loki && !validUids.has(dsUid.loki)) missing.push(`loki uid=${dsUid.loki}`);
+      if (dsUid.tempo && !validUids.has(dsUid.tempo)) missing.push(`tempo uid=${dsUid.tempo}`);
+      if (missing.length > 0) {
+        res.status(400).json({
+          error: `Datasource UIDs do not exist in Grafana: ${missing.join(", ")}. Re-probe and pick again.`,
+        });
+        return;
+      }
+      const storedDsUid: Record<string, string> = { prometheus: dsUid.prometheus };
+      if (dsUid.loki) storedDsUid.loki = dsUid.loki;
+      if (dsUid.tempo) storedDsUid.tempo = dsUid.tempo;
+      nextConfig.dsUid = storedDsUid;
+    }
+
+    if (suppressionProvided) {
+      nextConfig.alertRefireSuppressionMs = Math.floor(suppressionRaw as number);
+    }
+
+    await prisma.integration.update({
+      where: { id: existing.id },
+      data: { config: nextConfig as object },
+    });
+    res.status(204).end();
   } catch (err) {
     next(err);
   }

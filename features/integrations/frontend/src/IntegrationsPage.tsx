@@ -54,22 +54,12 @@ export function IntegrationsPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {integration.kind === "plane" && (
-                      <Link
-                        to={`/workspace/integrations/${integration.id}`}
-                        className="rounded border border-app-border px-2 py-1 text-xs text-app-text hover:bg-app-surface-hover"
-                      >
-                        Manage
-                      </Link>
-                    )}
-                    {integration.kind === "github" && (
-                      <Link
-                        to={`/admin/integrations/github/${integration.id}/drift`}
-                        className="rounded border border-app-border px-2 py-1 text-xs text-app-text hover:bg-app-surface-hover"
-                      >
-                        Drift
-                      </Link>
-                    )}
+                    <Link
+                      to={`/integrations/${integration.id}`}
+                      className="rounded border border-app-border px-2 py-1 text-xs text-app-text hover:bg-app-surface-hover"
+                    >
+                      Configure
+                    </Link>
                     <button
                       type="button"
                       onClick={() => setPendingDelete(integration)}

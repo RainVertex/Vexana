@@ -23,6 +23,7 @@ import type {
   GithubInstallationSummary,
   GithubReconciliationRunDto,
   Integration,
+  IntegrationDetail,
   JobSummary,
   LlmModelSummary,
   MaintainerRequestDto,
@@ -426,6 +427,8 @@ export function createApiClient(options: ApiClientOptions = {}) {
 
     integrations: {
       list: () => request<ListResponse<Integration>>(`/api/integrations`),
+      get: (id: string) =>
+        request<IntegrationDetail>(`/api/integrations/${encodeURIComponent(id)}`),
       connectPlane: (body: {
         name: string;
         baseUrl: string;
@@ -461,6 +464,26 @@ export function createApiClient(options: ApiClientOptions = {}) {
         }>(`/api/integrations/grafana`, { method: "POST", body: JSON.stringify(body) }),
       rotateGrafanaToken: (id: string, body: { apiToken: string }) =>
         request<Integration>(`/api/integrations/grafana/${encodeURIComponent(id)}/credentials`, {
+          method: "PATCH",
+          body: JSON.stringify(body),
+        }),
+      reprobeGrafana: (id: string) =>
+        request<{
+          datasources: {
+            prometheus: Array<{ uid: string; name: string; isDefault: boolean }>;
+            loki: Array<{ uid: string; name: string; isDefault: boolean }>;
+            tempo: Array<{ uid: string; name: string; isDefault: boolean }>;
+          };
+          imageRendererAvailable: boolean;
+        }>(`/api/integrations/grafana/${encodeURIComponent(id)}/probe`),
+      updateGrafanaConfig: (
+        id: string,
+        body: {
+          dsUid?: { prometheus: string; loki?: string; tempo?: string };
+          alertRefireSuppressionMs?: number;
+        },
+      ) =>
+        request<void>(`/api/integrations/grafana/${encodeURIComponent(id)}/config`, {
           method: "PATCH",
           body: JSON.stringify(body),
         }),

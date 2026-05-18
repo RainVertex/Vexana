@@ -8,6 +8,42 @@ export interface Integration extends NamedEntity {
   config: Record<string, unknown>;
 }
 
+// Per-kind "safe view" of an integration's config — only fields safe to display.
+// Returned by GET /api/integrations/:id. Encrypted secrets are NEVER included;
+// `hasApiToken` / `hasWebhookSecret` flags let the UI show a "set / not set"
+// indicator without leaking the value.
+
+export interface GrafanaIntegrationConfigView {
+  baseUrl: string;
+  dsUid: { prometheus: string; loki?: string; tempo?: string };
+  imageRendererAvailable: boolean;
+  alertRefireSuppressionMs: number;
+  hasApiToken: boolean;
+  hasWebhookSecret: boolean;
+}
+
+export interface PlaneIntegrationConfigView {
+  baseUrl: string;
+  workspaceSlug: string;
+  hasApiToken: boolean;
+  hasWebhookSecret: boolean;
+}
+
+export interface GithubIntegrationConfigView {
+  accountLogin: string;
+  installationId: number;
+}
+
+interface IntegrationDetailBase extends NamedEntity {
+  enabled: boolean;
+}
+
+export type IntegrationDetail =
+  | (IntegrationDetailBase & { kind: "grafana"; config: GrafanaIntegrationConfigView })
+  | (IntegrationDetailBase & { kind: "plane"; config: PlaneIntegrationConfigView })
+  | (IntegrationDetailBase & { kind: "github"; config: GithubIntegrationConfigView })
+  | (IntegrationDetailBase & { kind: "jira" | "slack"; config: Record<string, never> });
+
 /** Public summary of a connected GitHub App installation, exposed via GET */
 export interface GithubInstallationSummary {
   integrationId: ID;

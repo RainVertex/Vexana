@@ -5,9 +5,61 @@
 import { Router } from "express";
 import { prisma, encryptSecret } from "@internal/db";
 import { createPlaneClient, PlaneApiError } from "@internal/plane-client";
+import type { IntegrationKind, IntegrationDetail } from "@internal/shared-types";
 import { fullSync } from "@feature/workspace-backend";
 import { disconnectGitHubInstallation } from "./github-app/install";
 import { grafanaConnectRouter } from "./grafana/connect";
+
+// Per-kind "safe view" of an integration's stored config. Strips encrypted
+// secrets (apiToken, webhookSecret) and exposes only fields the admin needs
+// to see in the configure UI. Boolean `has*` flags let the UI render a
+// "set / not set" indicator without leaking the value itself.
+function safeConfigForKind(kind: IntegrationKind, raw: unknown): IntegrationDetail["config"] {
+  const cfg =
+    raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
+  const str = (v: unknown): string => (typeof v === "string" ? v : "");
+  const hasNonEmpty = (v: unknown): boolean => typeof v === "string" && v.length > 0;
+  switch (kind) {
+    case "grafana": {
+      const ds =
+        cfg.dsUid && typeof cfg.dsUid === "object" && !Array.isArray(cfg.dsUid)
+          ? (cfg.dsUid as Record<string, unknown>)
+          : {};
+      const dsUid: { prometheus: string; loki?: string; tempo?: string } = {
+        prometheus: str(ds.prometheus),
+      };
+      if (str(ds.loki)) dsUid.loki = str(ds.loki);
+      if (str(ds.tempo)) dsUid.tempo = str(ds.tempo);
+      return {
+        baseUrl: str(cfg.baseUrl),
+        dsUid,
+        imageRendererAvailable: Boolean(cfg.imageRendererAvailable),
+        alertRefireSuppressionMs:
+          typeof cfg.alertRefireSuppressionMs === "number" ? cfg.alertRefireSuppressionMs : 0,
+        hasApiToken: hasNonEmpty(cfg.apiToken),
+        hasWebhookSecret: hasNonEmpty(cfg.webhookSecret),
+      };
+    }
+    case "plane":
+      return {
+        baseUrl: str(cfg.baseUrl),
+        workspaceSlug: str(cfg.workspaceSlug),
+        hasApiToken: hasNonEmpty(cfg.apiToken),
+        hasWebhookSecret: hasNonEmpty(cfg.webhookSecret),
+      };
+    case "github":
+      return {
+        accountLogin: str(cfg.accountLogin),
+        installationId:
+          typeof cfg.installationId === "number"
+            ? cfg.installationId
+            : Number(cfg.installationId) || 0,
+      };
+    case "jira":
+    case "slack":
+      return {} as Record<string, never>;
+  }
+}
 
 export {
   recordInstallation,
@@ -237,6 +289,43 @@ integrationsRouter.patch("/:id/webhook-secret", async (req, res) => {
     },
   });
   res.status(204).end();
+});
+
+// Per-integration detail. Returns the row plus a per-kind safe view of the
+// stored config so the admin configure page can render real values without
+// the secrets ever crossing the wire. Admin-only, like PATCH/DELETE below.
+integrationsRouter.get("/:id", async (req, res) => {
+  if (!req.user || req.user.role !== "admin") {
+    res.status(403).json({ error: "Admin only" });
+    return;
+  }
+  const row = await prisma.integration.findUnique({
+    where: { id: req.params.id },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      kind: true,
+      enabled: true,
+      config: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+  if (!row) {
+    res.status(404).json({ error: "Integration not found" });
+    return;
+  }
+  res.json({
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    kind: row.kind,
+    enabled: row.enabled,
+    config: safeConfigForKind(row.kind as IntegrationKind, row.config),
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  });
 });
 
 // Generic toggle/disconnect — works for any kind. Disconnect cascades to

@@ -4,10 +4,13 @@
 // yet.
 
 import type { ComponentType } from "react";
-import type { IntegrationKind } from "@internal/shared-types";
+import type { IntegrationDetail, IntegrationKind } from "@internal/shared-types";
 import { GithubConnectDialog } from "./GithubConnectDialog";
+import { GithubManagePanel } from "./GithubManagePanel";
 import { GrafanaConnectDialog } from "./GrafanaConnectDialog";
+import { GrafanaManagePanel } from "./GrafanaManagePanel";
 import { PlaneConnectDialog } from "./PlaneConnectDialog";
+import { PlaneManagePanel } from "./PlaneManagePanel";
 
 export interface ProviderDialogProps {
   open: boolean;
@@ -15,11 +18,17 @@ export interface ProviderDialogProps {
   onConnected: () => void;
 }
 
+export interface ManagePanelProps {
+  integration: IntegrationDetail;
+  onChanged: () => void;
+}
+
 export interface ProviderEntry {
   kind: IntegrationKind;
   label: string;
   description: string;
   ConnectDialog?: ComponentType<ProviderDialogProps>;
+  ManagePanel?: ComponentType<ManagePanelProps>;
 }
 
 export const PROVIDERS: ProviderEntry[] = [
@@ -29,6 +38,7 @@ export const PROVIDERS: ProviderEntry[] = [
     description:
       "Self-hosted project management. Mirrors projects, work items, and comments into the workspace module.",
     ConnectDialog: PlaneConnectDialog,
+    ManagePanel: PlaneManagePanel,
   },
   {
     kind: "github",
@@ -36,6 +46,7 @@ export const PROVIDERS: ProviderEntry[] = [
     description:
       "Install the GitHub App on an org. Imports repos (catalog-info.yaml auto-discovery) plus teams + members, kept in sync via webhooks and weekly reconciliation.",
     ConnectDialog: GithubConnectDialog,
+    ManagePanel: GithubManagePanel,
   },
   {
     kind: "jira",
@@ -53,6 +64,7 @@ export const PROVIDERS: ProviderEntry[] = [
     description:
       "Service-account-token connection to a Grafana instance. Proxies queries to Prometheus, Loki, and Tempo and routes Alertmanager webhooks into the notifications bell.",
     ConnectDialog: GrafanaConnectDialog,
+    ManagePanel: GrafanaManagePanel,
   },
 ];
 
