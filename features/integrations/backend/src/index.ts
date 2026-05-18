@@ -7,6 +7,7 @@ import { prisma, encryptSecret } from "@internal/db";
 import { createPlaneClient, PlaneApiError } from "@internal/plane-client";
 import { fullSync } from "@feature/workspace-backend";
 import { disconnectGitHubInstallation } from "./github-app/install";
+import { grafanaConnectRouter } from "./grafana/connect";
 
 export {
   recordInstallation,
@@ -31,6 +32,11 @@ export {
 export { verifyGitHubSignature } from "./github-app/webhook-verify";
 
 export const integrationsRouter: Router = Router();
+
+// Grafana connect flow (probe + commit). Mounted as a sub-path so the more
+// specific routes (`/grafana/probe`, `POST /grafana`) don't collide with the
+// generic `PATCH /:id` / `DELETE /:id` below.
+integrationsRouter.use("/grafana", grafanaConnectRouter);
 
 integrationsRouter.get("/", async (_req, res) => {
   const integrations = await prisma.integration.findMany({

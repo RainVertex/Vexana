@@ -28,3 +28,44 @@ model DoraMetricsSnapshot {
   @@index([entityId])
   @@index([periodEnd])
 }
+
+// Per-entity wiring into a Grafana integration: which PromQL the scrape job
+// runs, which LogQL stream selector the logs panel reads, optional pinned
+// dashboard, optional per-entity trace-id regex override.
+model EntityObservabilityConfig {
+  entityId      String        @id
+  integrationId String
+  upQuery       String?
+  latencyQuery  String?
+  errorQuery    String?
+  logsSelector  String?
+  dashboardUid  String?
+  traceIdRegex  String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  entity        CatalogEntity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  integration   Integration   @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@index([integrationId])
+}
+
+// Webhook-receiver dedup state — one row per (integration, alert fingerprint).
+// State machine: firing within suppression window is skipped; firing outside
+// it (or against null lastFiringAt) notifies and bumps lastFiringAt; resolved
+// always notifies, bumps lastResolvedAt, and clears lastFiringAt so the next
+// genuine firing isn't suppressed against a stale timestamp.
+model AlertDeliveryState {
+  id             String      @id @default(cuid())
+  integrationId  String
+  fingerprint    String
+  lastFiringAt   DateTime?
+  lastResolvedAt DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  integration    Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@unique([integrationId, fingerprint])
+  @@index([integrationId])
+  @@index([lastResolvedAt])
+  @@index([lastFiringAt])
+}

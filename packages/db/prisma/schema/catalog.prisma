@@ -86,6 +86,7 @@ model CatalogEntity {
   workflowRuns       WorkflowRun[]
   deployments        Deployment[]
   pipelineSyncCursor PipelineSyncCursor?
+  observabilityConfig EntityObservabilityConfig?
 
   @@unique([name, kind])
   @@index([kind])

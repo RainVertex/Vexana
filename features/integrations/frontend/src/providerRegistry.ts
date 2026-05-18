@@ -6,6 +6,7 @@
 import type { ComponentType } from "react";
 import type { IntegrationKind } from "@internal/shared-types";
 import { GithubConnectDialog } from "./GithubConnectDialog";
+import { GrafanaConnectDialog } from "./GrafanaConnectDialog";
 import { PlaneConnectDialog } from "./PlaneConnectDialog";
 
 export interface ProviderDialogProps {
@@ -49,7 +50,9 @@ export const PROVIDERS: ProviderEntry[] = [
   {
     kind: "grafana",
     label: "Grafana",
-    description: "Dashboards and alerts from a Grafana instance.",
+    description:
+      "Service-account-token connection to a Grafana instance. Proxies queries to Prometheus, Loki, and Tempo and routes Alertmanager webhooks into the notifications bell.",
+    ConnectDialog: GrafanaConnectDialog,
   },
 ];
 

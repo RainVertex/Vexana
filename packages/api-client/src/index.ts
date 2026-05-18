@@ -53,7 +53,10 @@ import type {
   ScorecardSummary,
   SearchResults,
   SecretDto,
+  EntityObservabilityConfigDto,
+  LokiLogLine,
   ServiceHealthSample,
+  TempoTrace,
   TeamDetail,
   TeamMemberRole,
   TeamPolicyDto,
@@ -433,6 +436,39 @@ export function createApiClient(options: ApiClientOptions = {}) {
           `/api/integrations/plane`,
           { method: "POST", body: JSON.stringify(body) },
         ),
+      probeGrafana: (body: { baseUrl: string; apiToken: string }) =>
+        request<{
+          datasources: {
+            prometheus: Array<{ uid: string; name: string; isDefault: boolean }>;
+            loki: Array<{ uid: string; name: string; isDefault: boolean }>;
+            tempo: Array<{ uid: string; name: string; isDefault: boolean }>;
+          };
+          imageRendererAvailable: boolean;
+        }>(`/api/integrations/grafana/probe`, { method: "POST", body: JSON.stringify(body) }),
+      connectGrafana: (body: {
+        name: string;
+        baseUrl: string;
+        apiToken: string;
+        dsUid: { prometheus: string; loki?: string; tempo?: string };
+        alertRefireSuppressionMs?: number;
+      }) =>
+        request<{
+          integration: Integration;
+          dsUid: { prometheus: string; loki?: string; tempo?: string };
+          imageRendererAvailable: boolean;
+          webhookSecret: string;
+          webhookUrl: string;
+        }>(`/api/integrations/grafana`, { method: "POST", body: JSON.stringify(body) }),
+      rotateGrafanaToken: (id: string, body: { apiToken: string }) =>
+        request<Integration>(`/api/integrations/grafana/${encodeURIComponent(id)}/credentials`, {
+          method: "PATCH",
+          body: JSON.stringify(body),
+        }),
+      rotateGrafanaWebhookSecret: (id: string) =>
+        request<{ webhookSecret: string; webhookUrl: string }>(
+          `/api/integrations/grafana/${encodeURIComponent(id)}/rotate-webhook-secret`,
+          { method: "POST" },
+        ),
       disconnect: (id: string) =>
         request<void>(`/api/integrations/${encodeURIComponent(id)}`, { method: "DELETE" }),
       setEnabled: (id: string, enabled: boolean) =>
@@ -464,6 +500,65 @@ export function createApiClient(options: ApiClientOptions = {}) {
         request<ListResponse<ServiceHealthSample>>(
           `/api/observability/health-samples/${encodeURIComponent(entityId)}`,
         ),
+      logs: (entityId: string, opts: { minutes?: number; limit?: number } = {}) => {
+        const qs = new URLSearchParams({ entityId });
+        if (opts.minutes !== undefined) qs.set("minutes", String(opts.minutes));
+        if (opts.limit !== undefined) qs.set("limit", String(opts.limit));
+        return request<ListResponse<LokiLogLine>>(`/api/observability/logs?${qs.toString()}`);
+      },
+      trace: (traceId: string, opts: { entityId: string }) => {
+        const qs = new URLSearchParams({ entityId: opts.entityId });
+        return request<TempoTrace>(
+          `/api/observability/traces/${encodeURIComponent(traceId)}?${qs.toString()}`,
+        );
+      },
+      // Constructs the URL only — the <img> tag fetches the PNG; the backend
+      // is what holds the service-account token, never the browser. Non-admin
+      // callers must pass entityId so the backend can authorize.
+      dashboardImageUrl: (params: {
+        dashboardUid: string;
+        panelId: number;
+        from?: string;
+        to?: string;
+        w?: number;
+        h?: number;
+        entityId?: string;
+      }) => {
+        const qs = new URLSearchParams({
+          dashboardUid: params.dashboardUid,
+          panelId: String(params.panelId),
+        });
+        if (params.from) qs.set("from", params.from);
+        if (params.to) qs.set("to", params.to);
+        if (params.w) qs.set("w", String(params.w));
+        if (params.h) qs.set("h", String(params.h));
+        if (params.entityId) qs.set("entityId", params.entityId);
+        return `/api/observability/dashboard-image?${qs.toString()}`;
+      },
+      getEntityConfig: (entityId: string) =>
+        request<EntityObservabilityConfigDto>(
+          `/api/observability/entities/${encodeURIComponent(entityId)}/config`,
+        ),
+      putEntityConfig: (
+        entityId: string,
+        body: {
+          integrationId: string;
+          upQuery?: string | null;
+          latencyQuery?: string | null;
+          errorQuery?: string | null;
+          logsSelector?: string | null;
+          dashboardUid?: string | null;
+          traceIdRegex?: string | null;
+        },
+      ) =>
+        request<EntityObservabilityConfigDto>(
+          `/api/observability/entities/${encodeURIComponent(entityId)}/config`,
+          { method: "PUT", body: JSON.stringify(body) },
+        ),
+      deleteEntityConfig: (entityId: string) =>
+        request<void>(`/api/observability/entities/${encodeURIComponent(entityId)}/config`, {
+          method: "DELETE",
+        }),
     },
 
     search: {

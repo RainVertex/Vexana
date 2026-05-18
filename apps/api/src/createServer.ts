@@ -35,7 +35,7 @@ import {
 import { doraMetricsRouter } from "@feature/dora-metrics-backend";
 import { integrationsRouter } from "@feature/integrations-backend";
 import { githubIntegrationRouter } from "./routes/integrations/github";
-import { observabilityRouter } from "@feature/observability-backend";
+import { grafanaWebhookRouter, observabilityRouter } from "@feature/observability-backend";
 import { notificationsRouter } from "@feature/notifications-backend";
 import { onboardingRouter } from "@feature/onboarding-backend";
 import { pagesRouter } from "@feature/pages-backend";
@@ -81,6 +81,11 @@ export function createServer() {
   // Plane webhooks share the same constraint — mount before json parsing so
   // the receiver can verify X-Plane-Signature against the raw bytes.
   app.use("/integrations/plane/webhook", planeWebhookRouter);
+
+  // Grafana Alertmanager webhook: needs the raw body for the Bearer-token
+  // header check (the body is parsed AFTER auth) and replay protection,
+  // matching the constraint above.
+  app.use("/integrations/grafana/webhook", grafanaWebhookRouter);
 
   app.use(express.json());
   app.use(cookieParser(env.sessionSecret));

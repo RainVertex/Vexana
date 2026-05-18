@@ -11,9 +11,12 @@
     }
   },
   "dependencies": {
+    "@feature/notifications-backend": "0.1.0",
     "@internal/db": "0.1.0",
+    "@internal/grafana-client": "0.1.0",
     "@internal/shared-types": "0.1.0",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.5.2"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",

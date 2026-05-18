@@ -30,7 +30,7 @@ import {
 import { ScorecardEditPage, ScorecardsPage } from "@feature/scorecards-frontend";
 import { DoraMetricsPage } from "@feature/dora-metrics-frontend";
 import { IntegrationsPage } from "@feature/integrations-frontend";
-import { ObservabilityPage } from "@feature/observability-frontend";
+import { ObservabilityConfigPage, ObservabilityPage } from "@feature/observability-frontend";
 import {
   ScaffolderBindingsPage,
   ScaffolderDriftInboxPage,
@@ -91,6 +91,7 @@ export function AppRoutes() {
       <Route path="/dora-metrics" element={<DoraMetricsPage />} />
       <Route path="/integrations" element={<IntegrationsPage />} />
       <Route path="/observability" element={<ObservabilityPage />} />
+      <Route path="/observability/config" element={<ObservabilityConfigPage />} />
       <Route path="/scaffolder" element={<ScaffolderPage />} />
       <Route path="/scaffolder/bindings" element={<ScaffolderBindingsPage />} />
       <Route path="/scaffolder/drift" element={<ScaffolderDriftInboxPage />} />

@@ -22,6 +22,10 @@ model Integration {
   // Team requests asking to mirror their team to this GitHub installation
   // when approved. Approve flow looks up accountLogin from `config`.
   teamRequests    TeamRequest[]
+  // Grafana per-entity wiring + alert dedup state. Cascade-delete via FK so
+  // disconnecting a Grafana integration drops these alongside.
+  observabilityConfigs EntityObservabilityConfig[]
+  alertDeliveryStates  AlertDeliveryState[]
 
   @@index([kind])
 }
