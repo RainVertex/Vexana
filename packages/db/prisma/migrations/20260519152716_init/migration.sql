@@ -212,6 +212,7 @@ CREATE TABLE "CatalogEntity" (
     "tags" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "source" "CatalogEntitySource" NOT NULL DEFAULT 'manual',
     "sourceRef" TEXT,
+    "accountLogin" TEXT NOT NULL,
     "lastSeenAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "staleSince" TIMESTAMP(3),
     "yamlSpec" JSONB,
@@ -411,6 +412,8 @@ CREATE TABLE "GithubReconciliationRun" (
     "membersRemoved" INTEGER NOT NULL DEFAULT 0,
     "pendingQueued" INTEGER NOT NULL DEFAULT 0,
     "pendingResolved" INTEGER NOT NULL DEFAULT 0,
+    "orgMembershipsAdded" INTEGER NOT NULL DEFAULT 0,
+    "orgMembershipsRemoved" INTEGER NOT NULL DEFAULT 0,
     "errors" JSONB,
 
     CONSTRAINT "GithubReconciliationRun_pkey" PRIMARY KEY ("id")
@@ -859,6 +862,7 @@ CREATE TABLE "Team" (
     "name" TEXT NOT NULL,
     "description" TEXT,
     "departmentId" TEXT,
+    "accountLogin" TEXT NOT NULL,
     "source" "TeamSource" NOT NULL DEFAULT 'manual',
     "externalId" TEXT,
     "externalSlug" TEXT,
@@ -1236,6 +1240,9 @@ CREATE INDEX "CatalogEntity_unowned_idx" ON "CatalogEntity"("unowned");
 CREATE INDEX "CatalogEntity_installationId_idx" ON "CatalogEntity"("installationId");
 
 -- CreateIndex
+CREATE INDEX "CatalogEntity_accountLogin_idx" ON "CatalogEntity"("accountLogin");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "CatalogEntity_name_kind_key" ON "CatalogEntity"("name", "kind");
 
 -- CreateIndex
@@ -1474,6 +1481,9 @@ CREATE INDEX "Team_installationId_idx" ON "Team"("installationId");
 
 -- CreateIndex
 CREATE INDEX "Team_source_idx" ON "Team"("source");
+
+-- CreateIndex
+CREATE INDEX "Team_accountLogin_idx" ON "Team"("accountLogin");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Team_source_externalId_key" ON "Team"("source", "externalId");
