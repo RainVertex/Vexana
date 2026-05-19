@@ -1,7 +1,4 @@
 // Starts an ngrok tunnel against the platform backend (API_PORT, default 4000)
-// so external services (Plane webhooks, GitHub webhooks) can reach the dev
-// machine. Free ngrok URLs change on every restart — paste the printed URL
-// into the relevant webhook settings each time.
 //
 // Runs as part of `yarn dev` via concurrently. To skip the tunnel for a
 // session, run the workspaces directly: `yarn dev:app` + `yarn dev:backend`.
@@ -17,13 +14,10 @@ const port = Number(process.env.API_PORT ?? 4000);
 const authtoken = process.env.NGROK_AUTHTOKEN;
 
 if (!authtoken) {
-  // Graceful skip — concurrently keeps running the other dev processes.
-  // Avoid using process.exitCode != 0 because that would surface as a
-  // failure in the concurrently summary at shutdown time.
   console.log(
     "[tunnel] NGROK_AUTHTOKEN not set — skipping tunnel.\n" +
-      "[tunnel] To enable: get a free token at https://dashboard.ngrok.com/get-started/your-authtoken\n" +
-      "[tunnel] then set NGROK_AUTHTOKEN=<token> in .env and restart `yarn dev`.",
+      "[tunnel] To enable: get a free token at https://dashboard.ngrok.com/get-started/your-authtoken" +
+      "\n[tunnel] then set NGROK_AUTHTOKEN=<token> in .env and restart `yarn dev`.",
   );
   process.exit(0);
 }
@@ -33,7 +27,7 @@ try {
   ngrok = await import("@ngrok/ngrok");
 } catch (err) {
   console.error(
-    "[tunnel] Failed to load @ngrok/ngrok. Run `yarn install` and try again.\n" +
+    "[tunnel] Failed to load ngrok. Run `yarn install` and try again.\n" +
       `[tunnel] ${err instanceof Error ? err.message : String(err)}`,
   );
   process.exit(1);
@@ -71,3 +65,6 @@ const shutdown = async (signal) => {
 
 process.on("SIGINT", () => shutdown("SIGINT"));
 process.on("SIGTERM", () => shutdown("SIGTERM"));
+
+// keep the event loop alive
+process.stdin.resume();
