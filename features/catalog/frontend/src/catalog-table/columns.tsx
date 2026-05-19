@@ -203,7 +203,9 @@ export function buildColumns(): ColumnDef<CatalogRow>[] {
         if (row.getIsGrouped()) return null;
         const d = row.original.description;
         return d ? (
-          <span className="text-app-text-muted">{d}</span>
+          <div className="max-w-[20rem] truncate text-app-text-muted" title={d}>
+            {d}
+          </div>
         ) : (
           <span className="text-app-text-muted">—</span>
         );
