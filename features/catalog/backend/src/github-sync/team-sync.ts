@@ -14,7 +14,7 @@
 //     with a 7-day TTL, drained by the SSO user-creation hook.
 //   - Outside collaborators (not org members) are filtered out at queue entry.
 
-import { Prisma, prisma } from "@internal/db";
+import { Prisma, prisma, type UserKind, type UserRole } from "@internal/db";
 import { GitHubAppNotConfiguredError, octokitForInstallation } from "@feature/integrations-backend";
 import type { Octokit as OctokitClient } from "octokit";
 
@@ -33,6 +33,11 @@ export interface ReconciliationResult {
   membersRemoved: number;
   pendingQueued: number;
   pendingResolved: number;
+  // UserOrgMembership reconciliation: rows added/removed for this org based on
+  // the current GitHub org member list. Separate from team `membersAdded` and
+  // `membersRemoved`, which count per-team TeamMembership rows.
+  orgMembershipsAdded: number;
+  orgMembershipsRemoved: number;
   errors: Array<{ scope: string; reason: string }>;
   startedAt: Date;
   finishedAt: Date;
@@ -70,6 +75,13 @@ interface DbState {
   teamsByExternalId: Map<string, DbTeamRecord>;
   // githubId → User.id, for translating GH members to platform users
   userIdByGithubId: Map<string, string>;
+  // User.id → role / kind. Needed by the UserOrgMembership reconcile pass:
+  // admins are excluded by design (the auth gate doesn't apply to them) and
+  // agent-kind users never sign in via OAuth, so they also stay out.
+  userRoleById: Map<string, UserRole>;
+  userKindById: Map<string, UserKind>;
+  // userIds that currently hold a UserOrgMembership row for this run's org.
+  existingOrgMembershipUserIds: Set<string>;
   // slugs currently in use by NON-github teams that are not soft-deleted —
   // used to detect collisions when assigning slugs to imported teams.
   manualSlugs: Set<string>;
@@ -94,6 +106,9 @@ export interface ReconciliationDiff {
     githubLogin: string;
     role: "lead" | "member";
   }>;
+  // Per-org UserOrgMembership reconcile, scoped to the run's accountLogin.
+  orgMembershipsToAdd: Array<{ userId: string }>;
+  orgMembershipsToRemove: Array<{ userId: string }>;
 }
 
 const PENDING_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -120,6 +135,8 @@ export async function runReconciliation(
     membersRemoved: 0,
     pendingQueued: 0,
     pendingResolved: 0,
+    orgMembershipsAdded: 0,
+    orgMembershipsRemoved: 0,
     errors: [],
     startedAt,
     finishedAt: startedAt,
@@ -158,7 +175,7 @@ export async function runReconciliation(
     return result;
   }
 
-  const db = await loadDbState(installationId);
+  const db = await loadDbState(installationId, orgLogin);
   const diff = computeDiff(github, db);
   const applied = await applyDiff(diff, db, github, installationId);
 
@@ -168,10 +185,39 @@ export async function runReconciliation(
   result.membersAdded = applied.membersAdded;
   result.membersRemoved = applied.membersRemoved;
   result.pendingQueued = applied.pendingQueued;
+  result.orgMembershipsAdded = applied.orgMembershipsAdded;
+  result.orgMembershipsRemoved = applied.orgMembershipsRemoved;
   result.errors.push(...applied.errors);
 
-  await closeRun(run.id, result, { ok: applied.errors.length === 0 });
+  // Stranded-session pass: any user we just removed from this org who now has
+  // zero UserOrgMembership rows loses their last org coverage. Mirror the
+  // admin-disconnect flow (uninstall-effects.ts:revokeStrandedUserSessions)
+  // and revoke their active sessions so they can't keep using a session
+  // whose covering org just disappeared. Admins are exempt by design (they
+  // never hold UserOrgMembership rows, so they're naturally outside this set).
+  if (applied.removedOrgMembershipUserIds.length > 0) {
+    try {
+      await revokeSessionsForStrandedUsers(applied.removedOrgMembershipUserIds);
+    } catch (err) {
+      result.errors.push({ scope: "stranded-sessions", reason: errMessage(err) });
+    }
+  }
+
+  await closeRun(run.id, result, { ok: applied.errors.length === 0 && result.errors.length === 0 });
   return result;
+}
+
+/** Drop sessions for any of the given userIds that now hold zero UserOrgMembership rows. */
+async function revokeSessionsForStrandedUsers(candidateUserIds: string[]): Promise<void> {
+  const remaining = await prisma.userOrgMembership.groupBy({
+    by: ["userId"],
+    where: { userId: { in: candidateUserIds } },
+    _count: { userId: true },
+  });
+  const stillCovered = new Set(remaining.map((r) => r.userId));
+  const stranded = candidateUserIds.filter((id) => !stillCovered.has(id));
+  if (stranded.length === 0) return;
+  await prisma.session.deleteMany({ where: { userId: { in: stranded } } });
 }
 
 /** Resolve the org login for an installation. */
@@ -262,7 +308,7 @@ export async function fetchGithubState(
 }
 
 /** Snapshot the platform's current view of GitHub-sourced teams + membership plus the lookup */
-async function loadDbState(installationId: number): Promise<DbState> {
+async function loadDbState(installationId: number, orgLogin: string): Promise<DbState> {
   const teams = await prisma.team.findMany({
     where: { source: "github", installationId },
     select: {
@@ -296,12 +342,21 @@ async function loadDbState(installationId: number): Promise<DbState> {
 
   // Only fetch users with a githubId set (which is all of them per current
   // schema, but the column is technically NOT NULL — keep the where for
-  // future flexibility).
+  // future flexibility). role and userKind drive the UserOrgMembership
+  // reconcile filter (admins and agent-kind users are excluded).
   const users = await prisma.user.findMany({
     where: { githubId: { not: "" } },
-    select: { id: true, githubId: true },
+    select: { id: true, githubId: true, role: true, userKind: true },
   });
   const userIdByGithubId = new Map(users.map((u) => [u.githubId, u.id]));
+  const userRoleById = new Map(users.map((u) => [u.id, u.role]));
+  const userKindById = new Map(users.map((u) => [u.id, u.userKind]));
+
+  const orgRows = await prisma.userOrgMembership.findMany({
+    where: { accountLogin: orgLogin },
+    select: { userId: true },
+  });
+  const existingOrgMembershipUserIds = new Set(orgRows.map((r) => r.userId));
 
   const manual = await prisma.team.findMany({
     where: { source: { not: "github" }, deletedAt: null },
@@ -309,7 +364,14 @@ async function loadDbState(installationId: number): Promise<DbState> {
   });
   const manualSlugs = new Set(manual.map((t) => t.slug));
 
-  return { teamsByExternalId, userIdByGithubId, manualSlugs };
+  return {
+    teamsByExternalId,
+    userIdByGithubId,
+    userRoleById,
+    userKindById,
+    existingOrgMembershipUserIds,
+    manualSlugs,
+  };
 }
 
 /** Pure diff: given GitHub + DB snapshots, return action lists. */
@@ -321,6 +383,8 @@ export function computeDiff(github: GithubState, db: DbState): ReconciliationDif
     membershipsToAdd: [],
     membershipsToRemove: [],
     pendingToQueue: [],
+    orgMembershipsToAdd: [],
+    orgMembershipsToRemove: [],
   };
 
   const seenExternalIds = new Set<string>();
@@ -397,6 +461,29 @@ export function computeDiff(github: GithubState, db: DbState): ReconciliationDif
     }
   }
 
+  // UserOrgMembership reconcile for this org. The desired set is every known
+  // platform user (resolved by githubId) who is currently an active member of
+  // the org per GitHub, excluding admins (auth gate doesn't apply, they hold
+  // no rows by design) and agent-kind users (never sign in via OAuth).
+  const desiredOrgUserIds = new Set<string>();
+  for (const githubId of github.orgMemberIds) {
+    const userId = db.userIdByGithubId.get(githubId);
+    if (!userId) continue;
+    if (db.userRoleById.get(userId) === "admin") continue;
+    if (db.userKindById.get(userId) !== "human") continue;
+    desiredOrgUserIds.add(userId);
+  }
+  for (const userId of desiredOrgUserIds) {
+    if (!db.existingOrgMembershipUserIds.has(userId)) {
+      diff.orgMembershipsToAdd.push({ userId });
+    }
+  }
+  for (const userId of db.existingOrgMembershipUserIds) {
+    if (!desiredOrgUserIds.has(userId)) {
+      diff.orgMembershipsToRemove.push({ userId });
+    }
+  }
+
   return diff;
 }
 
@@ -407,6 +494,12 @@ interface ApplyResult {
   membersAdded: number;
   membersRemoved: number;
   pendingQueued: number;
+  orgMembershipsAdded: number;
+  orgMembershipsRemoved: number;
+  // userIds whose UserOrgMembership row for this org was deleted in this run;
+  // post-transaction caller uses this to detect newly-stranded users and
+  // revoke their sessions.
+  removedOrgMembershipUserIds: string[];
   errors: Array<{ scope: string; reason: string }>;
 }
 
@@ -424,6 +517,9 @@ async function applyDiff(
     membersAdded: 0,
     membersRemoved: 0,
     pendingQueued: 0,
+    orgMembershipsAdded: 0,
+    orgMembershipsRemoved: 0,
+    removedOrgMembershipUserIds: [],
     errors: [],
   };
 
@@ -558,6 +654,33 @@ async function applyDiff(
       });
       out.pendingQueued++;
     }
+
+    // Pass 4: UserOrgMembership reconcile for this org. Adds carry a fresh
+    // lastVerifiedAt; removes are tracked so the caller can revoke sessions
+    // for any newly-stranded user once the transaction commits.
+    if (diff.orgMembershipsToAdd.length > 0) {
+      const addRows = diff.orgMembershipsToAdd.map((a) => ({
+        userId: a.userId,
+        accountLogin: github.orgLogin,
+        lastVerifiedAt: new Date(),
+      }));
+      const inserted = await tx.userOrgMembership.createMany({
+        data: addRows,
+        skipDuplicates: true,
+      });
+      out.orgMembershipsAdded += inserted.count;
+    }
+    for (const r of diff.orgMembershipsToRemove) {
+      try {
+        await tx.userOrgMembership.delete({
+          where: { userId_accountLogin: { userId: r.userId, accountLogin: github.orgLogin } },
+        });
+        out.orgMembershipsRemoved++;
+        out.removedOrgMembershipUserIds.push(r.userId);
+      } catch (err) {
+        if ((err as { code?: string }).code !== "P2025") throw err;
+      }
+    }
   });
 
   return out;
@@ -606,6 +729,8 @@ async function closeRun(
       membersRemoved: result.membersRemoved,
       pendingQueued: result.pendingQueued,
       pendingResolved: result.pendingResolved,
+      orgMembershipsAdded: result.orgMembershipsAdded,
+      orgMembershipsRemoved: result.orgMembershipsRemoved,
       errors:
         result.errors.length > 0 || patch.skippedReason
           ? ({

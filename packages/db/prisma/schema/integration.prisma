@@ -46,6 +46,8 @@ model GithubReconciliationRun {
   membersRemoved  Int       @default(0)
   pendingQueued   Int       @default(0)
   pendingResolved Int       @default(0)
+  orgMembershipsAdded   Int @default(0)
+  orgMembershipsRemoved Int @default(0)
   errors          Json?
 
   @@index([installationId, startedAt])
