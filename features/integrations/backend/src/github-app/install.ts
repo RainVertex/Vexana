@@ -3,7 +3,7 @@
 // audit access — this module owns the side effects (Integration upsert,
 // metadata fetch, sync trigger seam) that those routes call into.
 
-import { prisma } from "@internal/db";
+import { Prisma, prisma } from "@internal/db";
 import { octokitAsApp } from "./octokit";
 import { disableStrandedUsers } from "./uninstall-effects";
 
@@ -170,7 +170,17 @@ export async function disconnectGitHubInstallation(
 
   const { disabledUserIds } = await disableStrandedUsers(accountLogin);
 
-  await prisma.integration.delete({ where: { id: integ.id } });
+  // Concurrent disconnect (e.g. user double-clicks the button, or the
+  // installation.deleted webhook races us after revokeAppInstallation) can
+  // leave the row already gone by the time we get here. Swallow P2025 so the
+  // caller still gets a clean result; everything else still ran.
+  try {
+    await prisma.integration.delete({ where: { id: integ.id } });
+  } catch (err) {
+    if (!(err instanceof Prisma.PrismaClientKnownRequestError) || err.code !== "P2025") {
+      throw err;
+    }
+  }
   return { installationId, accountLogin, entitiesStaled, revoked, revokeReason, disabledUserIds };
 }
 

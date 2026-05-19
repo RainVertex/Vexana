@@ -439,6 +439,7 @@ async function applyDiff(
           slug,
           name: gh.name,
           description: gh.description,
+          accountLogin: github.orgLogin,
           source: "github",
           externalId: gh.nodeId,
           externalSlug: gh.slug,

@@ -24,6 +24,8 @@ export interface TeamSummary {
   slug: string;
   name: string;
   description?: string | null;
+  /** GitHub org login the team belongs to. */
+  accountLogin: string;
   createdAt: ISODateString;
   updatedAt: ISODateString;
   memberCount: number;

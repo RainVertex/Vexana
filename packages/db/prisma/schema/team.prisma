@@ -42,6 +42,11 @@ model Team {
   name                 String
   description          String?
   departmentId         String?
+  // Authoritative GitHub org pointer. Every team belongs to exactly one
+  // org. For source=github, derived from Integration.config.accountLogin
+  // tied to installationId; for source=manual, chosen at create time.
+  // A catalog entity's owner teams must all share the entity's accountLogin.
+  accountLogin         String
   // External-source bookkeeping. For source=github: externalId is the team
   // node_id; externalSlug mirrors the current GH slug for diagnostics;
   // installationId links back to the discovering App installation;
@@ -70,6 +75,7 @@ model Team {
   @@unique([source, externalId])
   @@index([installationId])
   @@index([source])
+  @@index([accountLogin])
 }
 
 // Buffer for GitHub team members who don't yet have a platform User. Created

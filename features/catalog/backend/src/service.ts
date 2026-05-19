@@ -16,6 +16,9 @@ export type RegisterCatalogEntityInput = {
   repoUrl?: string | null;
   tags?: string[];
   yamlSpec?: Prisma.InputJsonValue | null;
+  // Org the entity belongs to. Required on create; on update the existing
+  // row's accountLogin is preserved (cross-org transfers are not allowed).
+  accountLogin?: string;
 };
 
 export type RegisterCatalogEntityOptions = {
@@ -67,6 +70,17 @@ export async function registerCatalogEntity(
         : [];
 
   if (!existing) {
+    // If the caller didn't pass an accountLogin explicitly (e.g. GitHub
+    // auto-sync), derive it from the installationId so we don't force every
+    // caller to look it up. Manual paths must pass it directly.
+    let accountLogin = input.accountLogin ?? null;
+    if (!accountLogin && opts.installationId != null) {
+      accountLogin = await resolveAccountLoginByInstallation(opts.installationId);
+    }
+    if (!accountLogin) {
+      throw new Error("accountLogin is required when creating a catalog entity");
+    }
+    await assertOwnerTeamsMatchOrg(finalOwners, accountLogin);
     const created = await prisma.catalogEntity.create({
       data: {
         kind: input.kind,
@@ -76,6 +90,7 @@ export async function registerCatalogEntity(
         tags: input.tags ?? [],
         source: opts.source,
         sourceRef: opts.sourceRef ?? null,
+        accountLogin,
         yamlSpec: input.yamlSpec ?? Prisma.JsonNull,
         lastSeenAt: new Date(),
         needsOnboarding: opts.needsOnboarding ?? false,
@@ -136,6 +151,10 @@ export async function registerCatalogEntity(
 
   if (isNoopUpdate(existing, input, opts)) {
     return { entityId: existing.id, action: "noop", before: existing, after: existing };
+  }
+
+  if (input.ownerTeamIds !== undefined) {
+    await assertOwnerTeamsMatchOrg(input.ownerTeamIds ?? [], existing.accountLogin);
   }
 
   const updated = await prisma.$transaction(async (tx) => {
@@ -237,6 +256,49 @@ function sameStringArray(a: string[], b: string[]): boolean {
   if (a.length !== b.length) return false;
   for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
   return true;
+}
+
+export class CrossOrgOwnerError extends Error {
+  constructor(
+    readonly entityAccountLogin: string,
+    readonly mismatchedTeamIds: string[],
+  ) {
+    super(
+      `Owner teams must belong to org "${entityAccountLogin}"; mismatched: ${mismatchedTeamIds.join(", ")}`,
+    );
+    this.name = "CrossOrgOwnerError";
+  }
+}
+
+async function assertOwnerTeamsMatchOrg(teamIds: string[], accountLogin: string): Promise<void> {
+  if (teamIds.length === 0) return;
+  const teams = await prisma.team.findMany({
+    where: { id: { in: teamIds } },
+    select: { id: true, accountLogin: true },
+  });
+  const mismatched = teams.filter((t) => t.accountLogin !== accountLogin).map((t) => t.id);
+  if (mismatched.length > 0) {
+    throw new CrossOrgOwnerError(accountLogin, mismatched);
+  }
+}
+
+async function resolveAccountLoginByInstallation(installationId: number): Promise<string | null> {
+  const rows = await prisma.integration.findMany({
+    where: { kind: "github" },
+    select: { config: true },
+  });
+  for (const row of rows) {
+    const cfg = row.config as { installationId?: unknown; accountLogin?: unknown } | null;
+    if (
+      cfg &&
+      Number(cfg.installationId) === installationId &&
+      typeof cfg.accountLogin === "string" &&
+      cfg.accountLogin.length > 0
+    ) {
+      return cfg.accountLogin;
+    }
+  }
+  return null;
 }
 
 /** Mark every entity with `repoUrl != null` whose `lastSeenAt` is older than `since` as stale. */

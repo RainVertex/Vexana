@@ -22,6 +22,7 @@ export function Toolbar({ view, total, filtered }: Props) {
     activeFacets.length > 0 ||
     view.hideStale ||
     view.hideOrphaned ||
+    view.showAllOrgs ||
     view.visibleColumns.length !==
       Object.values(COLUMN_META).filter((m) => m.defaultVisible).length;
 
@@ -41,8 +42,10 @@ export function Toolbar({ view, total, filtered }: Props) {
         <FilterByPopover
           hideStale={view.hideStale}
           hideOrphaned={view.hideOrphaned}
+          showAllOrgs={view.showAllOrgs}
           onToggleStale={() => view.setHideStale(!view.hideStale)}
           onToggleOrphaned={() => view.setHideOrphaned(!view.hideOrphaned)}
+          onToggleShowAllOrgs={() => view.setShowAllOrgs(!view.showAllOrgs)}
         />
         <ColumnsPopover visibleColumns={view.visibleColumns} onToggle={view.toggleColumn} />
         {hasState && (

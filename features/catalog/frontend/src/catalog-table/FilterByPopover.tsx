@@ -8,15 +8,19 @@ import { useEffect, useRef, useState } from "react";
 interface Props {
   hideStale: boolean;
   hideOrphaned: boolean;
+  showAllOrgs: boolean;
   onToggleStale: () => void;
   onToggleOrphaned: () => void;
+  onToggleShowAllOrgs: () => void;
 }
 
 export function FilterByPopover({
   hideStale,
   hideOrphaned,
+  showAllOrgs,
   onToggleStale,
   onToggleOrphaned,
+  onToggleShowAllOrgs,
 }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -37,7 +41,7 @@ export function FilterByPopover({
     };
   }, [open]);
 
-  const activeCount = (hideStale ? 1 : 0) + (hideOrphaned ? 1 : 0);
+  const activeCount = (hideStale ? 1 : 0) + (hideOrphaned ? 1 : 0) + (showAllOrgs ? 1 : 0);
 
   return (
     <label className="flex items-center gap-2 text-xs text-app-text-muted">
@@ -95,9 +99,26 @@ export function FilterByPopover({
                 </label>
               </li>
             </ul>
+            <div className="mt-2 px-1 text-[10px] uppercase tracking-wide text-app-text-muted">
+              Scope
+            </div>
+            <ul>
+              <li>
+                <label className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm hover:bg-app-surface-hover">
+                  <input
+                    type="checkbox"
+                    checked={showAllOrgs}
+                    onChange={onToggleShowAllOrgs}
+                    className="h-3.5 w-3.5 rounded border-app-border accent-app-primary"
+                  />
+                  <span className="text-app-text">Tüm organizasyonları göster</span>
+                </label>
+              </li>
+            </ul>
             <p className="mt-2 px-2 text-[10px] leading-snug text-app-text-muted">
               Stale = not seen recently or installation disconnected. Orphaned = stale and the
               GitHub installation is gone (re-installing the same org revives via githubRepoId).
+              Default sadece dahil olduğunuz organizasyonlardaki entity'leri gösterir.
             </p>
           </div>
         )}

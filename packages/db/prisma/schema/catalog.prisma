@@ -58,13 +58,17 @@ model CatalogEntity {
   tags             String[]              @default([])
   source           CatalogEntitySource   @default(manual)
   sourceRef        String?
+  // Authoritative GitHub org pointer. Every entity belongs to exactly one
+  // org, denormalized from the kind=github Integration.config.accountLogin.
+  // Used for catalog visibility filtering against UserOrgMembership.
+  accountLogin     String
   lastSeenAt       DateTime              @default(now())
   staleSince       DateTime?
   yamlSpec         Json?
   autoApply        Boolean               @default(false)
   // GitHub App auto-import bookkeeping. installationId links the entity to
   // the App installation that discovered it (used for cascade-stale on
-  // uninstall). githubRepoId is GitHub's stable numeric repo id — preferred
+  // uninstall). githubRepoId is GitHub's stable numeric repo id, preferred
   // over (name, kind) for upserts when present so renames don't fork the row.
   // needsOnboarding flips false the moment a valid catalog-info.yaml is seen;
   // unowned flips false when the agent (or a manual edit) attaches owners.
@@ -94,6 +98,7 @@ model CatalogEntity {
   @@index([needsOnboarding])
   @@index([unowned])
   @@index([installationId])
+  @@index([accountLogin])
 }
 
 model StarredEntity {

@@ -15,6 +15,7 @@ interface PersistedView {
   facets?: FacetState;
   hs?: boolean;
   ho?: boolean;
+  ao?: boolean;
 }
 
 export interface CatalogView {
@@ -27,6 +28,7 @@ export interface CatalogView {
   facets: FacetState;
   hideStale: boolean;
   hideOrphaned: boolean;
+  showAllOrgs: boolean;
   setSearch: (v: string) => void;
   setGroupBy: (id: CatalogColumnId | null) => void;
   setSorting: (s: SortingState) => void;
@@ -35,6 +37,7 @@ export interface CatalogView {
   clearFacet: (col: CatalogColumnId) => void;
   setHideStale: (v: boolean) => void;
   setHideOrphaned: (v: boolean) => void;
+  setShowAllOrgs: (v: boolean) => void;
   reset: () => void;
 }
 
@@ -111,6 +114,7 @@ function snapshotFromParams(p: URLSearchParams): PersistedView {
     facets,
     hs: p.get("hs") === "1" || undefined,
     ho: p.get("ho") === "1" || undefined,
+    ao: p.get("ao") === "1" || undefined,
   };
 }
 
@@ -137,6 +141,7 @@ export function useCatalogView(): CatalogView {
     }
     if (stored.hs) next.set("hs", "1");
     if (stored.ho) next.set("ho", "1");
+    if (stored.ao) next.set("ao", "1");
     if (Array.from(next.keys()).length > 0) setParams(next, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -146,6 +151,7 @@ export function useCatalogView(): CatalogView {
   const sorting = parseSort(params.get("s"));
   const hideStale = params.get("hs") === "1";
   const hideOrphaned = params.get("ho") === "1";
+  const showAllOrgs = params.get("ao") === "1";
 
   const visibleColumns = useMemo<CatalogColumnId[]>(
     () => parseColumns(params.get("cols")) ?? defaultVisible(),
@@ -266,6 +272,11 @@ export function useCatalogView(): CatalogView {
     [update],
   );
 
+  const setShowAllOrgs = useCallback(
+    (v: boolean) => update((n) => (v ? n.set("ao", "1") : n.delete("ao"))),
+    [update],
+  );
+
   const reset = useCallback(() => {
     setParams(new URLSearchParams(), { replace: true });
     writeStorage({});
@@ -281,6 +292,7 @@ export function useCatalogView(): CatalogView {
     facets,
     hideStale,
     hideOrphaned,
+    showAllOrgs,
     setSearch,
     setGroupBy,
     setSorting,
@@ -289,6 +301,7 @@ export function useCatalogView(): CatalogView {
     clearFacet,
     setHideStale,
     setHideOrphaned,
+    setShowAllOrgs,
     reset,
   };
 }

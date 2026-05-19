@@ -46,6 +46,12 @@ async function main() {
   // Slug uniqueness is enforced by a partial unique index (live teams only),
   // so Prisma's generated WhereUniqueInput no longer accepts {slug}. Use
   // findFirst-then-create to keep the seed idempotent.
+  // Seed teams are bound to a placeholder GitHub org slug "example". The
+  // visibility filter looks at UserOrgMembership rows, so admins (who bypass
+  // the filter) still see seed data; non-admin demo logins won't see it
+  // unless an integration with this accountLogin is also wired in.
+  const SEED_ACCOUNT_LOGIN = "example";
+
   const platformTeam =
     (await prisma.team.findFirst({ where: { slug: "platform", deletedAt: null } })) ??
     (await prisma.team.create({
@@ -53,6 +59,7 @@ async function main() {
         slug: "platform",
         name: "Platform Team",
         description: "Owns shared infrastructure, CI, observability.",
+        accountLogin: SEED_ACCOUNT_LOGIN,
       },
     }));
 
@@ -63,6 +70,7 @@ async function main() {
         slug: "product",
         name: "Product Team",
         description: "Builds customer-facing features.",
+        accountLogin: SEED_ACCOUNT_LOGIN,
       },
     }));
 
@@ -88,6 +96,7 @@ async function main() {
       repoUrl: "https://github.com/example/platform-api",
       tags: ["rest", "express", "typescript", "on-call"],
       source: "seed",
+      accountLogin: SEED_ACCOUNT_LOGIN,
       yamlSpec: {
         metadata: {
           annotations: {
@@ -131,6 +140,7 @@ async function main() {
       repoUrl: "https://github.com/example/platform-web",
       tags: ["react", "vite", "tailwind"],
       source: "seed",
+      accountLogin: SEED_ACCOUNT_LOGIN,
       yamlSpec: {
         metadata: {
           annotations: {

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { prisma, type CatalogEntity } from "@internal/db";
-import { registerCatalogEntity } from "./service";
+import { CrossOrgOwnerError, registerCatalogEntity } from "./service";
 import { getRelationsFor } from "./relations";
 import {
   evaluateScorecardsForEntity,
@@ -83,6 +83,9 @@ const createInput = z.object({
   ownerTeamIds: z.array(z.string().min(1)).optional(),
   repoUrl: z.url().optional(),
   tags: z.array(z.string()).optional(),
+  // GitHub org login of the kind=github integration this entity belongs to.
+  // Required: every catalog entity must belong to exactly one org.
+  accountLogin: z.string().min(1),
 });
 
 const patchInput = z.object({
@@ -141,8 +144,31 @@ async function loadLiveInstallationIds(): Promise<ReadonlySet<number>> {
 export const catalogRouter: Router = Router();
 
 catalogRouter.get("/", async (req, res) => {
+  // Visibility: by default, non-admin users only see entities whose
+  // accountLogin matches one of their UserOrgMembership rows. Admins and
+  // ?allOrgs=1 bypass the filter. An empty membership set yields zero rows
+  // (intentional, the user has no org coverage).
+  const allOrgs = req.query.allOrgs === "1" || req.query.allOrgs === "true";
+  let whereClause: { accountLogin?: { in: string[] } } = {};
+  if (!allOrgs && req.user && req.user.role !== "admin") {
+    const memberships = await prisma.userOrgMembership.findMany({
+      where: { userId: req.user.id },
+      select: { accountLogin: true },
+    });
+    const logins = memberships.map((m) => m.accountLogin);
+    if (logins.length === 0) {
+      res.json({ items: [] });
+      return;
+    }
+    whereClause = { accountLogin: { in: logins } };
+  }
+
   const [entities, liveInstallationIds] = await Promise.all([
-    prisma.catalogEntity.findMany({ include: ENTITY_INCLUDE, orderBy: { name: "asc" } }),
+    prisma.catalogEntity.findMany({
+      where: whereClause,
+      include: ENTITY_INCLUDE,
+      orderBy: { name: "asc" },
+    }),
     loadLiveInstallationIds(),
   ]);
   res.json({
@@ -155,10 +181,35 @@ catalogRouter.post("/", async (req, res) => {
   if (!parsed.success) {
     return res.status(400).json({ error: parsed.error.message });
   }
-  const result = await registerCatalogEntity(parsed.data, {
-    source: "manual",
-    sourceRef: req.user?.id ? `user/${req.user.id}` : null,
+  // Reject if the caller picked an accountLogin that doesn't match any
+  // enabled GitHub integration. Without this, anyone could create entities
+  // under fake orgs and bypass the visibility filter.
+  const githubIntegrations = await prisma.integration.findMany({
+    where: { kind: "github", enabled: true },
+    select: { config: true },
   });
+  const validLogins = new Set<string>();
+  for (const row of githubIntegrations) {
+    const cfg = row.config as { accountLogin?: unknown } | null;
+    if (cfg && typeof cfg.accountLogin === "string") validLogins.add(cfg.accountLogin);
+  }
+  if (!validLogins.has(parsed.data.accountLogin)) {
+    return res.status(400).json({
+      error: `accountLogin "${parsed.data.accountLogin}" does not match any enabled GitHub integration`,
+    });
+  }
+  let result;
+  try {
+    result = await registerCatalogEntity(parsed.data, {
+      source: "manual",
+      sourceRef: req.user?.id ? `user/${req.user.id}` : null,
+    });
+  } catch (err) {
+    if (err instanceof CrossOrgOwnerError) {
+      return res.status(400).json({ error: err.message });
+    }
+    throw err;
+  }
   const entity = await prisma.catalogEntity.findUnique({
     where: { id: result.entityId },
     include: ENTITY_INCLUDE,

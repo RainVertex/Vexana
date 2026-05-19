@@ -1002,6 +1002,27 @@ async function runApproval(
       // platform Team row. Upsert by (source, externalId) so we never hit
       // a duplicate-key, and the row ends up with our request-derived
       // metadata regardless of who got there first.
+      // Resolve the org binding for the new team. For mirrored teams the
+      // accountLogin is the GitHub org the App is installed on. For non-mirror
+      // (admin-side manual) teams we fall back to the requester's first known
+      // UserOrgMembership; if that returns nothing we abort the approval
+      // since a team must always belong to exactly one org.
+      let accountLogin: string;
+      if (mirror) {
+        accountLogin = mirror.orgLogin;
+      } else {
+        const firstMembership = await tx.userOrgMembership.findFirst({
+          where: { userId: request.requestedByUserId },
+          select: { accountLogin: true },
+        });
+        if (!firstMembership) {
+          throw new Error(
+            "Cannot approve a non-mirror team request whose requester has no UserOrgMembership row",
+          );
+        }
+        accountLogin = firstMembership.accountLogin;
+      }
+
       const team = mirror
         ? await tx.team.upsert({
             where: {
@@ -1011,6 +1032,7 @@ async function runApproval(
               slug: request.slug,
               name: request.name,
               description: request.description,
+              accountLogin,
               source: "github",
               externalId: mirror.nodeId,
               externalSlug: mirror.githubSlug,
@@ -1032,6 +1054,7 @@ async function runApproval(
               slug: request.slug,
               name: request.name,
               description: request.description,
+              accountLogin,
               source: "manual",
             },
           });

@@ -84,6 +84,8 @@ export interface CreateCatalogEntityInput {
   ownerTeamIds?: string[];
   repoUrl?: string;
   tags?: string[];
+  /** GitHub org login the entity belongs to (must match an enabled github integration). */
+  accountLogin: string;
 }
 
 export interface PatchCatalogEntityInput {
@@ -315,7 +317,10 @@ export function createApiClient(options: ApiClientOptions = {}) {
     },
 
     catalog: {
-      list: () => request<ListResponse<CatalogEntityWithOwners>>(`/api/catalog`),
+      list: (opts: { allOrgs?: boolean } = {}) => {
+        const qs = opts.allOrgs ? "?allOrgs=1" : "";
+        return request<ListResponse<CatalogEntityWithOwners>>(`/api/catalog${qs}`);
+      },
       get: (id: string) =>
         request<CatalogEntityWithOwners>(`/api/catalog/${encodeURIComponent(id)}`),
       overview: (id: string) =>
@@ -631,13 +636,21 @@ export function createApiClient(options: ApiClientOptions = {}) {
     },
 
     teams: {
-      list: (opts: { includeDeleted?: boolean } = {}) => {
-        const qs = opts.includeDeleted ? "?includeDeleted=true" : "";
-        return request<ListResponse<TeamSummary>>(`/api/teams${qs}`);
+      list: (opts: { includeDeleted?: boolean; allOrgs?: boolean } = {}) => {
+        const params = new URLSearchParams();
+        if (opts.includeDeleted) params.set("includeDeleted", "true");
+        if (opts.allOrgs) params.set("allOrgs", "1");
+        const qs = params.toString();
+        return request<ListResponse<TeamSummary>>(`/api/teams${qs ? `?${qs}` : ""}`);
       },
       get: (slug: string) => request<TeamDetail>(`/api/teams/${encodeURIComponent(slug)}`),
-      create: (body: { slug: string; name: string; description?: string; leadUserId?: string }) =>
-        request<TeamDetail>(`/api/teams`, { method: "POST", body: JSON.stringify(body) }),
+      create: (body: {
+        slug: string;
+        name: string;
+        description?: string;
+        leadUserId?: string;
+        accountLogin: string;
+      }) => request<TeamDetail>(`/api/teams`, { method: "POST", body: JSON.stringify(body) }),
       update: (slug: string, body: { slug?: string; name?: string; description?: string | null }) =>
         request<TeamDetail>(`/api/teams/${encodeURIComponent(slug)}`, {
           method: "PATCH",

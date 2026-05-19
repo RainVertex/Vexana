@@ -12,16 +12,17 @@ export function TeamsPage() {
   const [me, setMe] = useState<CurrentUser | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [requestOpen, setRequestOpen] = useState(false);
+  const [showAllOrgs, setShowAllOrgs] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const res = await api.teams.list();
+      const res = await api.teams.list({ allOrgs: showAllOrgs });
       setItems(res.items);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load teams");
     }
-  }, [api]);
+  }, [api, showAllOrgs]);
 
   useEffect(() => {
     void load();
@@ -57,6 +58,16 @@ export function TeamsPage() {
         </>
       }
     >
+      <label className="mb-3 flex cursor-pointer items-center gap-2 text-xs text-app-text-muted">
+        <input
+          type="checkbox"
+          checked={showAllOrgs}
+          onChange={(e) => setShowAllOrgs(e.target.checked)}
+          className="h-3.5 w-3.5 rounded border-app-border accent-app-primary"
+        />
+        Tüm organizasyonlardaki team'leri göster
+      </label>
+
       {error && <p className="mb-3 text-sm text-app-danger">{error}</p>}
       {!error && items === null && <p className="text-sm text-app-text-muted">Loading…</p>}
       {items && items.length === 0 && <p className="text-sm text-app-text-muted">No teams yet.</p>}

@@ -18,7 +18,7 @@ export function CatalogPage() {
   const load = useCallback(() => {
     let cancelled = false;
     api.catalog
-      .list()
+      .list({ allOrgs: view.showAllOrgs })
       .then((res) => {
         if (cancelled) return;
         setRows(res.items as CatalogRow[]);
@@ -30,7 +30,7 @@ export function CatalogPage() {
     return () => {
       cancelled = true;
     };
-  }, [api]);
+  }, [api, view.showAllOrgs]);
 
   useEffect(() => load(), [load]);
 

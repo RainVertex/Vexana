@@ -1,6 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useApi } from "@internal/api-client/react";
-import type { CatalogEntityKind, Team } from "@internal/shared-types";
+import type { CatalogEntityKind, TeamSummary } from "@internal/shared-types";
+
+interface OrgOption {
+  accountLogin: string;
+  name: string;
+}
 
 const KINDS: CatalogEntityKind[] = [
   "service",
@@ -26,17 +31,47 @@ export function RegisterEntityDialog({ open, onClose, onCreated }: Props) {
   const [repoUrl, setRepoUrl] = useState("");
   const [tags, setTags] = useState("");
   const [ownerTeamIds, setOwnerTeamIds] = useState<string[]>([]);
-  const [teams, setTeams] = useState<Team[]>([]);
+  const [teams, setTeams] = useState<TeamSummary[]>([]);
+  const [orgs, setOrgs] = useState<OrgOption[]>([]);
+  const [accountLogin, setAccountLogin] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
+    // Load teams across all orgs so the owner dropdown can be filtered
+    // client-side once the user picks an org. allOrgs=1 is the simplest way
+    // to make this work for admins and members alike.
     api.teams
-      .list()
+      .list({ allOrgs: true })
       .then((res) => setTeams(res.items))
       .catch(() => setTeams([]));
+    api.integrations
+      .githubInstallations()
+      .then((res) => {
+        const opts = res.items.map((i) => ({ accountLogin: i.accountLogin, name: i.name }));
+        setOrgs(opts);
+        if (opts.length > 0 && !accountLogin) setAccountLogin(opts[0].accountLogin);
+      })
+      .catch(() => setOrgs([]));
+    // accountLogin is intentionally not a dep here; we only initialize once
+    // per open.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [api, open]);
+
+  const teamsForSelectedOrg = useMemo(
+    () => teams.filter((t) => t.accountLogin === accountLogin),
+    [teams, accountLogin],
+  );
+
+  // Drop any owner team that doesn't belong to the newly picked org so the
+  // submit body can never contain cross-org owners.
+  useEffect(() => {
+    if (ownerTeamIds.length === 0) return;
+    const valid = new Set(teamsForSelectedOrg.map((t) => t.id));
+    const filtered = ownerTeamIds.filter((id) => valid.has(id));
+    if (filtered.length !== ownerTeamIds.length) setOwnerTeamIds(filtered);
+  }, [accountLogin, teamsForSelectedOrg, ownerTeamIds]);
 
   useEffect(() => {
     const el = dialogRef.current;
@@ -52,12 +87,17 @@ export function RegisterEntityDialog({ open, onClose, onCreated }: Props) {
     setRepoUrl("");
     setTags("");
     setOwnerTeamIds([]);
+    setAccountLogin(orgs[0]?.accountLogin ?? "");
     setError(null);
     setSubmitting(false);
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!accountLogin) {
+      setError("Pick an organization for this entity.");
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
@@ -72,6 +112,7 @@ export function RegisterEntityDialog({ open, onClose, onCreated }: Props) {
             .map((t) => t.trim())
             .filter(Boolean) || undefined,
         ownerTeamIds: ownerTeamIds.length > 0 ? ownerTeamIds : undefined,
+        accountLogin,
       });
       reset();
       onCreated();
@@ -90,6 +131,22 @@ export function RegisterEntityDialog({ open, onClose, onCreated }: Props) {
     >
       <form onSubmit={handleSubmit} className="w-[480px] max-w-[90vw] p-5">
         <h2 className="mb-4 text-lg font-semibold">Register existing service</h2>
+
+        <Field label="Organization" required>
+          <select
+            value={accountLogin}
+            onChange={(e) => setAccountLogin(e.target.value)}
+            required
+            className={inputClass}
+          >
+            {orgs.length === 0 && <option value="">No GitHub integrations connected</option>}
+            {orgs.map((o) => (
+              <option key={o.accountLogin} value={o.accountLogin}>
+                {o.accountLogin}
+              </option>
+            ))}
+          </select>
+        </Field>
 
         <Field label="Kind">
           <select
@@ -145,7 +202,7 @@ export function RegisterEntityDialog({ open, onClose, onCreated }: Props) {
             }
             className={`${inputClass} h-24`}
           >
-            {teams.map((t) => (
+            {teamsForSelectedOrg.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.name}
               </option>

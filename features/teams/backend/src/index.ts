@@ -45,8 +45,28 @@ const slugSchema = z
 teamsRouter.get("/", async (req, res, next) => {
   try {
     const includeDeleted = req.query.includeDeleted === "true" && req.user?.role === "admin";
+    const allOrgs = req.query.allOrgs === "1" || req.query.allOrgs === "true";
+
+    // Org filter: by default, non-admin callers only see teams whose
+    // accountLogin matches one of their UserOrgMembership rows. Admin and
+    // ?allOrgs=1 bypass. (Per-team privacy filter still applies via the
+    // visibility helper; this is an additional org-level filter on top.)
+    const where: Prisma.TeamWhereInput = includeDeleted ? {} : { deletedAt: null };
+    if (!allOrgs && req.user && req.user.role !== "admin") {
+      const memberships = await prisma.userOrgMembership.findMany({
+        where: { userId: req.user.id },
+        select: { accountLogin: true },
+      });
+      const logins = memberships.map((m) => m.accountLogin);
+      if (logins.length === 0) {
+        res.json({ items: [] });
+        return;
+      }
+      where.accountLogin = { in: logins };
+    }
+
     const teams = await prisma.team.findMany({
-      where: includeDeleted ? {} : { deletedAt: null },
+      where,
       include: TEAM_DETAIL_INCLUDE,
       orderBy: { name: "asc" },
     });
@@ -84,6 +104,9 @@ const createSchema = z.object({
   description: z.string().max(1000).optional(),
   /** Optional initial lead (User.id). */
   leadUserId: z.string().min(1).optional(),
+  // GitHub org login the team belongs to. Every team must be tied to exactly
+  // one org so catalog entities owned by this team don't span orgs.
+  accountLogin: z.string().min(1),
 });
 
 teamsRouter.post("/", async (req, res, next) => {
@@ -98,6 +121,23 @@ teamsRouter.post("/", async (req, res, next) => {
       return;
     }
 
+    // Validate accountLogin matches an enabled github integration.
+    const ghIntegrations = await prisma.integration.findMany({
+      where: { kind: "github", enabled: true },
+      select: { config: true },
+    });
+    const validLogins = new Set<string>();
+    for (const row of ghIntegrations) {
+      const cfg = row.config as { accountLogin?: unknown } | null;
+      if (cfg && typeof cfg.accountLogin === "string") validLogins.add(cfg.accountLogin);
+    }
+    if (!validLogins.has(parsed.data.accountLogin)) {
+      res.status(400).json({
+        error: `accountLogin "${parsed.data.accountLogin}" does not match any enabled GitHub integration`,
+      });
+      return;
+    }
+
     try {
       const team = await prisma.$transaction(async (tx) => {
         const created = await tx.team.create({
@@ -105,6 +145,7 @@ teamsRouter.post("/", async (req, res, next) => {
             slug: parsed.data.slug,
             name: parsed.data.name,
             description: parsed.data.description ?? null,
+            accountLogin: parsed.data.accountLogin,
           },
         });
         const leadUserId = parsed.data.leadUserId ?? req.user!.id;
