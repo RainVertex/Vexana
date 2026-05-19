@@ -16,7 +16,7 @@ export interface AuditPayloads {
     integrationId: string;
     kind: string;
     accountLogin: string;
-    disabledUserCount: number;
+    affectedUserCount: number;
     source: "admin_action" | "github_webhook";
   };
   "integration.resynced": { integrationId: string; kind: string; runId: string };

@@ -69,7 +69,7 @@ export {
   revokeAppInstallation,
   disconnectGitHubInstallation,
 } from "./github-app/install";
-export { disableStrandedUsers } from "./github-app/uninstall-effects";
+export { revokeStrandedUserSessions } from "./github-app/uninstall-effects";
 export type {
   InstallationMetadata,
   RecordInstallationResult,
@@ -395,7 +395,7 @@ integrationsRouter.delete("/:id", async (req, res, next) => {
             integrationId: integ.id,
             kind: "github",
             accountLogin: result.accountLogin,
-            disabledUserCount: result.disabledUserIds.length,
+            affectedUserCount: result.affectedUserIds.length,
             source: "admin_action",
           },
         },
@@ -406,7 +406,7 @@ integrationsRouter.delete("/:id", async (req, res, next) => {
         entitiesStaled: result.entitiesStaled,
         revoked: result.revoked,
         revokeReason: result.revokeReason,
-        disabledUserCount: result.disabledUserIds.length,
+        affectedUserCount: result.affectedUserIds.length,
       });
       return;
     }

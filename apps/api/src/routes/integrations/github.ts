@@ -17,12 +17,12 @@ import { randomBytes } from "node:crypto";
 import { Router } from "express";
 import { prisma } from "@internal/db";
 import {
-  disableStrandedUsers,
   GitHubAppNotConfiguredError,
   loadGitHubAppConfig,
   octokitAsApp,
   recordInstallation,
   recordUninstallation,
+  revokeStrandedUserSessions,
 } from "@feature/integrations-backend";
 import {
   runReconciliation,
@@ -354,11 +354,11 @@ githubIntegrationRouter.delete("/:integrationId", async (req, res, next) => {
     // 2. Mark Integration disabled.
     await recordUninstallation(installationId);
 
-    // 3. Disable users whose only org coverage was this one and kill their
-    // sessions, so they don't keep accessing the platform with a stale
-    // session. Helper is idempotent and admin-safe.
+    // 3. Revoke sessions of users whose only org coverage was this one, so
+    // they don't keep using a stale session. user.status is left untouched,
+    // verifyAnyOrgMembership at next sign-in is the authoritative gate.
     const accountLogin = typeof cfg.accountLogin === "string" ? cfg.accountLogin : "";
-    const { disabledUserIds } = await disableStrandedUsers(accountLogin);
+    const { affectedUserIds } = await revokeStrandedUserSessions(accountLogin);
 
     // 4. Stale every entity tied to the installation.
     const staledCount = await staleEntitiesForInstallation(installationId);
@@ -381,7 +381,7 @@ githubIntegrationRouter.delete("/:integrationId", async (req, res, next) => {
         integrationId: integration.id,
         kind: "github",
         accountLogin,
-        disabledUserCount: disabledUserIds.length,
+        affectedUserCount: affectedUserIds.length,
         source: "admin_action",
       },
       { kind: "integration", id: integration.id },
@@ -394,7 +394,7 @@ githubIntegrationRouter.delete("/:integrationId", async (req, res, next) => {
         githubRevoked,
         staledCount,
         integrationRemoved,
-        disabledUserCount: disabledUserIds.length,
+        affectedUserCount: affectedUserIds.length,
       },
       "github-app: disconnected",
     );
@@ -404,7 +404,7 @@ githubIntegrationRouter.delete("/:integrationId", async (req, res, next) => {
       githubRevoked,
       staledEntities: staledCount,
       integrationRemoved,
-      disabledUserCount: disabledUserIds.length,
+      affectedUserCount: affectedUserIds.length,
     });
   } catch (err) {
     next(err);

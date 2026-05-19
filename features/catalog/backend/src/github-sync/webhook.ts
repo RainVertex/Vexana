@@ -15,12 +15,12 @@
 import express, { Router, type Request, type Response } from "express";
 import { prisma } from "@internal/db";
 import {
-  disableStrandedUsers,
   GitHubAppNotConfiguredError,
   loadGitHubAppConfig,
   octokitForInstallation,
   recordInstallation,
   recordUninstallation,
+  revokeStrandedUserSessions,
   verifyGitHubSignature,
 } from "@feature/integrations-backend";
 import {
@@ -160,10 +160,10 @@ async function handleInstallation(action: string, payload: Record<string, unknow
     const result = await recordUninstallation(installationId);
     await staleEntitiesForInstallation(installationId);
 
-    // Disable any users whose only org coverage was this one and kill their
-    // sessions, mirroring the admin-side disconnect flow.
+    // Revoke sessions of users whose only org coverage was this one, mirroring
+    // the admin-side disconnect flow. user.status is left untouched.
     const accountLogin = readAccountLogin(payload);
-    const { disabledUserIds } = await disableStrandedUsers(accountLogin);
+    const { affectedUserIds } = await revokeStrandedUserSessions(accountLogin);
 
     if (result.integrationId) {
       await prisma.auditEvent.create({
@@ -178,7 +178,7 @@ async function handleInstallation(action: string, payload: Record<string, unknow
             integrationId: result.integrationId,
             kind: "github",
             accountLogin,
-            disabledUserCount: disabledUserIds.length,
+            affectedUserCount: affectedUserIds.length,
             source: "github_webhook",
           },
         },
