@@ -1,4 +1,6 @@
+import type { ReactNode } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
+import { useCurrentUser } from "./auth";
 import { HomePage } from "./pages/HomePage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { PlaneEmbedPage } from "./pages/PlaneEmbedPage";
@@ -58,15 +60,25 @@ import {
   WorkspacePage,
 } from "@feature/workspace-frontend";
 
+function AdminRoute({ children }: { children: ReactNode }) {
+  const me = useCurrentUser();
+  if (me.role !== "admin") {
+    return (
+      <div className="p-8">
+        <h1 className="mb-2 text-xl font-semibold text-app-text">Forbidden</h1>
+        <p className="text-sm text-app-text-muted">
+          You need the <strong>admin</strong> role to view this page.
+        </p>
+      </div>
+    );
+  }
+  return <>{children}</>;
+}
+
 export function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
-      {/* Single Route with an optional segment so navigating from /chat to
-          /chat/:id (which handleSend does on the first message of a new
-          conversation) is a re-render, not an unmount/remount. A remount here
-          would wipe useChatStream's state mid-SSE and the live bubble would
-          never render. */}
       <Route path="/chat/:conversationId?" element={<ChatRoute />} />
       <Route path="/p/:pageId" element={<DashboardPage />} />
       <Route path="/agents" element={<AgentsPage />} />
@@ -86,8 +98,22 @@ export function AppRoutes() {
       <Route path="/scorecards" element={<ScorecardsPage />} />
       <Route path="/scorecards/:id" element={<ScorecardEditPage />} />
       <Route path="/dora-metrics" element={<DoraMetricsPage />} />
-      <Route path="/integrations" element={<IntegrationsPage />} />
-      <Route path="/integrations/:id" element={<IntegrationManagePage />} />
+      <Route
+        path="/integrations"
+        element={
+          <AdminRoute>
+            <IntegrationsPage />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/integrations/:id"
+        element={
+          <AdminRoute>
+            <IntegrationManagePage />
+          </AdminRoute>
+        }
+      />
       <Route path="/observability" element={<ObservabilityPage />} />
       <Route path="/observability/config" element={<ObservabilityConfigPage />} />
       <Route path="/scaffolder" element={<ScaffolderPage />} />
@@ -97,8 +123,6 @@ export function AppRoutes() {
       <Route path="/scaffolder/:templateId" element={<ScaffolderTemplatePage />} />
       <Route path="/search" element={<SearchPage />} />
       <Route path="/teams" element={<TeamsPage />} />
-      {/* Round-1 paths redirect into the new Requests section. Bookmarks and
-       *  notification deep-links sent before the cutover keep working. */}
       <Route path="/teams/requests" element={<Navigate to="/requests/team" replace />} />
       <Route path="/teams/maintainer-requests" element={<Navigate to="/requests/team" replace />} />
       <Route
@@ -119,7 +143,14 @@ export function AppRoutes() {
       <Route path="/workspace/projects" element={<ProjectsListPage />} />
       <Route path="/workspace/projects/:id" element={<ProjectDetailPage />} />
       <Route path="/workspace/work-items/:id" element={<WorkItemDetailPage />} />
-      <Route path="/workspace/integrations/:id" element={<IntegrationDetailPage />} />
+      <Route
+        path="/workspace/integrations/:id"
+        element={
+          <AdminRoute>
+            <IntegrationDetailPage />
+          </AdminRoute>
+        }
+      />
       <Route path="/workspace/plane" element={<PlaneEmbedPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/admin/users" element={<AdminUsersPage />} />

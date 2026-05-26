@@ -25,7 +25,11 @@ export const workspaceRoutes: Router = Router();
 
 // -------- Integrations -------------------------------------------------------
 
-workspaceRoutes.get("/integrations", async (_req, res) => {
+workspaceRoutes.get("/integrations", async (req, res) => {
+  if (!req.user || req.user.role !== "admin") {
+    res.status(403).json({ error: "Admin only" });
+    return;
+  }
   const integrations = await prisma.integration.findMany({
     where: { kind: "plane" },
     select: {
@@ -43,8 +47,6 @@ workspaceRoutes.get("/integrations", async (_req, res) => {
     },
   });
 
-  // Counts per integration are looked up in a single query each — there are
-  // typically very few Plane integrations per platform deployment.
   const items: PlaneIntegrationStatusDto[] = await Promise.all(
     integrations.map(async (i) => {
       const ws = i.planeWorkspaces[0] ?? null;
@@ -76,6 +78,10 @@ workspaceRoutes.get("/integrations", async (_req, res) => {
 });
 
 workspaceRoutes.get("/integrations/:id", async (req, res) => {
+  if (!req.user || req.user.role !== "admin") {
+    res.status(403).json({ error: "Admin only" });
+    return;
+  }
   const integration = await prisma.integration.findFirst({
     where: { id: req.params.id, kind: "plane" },
     select: {
@@ -122,8 +128,6 @@ workspaceRoutes.post("/integrations/:id/sync", async (req, res) => {
     return;
   }
   const integrationId = req.params.id;
-  // Run full sync inline. If this becomes too slow we'll move it onto a
-  // JobRun — the contract here is "returns when the sync finishes."
   try {
     const result = await fullSync(integrationId);
     res.json({ status: "ok", ...result });
@@ -136,6 +140,10 @@ workspaceRoutes.post("/integrations/:id/sync", async (req, res) => {
 // -------- Members + user mapping --------------------------------------------
 
 workspaceRoutes.get("/integrations/:id/members", async (req, res) => {
+  if (!req.user || req.user.role !== "admin") {
+    res.status(403).json({ error: "Admin only" });
+    return;
+  }
   const integration = await prisma.integration.findFirst({
     where: { id: req.params.id, kind: "plane" },
     select: { id: true, planeWorkspaces: { select: { id: true } } },
@@ -267,7 +275,6 @@ workspaceRoutes.get("/projects", async (req, res) => {
     },
     orderBy: { name: "asc" },
   });
-  // Item counts in batch — group-by avoids N+1 when listing many projects.
   const ids = projects.map((p) => p.id);
   const [allCounts, openCounts] = await Promise.all([
     ids.length
@@ -450,8 +457,6 @@ workspaceRoutes.get("/my-work", async (req, res) => {
     include: { member: { select: { externalId: true, workspaceId: true } } },
   });
   if (mappings.length === 0) {
-    // Show recently-touched projects so the page isn't empty, but flag the
-    // missing mapping so the UI can prompt the user to ask an admin.
     const recentProjects = await prisma.planeProject.findMany({
       where: { archivedAt: null },
       orderBy: { lastSyncedAt: "desc" },

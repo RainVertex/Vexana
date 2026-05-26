@@ -91,7 +91,11 @@ export const integrationsRouter: Router = Router();
 // generic `PATCH /:id` / `DELETE /:id` below.
 integrationsRouter.use("/grafana", grafanaConnectRouter);
 
-integrationsRouter.get("/", async (_req, res) => {
+integrationsRouter.get("/", async (req, res) => {
+  if (!req.user || req.user.role !== "admin") {
+    res.status(403).json({ error: "Admin only" });
+    return;
+  }
   const integrations = await prisma.integration.findMany({
     orderBy: { name: "asc" },
     select: {
@@ -100,7 +104,7 @@ integrationsRouter.get("/", async (_req, res) => {
       description: true,
       kind: true,
       enabled: true,
-      // Never return config — it carries encrypted secrets.
+      // Never return config as it carries encrypted secrets.
       createdAt: true,
       updatedAt: true,
     },
@@ -108,7 +112,6 @@ integrationsRouter.get("/", async (_req, res) => {
   res.json({
     items: integrations.map((i) => ({
       ...i,
-      // Frontend expects a `config` field on Integration; redact contents.
       config: {},
       createdAt: i.createdAt.toISOString(),
       updatedAt: i.updatedAt.toISOString(),
@@ -154,13 +157,6 @@ integrationsRouter.get("/github/installations", async (req, res) => {
 // ---------------------------------------------------------------------------
 // Plane connect flow
 // ---------------------------------------------------------------------------
-// 1. Validate the API token by calling GET /workspaces/<slug>/.
-// 2. Persist an Integration row with the encrypted token + a freshly
-//    generated webhook secret. The slug is also stored for fast lookup.
-// 3. Kick off a full sync inline so the connecting admin sees data
-//    immediately. If the sync fails the integration row is rolled back so
-//    the user can fix and retry.
-
 integrationsRouter.post("/plane", async (req, res) => {
   if (!req.user || req.user.role !== "admin") {
     res.status(403).json({ error: "Admin only" });
@@ -202,10 +198,6 @@ integrationsRouter.post("/plane", async (req, res) => {
     return;
   }
 
-  // Validate by listing projects. We can't use GET /workspaces/<slug>/ because
-  // Plane's personal API tokens don't authenticate that endpoint (it's
-  // session-only). The projects endpoint accepts X-API-Key, so a successful
-  // response confirms both the token and the workspace slug in one call.
   const workspaceName = workspaceSlug;
   try {
     const probe = createPlaneClient({ baseUrl, apiToken });
@@ -223,12 +215,6 @@ integrationsRouter.post("/plane", async (req, res) => {
     return;
   }
 
-  // Plane generates and owns the webhook secret — it's shown ONCE on
-  // Plane's webhook creation page and never again. We can't generate one
-  // and tell Plane to use it. So we create the integration with no
-  // webhook secret yet; the admin pastes Plane's secret afterward via
-  // PATCH /api/integrations/:id/webhook-secret. Until then, our receiver
-  // returns 503 to incoming webhooks.
   const integration = await prisma.integration.create({
     data: {
       name,
@@ -243,9 +229,6 @@ integrationsRouter.post("/plane", async (req, res) => {
     },
   });
 
-  // Kick the initial sync inline so the connect-flow caller gets back a
-  // populated workspace. If the sync throws we still keep the integration
-  // row — the admin can retry via /api/workspace/integrations/:id/sync.
   let syncError: string | null = null;
   try {
     await fullSync(integration.id);
@@ -265,17 +248,11 @@ integrationsRouter.post("/plane", async (req, res) => {
       updatedAt: integration.updatedAt.toISOString(),
     },
     workspaceName,
-    // Webhook setup is a two-step flow (Plane owns the secret):
-    //   1. Create a webhook in Plane with this URL as the payload URL.
-    //   2. Plane shows you a secret like `plane_wh_<hex>` exactly once —
-    //      paste it into the integration detail page in our platform.
     webhookUrl: `/integrations/plane/webhook/${integration.id}`,
     syncError,
   });
 });
 
-// Set or rotate the webhook secret. Called after the admin creates the
-// webhook in Plane and copies the secret Plane generated.
 integrationsRouter.patch("/:id/webhook-secret", async (req, res) => {
   if (!req.user || req.user.role !== "admin") {
     res.status(403).json({ error: "Admin only" });
@@ -310,9 +287,6 @@ integrationsRouter.patch("/:id/webhook-secret", async (req, res) => {
   res.status(204).end();
 });
 
-// Per-integration detail. Returns the row plus a per-kind safe view of the
-// stored config so the admin configure page can render real values without
-// the secrets ever crossing the wire. Admin-only, like PATCH/DELETE below.
 integrationsRouter.get("/:id", async (req, res) => {
   if (!req.user || req.user.role !== "admin") {
     res.status(403).json({ error: "Admin only" });
@@ -346,9 +320,6 @@ integrationsRouter.get("/:id", async (req, res) => {
     updatedAt: row.updatedAt.toISOString(),
   });
 });
-
-// Generic toggle/disconnect — works for any kind. Disconnect cascades to
-// Plane mirror tables via the Integration FK.
 
 integrationsRouter.patch("/:id", async (req, res) => {
   if (!req.user || req.user.role !== "admin") {
@@ -392,13 +363,6 @@ integrationsRouter.delete("/:id", async (req, res, next) => {
       return;
     }
 
-    // GitHub disconnect cascades: stale-mark every CatalogEntity tied to the
-    // installation, revoke the App on GitHub so webhooks stop firing, disable
-    // any users whose only covering org was this one (helper inside
-    // disconnectGitHubInstallation), then remove the Integration row.
-    // Re-installing the same org rehydrates the entities via githubRepoId,
-    // so this is reversible without data loss. Disabled users have to be
-    // re-enabled manually by an admin once their org is back.
     if (integ.kind === "github") {
       const result = await disconnectGitHubInstallation(integ.id);
       await prisma.auditEvent.create({
