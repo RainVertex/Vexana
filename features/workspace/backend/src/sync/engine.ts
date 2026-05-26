@@ -26,6 +26,7 @@ import {
   upsertWorkspace,
 } from "./upsert";
 import { autoMapMembers } from "./userMapping";
+import { isPlaneBotMember } from "./planeBotFilter";
 
 interface PlaneIntegrationConfig {
   baseUrl: string;
@@ -125,11 +126,19 @@ export async function fullSync(integrationId: string): Promise<FullSyncResult> {
   };
   const ws = await upsertWorkspace(prisma, integrationId, synthWs);
 
+  const humanMemberRaws = memberRaws.filter((m) => !isPlaneBotMember(m));
+
   let memberCount = 0;
   let autoMappedUserCount = 0;
   await prisma.$transaction(async (tx) => {
+    await tx.planeMember.deleteMany({
+      where: {
+        workspaceId: ws.id,
+        email: { startsWith: "bot_user_", endsWith: "@plane.so", mode: "insensitive" },
+      },
+    });
     const upserted: Array<{ id: string; email: string }> = [];
-    for (const m of memberRaws) {
+    for (const m of humanMemberRaws) {
       const r = await upsertMember(tx, ws.id, m);
       if (r) upserted.push(r);
     }
