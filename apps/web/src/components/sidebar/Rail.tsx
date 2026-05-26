@@ -4,6 +4,7 @@ import { useCurrentUser } from "../../auth";
 import {
   AccountIcon,
   AdminIcon,
+  BoardIcon,
   BotIcon,
   CubeIcon,
   HomeIcon,
@@ -38,6 +39,7 @@ const SECTIONS: SectionDef[] = [
   { key: "requests", to: "/requests/team", label: "Requests", icon: InboxIcon },
   { key: "agents", to: "/agents", label: "Agents", icon: SparklesIcon },
   { key: "workspace", to: "/workspace", label: "Workspace", icon: WorkspaceIcon },
+  { key: "plane", to: "/workspace/plane", label: "Plane", icon: BoardIcon },
   { key: "teams", to: "/teams", label: "Teams", icon: TeamsIcon },
   {
     key: "observability",

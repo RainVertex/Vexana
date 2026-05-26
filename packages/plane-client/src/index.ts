@@ -53,19 +53,7 @@ export interface PlaneClient {
     opts?: { updatedAfter?: Date },
   ): Promise<PlaneApiWorkItem[]>;
   getWorkItem(slug: string, projectId: string, workItemId: string): Promise<PlaneApiWorkItem>;
-  updateWorkItem(
-    slug: string,
-    projectId: string,
-    workItemId: string,
-    patch: Partial<Pick<PlaneApiWorkItem, "state" | "assignees" | "priority" | "name">>,
-  ): Promise<PlaneApiWorkItem>;
   listComments(slug: string, projectId: string, workItemId: string): Promise<PlaneApiComment[]>;
-  createComment(
-    slug: string,
-    projectId: string,
-    workItemId: string,
-    body: { comment_html: string },
-  ): Promise<PlaneApiComment>;
   listWorkspaceMembers(slug: string): Promise<PlaneApiMember[]>;
 }
 
@@ -165,38 +153,6 @@ export function createPlaneClient(config: PlaneClientConfig): PlaneClient {
         `issues/${workItemId}/comments`,
         {},
       ),
-    updateWorkItem: async (slug, projectId, workItemId, patch) => {
-      try {
-        return await request<PlaneApiWorkItem>(
-          `/api/v1/workspaces/${slug}/projects/${projectId}/work-items/${workItemId}/`,
-          { method: "PATCH", body: JSON.stringify(patch) },
-        );
-      } catch (err) {
-        if (err instanceof PlaneApiError && err.status === 404) {
-          return await request<PlaneApiWorkItem>(
-            `/api/v1/workspaces/${slug}/projects/${projectId}/issues/${workItemId}/`,
-            { method: "PATCH", body: JSON.stringify(patch) },
-          );
-        }
-        throw err;
-      }
-    },
-    createComment: async (slug, projectId, workItemId, body) => {
-      try {
-        return await request<PlaneApiComment>(
-          `/api/v1/workspaces/${slug}/projects/${projectId}/work-items/${workItemId}/comments/`,
-          { method: "POST", body: JSON.stringify(body) },
-        );
-      } catch (err) {
-        if (err instanceof PlaneApiError && err.status === 404) {
-          return await request<PlaneApiComment>(
-            `/api/v1/workspaces/${slug}/projects/${projectId}/issues/${workItemId}/comments/`,
-            { method: "POST", body: JSON.stringify(body) },
-          );
-        }
-        throw err;
-      }
-    },
     listWorkspaceMembers: (slug) => collect<PlaneApiMember>(`/api/v1/workspaces/${slug}/members/`),
   };
 

@@ -1,6 +1,6 @@
 import type { PageSection } from "@internal/shared-types";
 
-export type SidebarSection = PageSection | "home" | "account" | "integrations" | "chat";
+export type SidebarSection = PageSection | "home" | "account" | "integrations" | "chat" | "plane";
 
 /** Map a URL pathname to its rail section. */
 export function sectionFromPath(pathname: string): SidebarSection {
