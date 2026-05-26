@@ -1000,6 +1000,19 @@ export function createApiClient(options: ApiClientOptions = {}) {
         request<ListResponse<PlaneCommentDto>>(
           `/api/workspace/work-items/${encodeURIComponent(workItemId)}/comments`,
         ),
+      postComment: (workItemId: string, body: string) =>
+        request<PlaneCommentDto>(
+          `/api/workspace/work-items/${encodeURIComponent(workItemId)}/comments`,
+          { method: "POST", body: JSON.stringify({ body }) },
+        ),
+      updateWorkItem: (
+        workItemId: string,
+        patch: { stateExternalId?: string; assigneeExternalIds?: string[]; priority?: string },
+      ) =>
+        request<{ status: "ok" }>(`/api/workspace/work-items/${encodeURIComponent(workItemId)}`, {
+          method: "PATCH",
+          body: JSON.stringify(patch),
+        }),
     },
 
     scaffolder: {
