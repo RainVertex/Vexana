@@ -141,6 +141,27 @@ function normalizeCommentPayload(raw: PlaneApiComment): PlaneApiComment {
   };
 }
 
+function normalizeProjectPayload(raw: PlaneApiProject): PlaneApiProject {
+  return {
+    ...raw,
+    workspace: planeUuid(raw.workspace) ?? raw.workspace,
+  };
+}
+
+function normalizeCyclePayload(raw: PlaneApiCycle): PlaneApiCycle {
+  return {
+    ...raw,
+    project: planeUuid(raw.project) ?? raw.project,
+  };
+}
+
+function normalizeModulePayload(raw: PlaneApiModule): PlaneApiModule {
+  return {
+    ...raw,
+    project: planeUuid(raw.project) ?? raw.project,
+  };
+}
+
 async function dispatch(integrationId: string, payload: PlaneWebhookPayload): Promise<void> {
   const { event, action, data } = payload;
   if (action === "delete" || (action as string) === "deleted") {
@@ -174,13 +195,14 @@ async function dispatch(integrationId: string, payload: PlaneWebhookPayload): Pr
 }
 
 async function handleProjectUpsert(integrationId: string, raw: PlaneApiProject): Promise<void> {
+  const normalized = normalizeProjectPayload(raw);
   const ws = await prisma.planeWorkspace.findFirst({
-    where: { integrationId, externalId: raw.workspace },
+    where: { integrationId, externalId: normalized.workspace },
     select: { id: true },
   });
-  if (!ws) return; // workspace not yet mirrored — full sync will pick it up
+  if (!ws) return;
   await prisma.$transaction(async (tx) => {
-    await upsertProject(tx, integrationId, ws.id, raw);
+    await upsertProject(tx, integrationId, ws.id, normalized);
   });
 }
 
@@ -197,24 +219,26 @@ async function handleWorkItemUpsert(integrationId: string, raw: PlaneApiWorkItem
 }
 
 async function handleCycleUpsert(integrationId: string, raw: PlaneApiCycle): Promise<void> {
+  const normalized = normalizeCyclePayload(raw);
   const project = await prisma.planeProject.findFirst({
-    where: { integrationId, externalId: raw.project },
+    where: { integrationId, externalId: normalized.project },
     select: { id: true },
   });
   if (!project) return;
   await prisma.$transaction(async (tx) => {
-    await upsertCycle(tx, project.id, raw);
+    await upsertCycle(tx, project.id, normalized);
   });
 }
 
 async function handleModuleUpsert(integrationId: string, raw: PlaneApiModule): Promise<void> {
+  const normalized = normalizeModulePayload(raw);
   const project = await prisma.planeProject.findFirst({
-    where: { integrationId, externalId: raw.project },
+    where: { integrationId, externalId: normalized.project },
     select: { id: true },
   });
   if (!project) return;
   await prisma.$transaction(async (tx) => {
-    await upsertModule(tx, project.id, raw);
+    await upsertModule(tx, project.id, normalized);
   });
 }
 

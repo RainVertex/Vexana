@@ -111,7 +111,11 @@ export function IntegrationManagePage() {
       <ConfirmDialog
         open={confirmDisconnect}
         title={`Disconnect ${detail?.name ?? "integration"}?`}
-        message="This deletes the local mirror data. The external tool itself is not affected."
+        message={
+          detail?.kind === "plane"
+            ? "This deletes the local mirror data. The external tool itself is not affected. After disconnecting, manually delete the corresponding webhook in Plane (Workspace Settings, Webhooks) so it stops sending 404 deliveries to this server."
+            : "This deletes the local mirror data. The external tool itself is not affected."
+        }
         confirmLabel="Disconnect"
         destructive
         onConfirm={disconnect}

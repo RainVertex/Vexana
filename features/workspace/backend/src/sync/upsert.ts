@@ -222,7 +222,10 @@ export async function upsertWorkItem(
     completedAt = raw.completed_at ? new Date(raw.completed_at) : new Date();
   }
 
-  const description = raw.description_markdown ?? raw.description_stripped ?? null;
+  const description =
+    raw.description_markdown ??
+    raw.description_stripped ??
+    (typeof raw.description_html === "string" ? stripHtml(raw.description_html) : null);
 
   return tx.planeWorkItem.upsert({
     where: { projectId_externalId: { projectId, externalId: raw.id } },
