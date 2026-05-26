@@ -91,6 +91,8 @@ export interface PlaneWorkItemSummaryDto {
   externalUpdatedAt: ISODateString;
   /** Embedded for list rendering; null when project is not in the response. */
   project?: { id: ID; identifier: string; name: string } | null;
+  /** Deep link to the work item in Plane's native UI; undefined when integration config is incomplete. */
+  planeUrl?: string;
 }
 
 export interface PlaneWorkItemDetailDto extends PlaneWorkItemSummaryDto {

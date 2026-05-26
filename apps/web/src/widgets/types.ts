@@ -7,7 +7,8 @@ export type WidgetId =
   | "onboarding"
   | "chat-assistant"
   | "service-health"
-  | "grafana-alerts";
+  | "grafana-alerts"
+  | "my-work";
 
 export interface VisitRecord {
   path: string;

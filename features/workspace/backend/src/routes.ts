@@ -474,7 +474,15 @@ workspaceRoutes.get("/my-work", async (req, res) => {
     },
     include: {
       state: true,
-      project: { select: { id: true, identifier: true, name: true } },
+      project: {
+        select: {
+          id: true,
+          identifier: true,
+          name: true,
+          externalId: true,
+          integrationId: true,
+        },
+      },
     },
     orderBy: [{ targetDate: "asc" }, { externalUpdatedAt: "desc" }],
     take: 50,
@@ -485,8 +493,33 @@ workspaceRoutes.get("/my-work", async (req, res) => {
     where: { id: { in: projectIds } },
   });
 
+  const integrationIds = Array.from(new Set(myItems.map((w) => w.project.integrationId)));
+  const integrationRows = await prisma.integration.findMany({
+    where: { id: { in: integrationIds }, kind: "plane" },
+    select: { id: true, config: true },
+  });
+  const linkBaseByIntegrationId = new Map<string, string>();
+  for (const i of integrationRows) {
+    const cfg =
+      (i.config as { baseUrl?: unknown; webUrl?: unknown; workspaceSlug?: unknown }) ?? {};
+    const host = typeof cfg.webUrl === "string" ? cfg.webUrl : cfg.baseUrl;
+    if (typeof host === "string" && typeof cfg.workspaceSlug === "string") {
+      linkBaseByIntegrationId.set(
+        i.id,
+        `${host.replace(/\/+$/, "")}/${cfg.workspaceSlug}/projects`,
+      );
+    }
+  }
+
   res.json({
-    myOpenWorkItems: myItems.map(toWorkItemSummary),
+    myOpenWorkItems: myItems.map((w) => {
+      const summary = toWorkItemSummary(w);
+      const base = linkBaseByIntegrationId.get(w.project.integrationId);
+      if (base) {
+        summary.planeUrl = `${base}/${w.project.externalId}/issues/${w.externalId}`;
+      }
+      return summary;
+    }),
     recentProjects: projects.map(toProjectDto),
     needsIntegration: false,
     needsUserMapping: false,

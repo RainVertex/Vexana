@@ -1,0 +1,1 @@
+export { MyWorkWidget } from "./MyWorkWidget";
