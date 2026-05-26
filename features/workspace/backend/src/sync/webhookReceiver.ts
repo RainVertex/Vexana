@@ -2,11 +2,6 @@
 // `X-Plane-Signature` header (see verifyPlaneSignature in plane-client). We
 // verify, then dispatch by `event` + `action` to a single-row upsert/delete.
 // The incremental sync job catches any deliveries we miss.
-//
-// IMPORTANT: this router MUST be mounted with express.raw() so the request
-// body is the exact bytes Plane signed. createServer mounts /api/webhooks
-// after express.json() — we need our own mount earlier in the chain (see
-// the GitHub webhook precedent). Mount path: /integrations/plane/webhook/:id
 
 import { Router } from "express";
 import { prisma } from "@internal/db";
@@ -21,6 +16,12 @@ import type {
 import express from "express";
 import { decryptWebhookSecret } from "./engine";
 import { upsertComment, upsertCycle, upsertModule, upsertProject, upsertWorkItem } from "./upsert";
+import {
+  buildPlaneWorkItemUrl,
+  notifyPlaneAssigned,
+  notifyPlaneCommentPosted,
+  resolvePlaneAssignees,
+} from "./notifyPlane";
 
 interface PlaneWebhookPayload {
   event: string;
@@ -210,11 +211,48 @@ async function handleWorkItemUpsert(integrationId: string, raw: PlaneApiWorkItem
   const normalized = normalizeIssuePayload(raw);
   const project = await prisma.planeProject.findFirst({
     where: { integrationId, externalId: normalized.project },
-    select: { id: true },
+    select: { id: true, externalId: true, identifier: true, name: true, workspaceId: true },
   });
   if (!project) return;
   await prisma.$transaction(async (tx) => {
+    const existing = await tx.planeWorkItem.findUnique({
+      where: { projectId_externalId: { projectId: project.id, externalId: normalized.id } },
+      select: { assigneeIds: true },
+    });
+    const existingAssignees = new Set(existing?.assigneeIds ?? []);
     await upsertWorkItem(tx, project.id, normalized);
+
+    const newAssignees = normalized.assignees.filter((id) => !existingAssignees.has(id));
+    if (newAssignees.length === 0) return;
+    const mappings = await resolvePlaneAssignees(tx, project.workspaceId, newAssignees);
+    if (mappings.size === 0) return;
+    const integration = await tx.integration.findUnique({
+      where: { id: integrationId },
+      select: { config: true },
+    });
+    const planeUrl = integration
+      ? buildPlaneWorkItemUrl(integration.config, project.externalId, normalized.id)
+      : null;
+    const localWorkItem = await tx.planeWorkItem.findUnique({
+      where: { projectId_externalId: { projectId: project.id, externalId: normalized.id } },
+      select: { id: true },
+    });
+    if (!localWorkItem) return;
+    await notifyPlaneAssigned(tx, {
+      platformUserIds: Array.from(mappings.values()),
+      workItem: {
+        localId: localWorkItem.id,
+        externalId: normalized.id,
+        sequenceId: normalized.sequence_id,
+        name: normalized.name,
+      },
+      project: {
+        externalId: project.externalId,
+        identifier: project.identifier,
+        name: project.name,
+      },
+      planeUrl,
+    });
   });
 }
 
@@ -246,11 +284,75 @@ async function handleCommentUpsert(integrationId: string, raw: PlaneApiComment):
   const normalized = normalizeCommentPayload(raw);
   const workItem = await prisma.planeWorkItem.findFirst({
     where: { project: { integrationId }, externalId: normalized.issue },
-    select: { id: true },
+    select: {
+      id: true,
+      externalId: true,
+      sequenceId: true,
+      name: true,
+      assigneeIds: true,
+      project: {
+        select: { externalId: true, identifier: true, name: true, workspaceId: true },
+      },
+    },
   });
   if (!workItem) return;
   await prisma.$transaction(async (tx) => {
+    const existing = await tx.planeComment.findUnique({
+      where: { workItemId_externalId: { workItemId: workItem.id, externalId: normalized.id } },
+      select: { id: true },
+    });
+    const isNew = !existing;
     await upsertComment(tx, workItem.id, normalized);
+    if (!isNew) return;
+
+    const authorExternalId = normalized.actor ?? null;
+    const recipients = workItem.assigneeIds.filter((id) => id !== authorExternalId);
+    if (recipients.length === 0) return;
+    const mappings = await resolvePlaneAssignees(tx, workItem.project.workspaceId, recipients);
+    if (mappings.size === 0) return;
+
+    let authorDisplayName: string | null = null;
+    if (authorExternalId) {
+      const author = await tx.planeMember.findFirst({
+        where: { workspaceId: workItem.project.workspaceId, externalId: authorExternalId },
+        select: { displayName: true },
+      });
+      authorDisplayName = author?.displayName ?? null;
+    }
+
+    const body =
+      typeof normalized.comment_stripped === "string" && normalized.comment_stripped.length > 0
+        ? normalized.comment_stripped
+        : typeof normalized.comment_html === "string"
+          ? normalized.comment_html.replace(/<[^>]+>/g, "")
+          : "";
+    const bodyExcerpt = body.trim().slice(0, 200);
+
+    const integration = await tx.integration.findUnique({
+      where: { id: integrationId },
+      select: { config: true },
+    });
+    const planeUrl = integration
+      ? buildPlaneWorkItemUrl(integration.config, workItem.project.externalId, workItem.externalId)
+      : null;
+
+    await notifyPlaneCommentPosted(tx, {
+      platformUserIds: Array.from(mappings.values()),
+      workItem: {
+        localId: workItem.id,
+        externalId: workItem.externalId,
+        sequenceId: workItem.sequenceId,
+        name: workItem.name,
+      },
+      project: {
+        externalId: workItem.project.externalId,
+        identifier: workItem.project.identifier,
+        name: workItem.project.name,
+      },
+      authorDisplayName,
+      bodyExcerpt,
+      planeUrl,
+    });
   });
 }
 

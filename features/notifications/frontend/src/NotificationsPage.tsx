@@ -46,6 +46,21 @@ function summary(n: NotificationDto): string {
       return "Added to team";
     case "team.member.removed":
       return "Removed from team";
+    case "plane.work_item.assigned": {
+      const p = n.payload as Record<string, unknown>;
+      const id = typeof p.projectIdentifier === "string" ? p.projectIdentifier : "";
+      const seq = typeof p.sequenceId === "number" ? p.sequenceId : "";
+      const name = typeof p.workItemName === "string" ? p.workItemName : "a work item";
+      return `Assigned to ${id}-${seq}: ${name}`;
+    }
+    case "plane.comment.posted": {
+      const p = n.payload as Record<string, unknown>;
+      const id = typeof p.projectIdentifier === "string" ? p.projectIdentifier : "";
+      const seq = typeof p.sequenceId === "number" ? p.sequenceId : "";
+      const name = typeof p.workItemName === "string" ? p.workItemName : "a work item";
+      const author = typeof p.authorDisplayName === "string" ? p.authorDisplayName : "Someone";
+      return `${author} commented on ${id}-${seq}: ${name}`;
+    }
     default:
       return n.kind;
   }
