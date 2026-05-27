@@ -2,7 +2,7 @@ import { Router, type Request } from "express";
 import { Prisma, prisma } from "@internal/db";
 import type { UserTask } from "@internal/db";
 import type { UserTaskDto } from "@internal/shared-types";
-import { SEED_TASKS } from "./seeds";
+import { SEED_TASKS, type SeedTask } from "./seeds";
 
 export const onboardingRouter: Router = Router();
 
@@ -40,14 +40,29 @@ async function audit(
   }
 }
 
-/** Seed missing default tasks for the user. */
+async function effectiveSeedTasks(): Promise<SeedTask[]> {
+  const checks: Record<string, () => Promise<boolean>> = {
+    "plane-integration-exists": async () => {
+      const count = await prisma.integration.count({ where: { kind: "plane", enabled: true } });
+      return count > 0;
+    },
+  };
+  const results = new Map<string, boolean>();
+  for (const task of SEED_TASKS) {
+    if (!task.condition) continue;
+    if (!results.has(task.condition)) {
+      results.set(task.condition, await checks[task.condition]());
+    }
+  }
+  return SEED_TASKS.filter((t) => !t.condition || results.get(t.condition));
+}
+
 async function ensureSeeded(userId: string): Promise<void> {
-  // Skip the round-trip if the user already has any rows. Keeps the hot path
-  // (returning user) at one query instead of two.
+  const tasks = await effectiveSeedTasks();
   const existing = await prisma.userTask.count({ where: { userId } });
-  if (existing >= SEED_TASKS.length) return;
+  if (existing >= tasks.length) return;
   await prisma.userTask.createMany({
-    data: SEED_TASKS.map((s) => ({
+    data: tasks.map((s) => ({
       userId,
       kind: s.kind,
       payload: s.payload as Prisma.InputJsonValue,
@@ -56,28 +71,30 @@ async function ensureSeeded(userId: string): Promise<void> {
   });
 }
 
-/** Auto-complete tasks whose completion can be derived from other system state. */
 async function applyAutoCompletions(req: Request, userId: string): Promise<void> {
   const pending = await prisma.userTask.findMany({
-    where: { userId, status: "pending", kind: { in: ["team-join"] } },
+    where: { userId, status: "pending", kind: { in: ["team-join", "connect-plane"] } },
   });
   if (pending.length === 0) return;
 
   for (const task of pending) {
+    let shouldComplete = false;
     if (task.kind === "team-join") {
-      const memberships = await prisma.teamMembership.count({ where: { userId } });
-      if (memberships > 0) {
-        const updated = await prisma.userTask.update({
-          where: { id: task.id },
-          data: { status: "completed", completedAt: new Date() },
-        });
-        await audit(
-          req,
-          "user.task.completed",
-          { taskId: updated.id, kind: updated.kind, auto: true },
-          { kind: "UserTask", id: updated.id },
-        );
-      }
+      shouldComplete = (await prisma.teamMembership.count({ where: { userId } })) > 0;
+    } else if (task.kind === "connect-plane") {
+      shouldComplete = (await prisma.planeOAuthToken.count({ where: { userId } })) > 0;
+    }
+    if (shouldComplete) {
+      const updated = await prisma.userTask.update({
+        where: { id: task.id },
+        data: { status: "completed", completedAt: new Date() },
+      });
+      await audit(
+        req,
+        "user.task.completed",
+        { taskId: updated.id, kind: updated.kind, auto: true },
+        { kind: "UserTask", id: updated.id },
+      );
     }
   }
 }

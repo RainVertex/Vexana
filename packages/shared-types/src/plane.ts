@@ -153,3 +153,9 @@ export interface PlaneUserMappingDto {
   user: { id: ID; displayName: string; email: string; avatarUrl: string | null };
   createdAt: ISODateString;
 }
+
+export interface PlaneOAuthStatusDto {
+  connected: boolean;
+  planeEmail: string | null;
+  integrationId: ID | null;
+}

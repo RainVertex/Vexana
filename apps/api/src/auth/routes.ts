@@ -241,14 +241,39 @@ authRouter.get("/me", authMeLimiter, requireAuth, (req, res) => {
 });
 
 const PLANE_STATE_COOKIE = "mep_plane_oauth_state";
+const PLANE_RETURN_COOKIE = "mep_plane_oauth_return";
 
-authRouter.get("/plane", requireAuth, (req, res) => {
+authRouter.get("/plane", requireAuth, async (req, res) => {
   const env = loadEnv();
   if (!env.plane) {
     res.status(503).json({ error: "Plane OAuth not configured" });
     return;
   }
-  const integrationId = typeof req.query.integrationId === "string" ? req.query.integrationId : "";
+  let integrationId = typeof req.query.integrationId === "string" ? req.query.integrationId : "";
+  if (!integrationId) {
+    const integration = await prisma.integration.findFirst({
+      where: { kind: "plane", enabled: true },
+      select: { id: true },
+    });
+    if (!integration) {
+      res.redirect(`${env.webOrigin}/settings?error=no_plane_integration`);
+      return;
+    }
+    integrationId = integration.id;
+  }
+
+  const returnUrl = typeof req.query.returnUrl === "string" ? req.query.returnUrl : "";
+  if (returnUrl && returnUrl.startsWith("/")) {
+    res.cookie(PLANE_RETURN_COOKIE, returnUrl, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: env.nodeEnv === "production",
+      path: "/auth",
+      maxAge: 10 * 60 * 1000,
+      signed: true,
+    });
+  }
+
   const state = `${randomBytes(16).toString("base64url")}:${integrationId}`;
   res.cookie(PLANE_STATE_COOKIE, state, {
     httpOnly: true,
@@ -278,7 +303,9 @@ authRouter.get("/plane/callback", requireAuth, async (req, res, next) => {
     const code = typeof req.query.code === "string" ? req.query.code : "";
     const state = typeof req.query.state === "string" ? req.query.state : "";
     const expectedState = req.signedCookies?.[PLANE_STATE_COOKIE] ?? "";
+    const returnUrl = req.signedCookies?.[PLANE_RETURN_COOKIE] ?? "";
     res.clearCookie(PLANE_STATE_COOKIE, { path: "/auth" });
+    res.clearCookie(PLANE_RETURN_COOKIE, { path: "/auth" });
 
     if (!code || !state || !expectedState || state !== expectedState) {
       res.redirect(`${env.webOrigin}/workspace?error=bad_oauth_state`);
@@ -340,7 +367,8 @@ authRouter.get("/plane/callback", requireAuth, async (req, res, next) => {
       },
     });
 
-    res.redirect(`${env.webOrigin}/workspace?plane_connected=true`);
+    const dest = returnUrl && returnUrl.startsWith("/") ? returnUrl : "/workspace";
+    res.redirect(`${env.webOrigin}${dest}${dest.includes("?") ? "&" : "?"}plane_connected=true`);
   } catch (err) {
     next(err);
   }

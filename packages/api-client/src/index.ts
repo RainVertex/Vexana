@@ -34,6 +34,7 @@ import type {
   PlaneCommentDto,
   PlaneCycleDto,
   PlaneIntegrationStatusDto,
+  PlaneOAuthStatusDto,
   PlaneLabelDto,
   PlaneMemberDto,
   PlaneModuleDto,
@@ -1000,6 +1001,19 @@ export function createApiClient(options: ApiClientOptions = {}) {
         request<ListResponse<PlaneCommentDto>>(
           `/api/workspace/work-items/${encodeURIComponent(workItemId)}/comments`,
         ),
+      postComment: (workItemId: string, body: { comment: string }) =>
+        request<PlaneCommentDto>(
+          `/api/workspace/work-items/${encodeURIComponent(workItemId)}/comments`,
+          { method: "POST", body: JSON.stringify(body) },
+        ),
+      updateWorkItem: (workItemId: string, body: { stateId?: string }) =>
+        request<{ ok: true }>(`/api/workspace/work-items/${encodeURIComponent(workItemId)}`, {
+          method: "PATCH",
+          body: JSON.stringify(body),
+        }),
+      getMyPlaneOAuth: () => request<PlaneOAuthStatusDto>(`/api/workspace/me/plane-oauth`),
+      disconnectPlaneOAuth: () =>
+        request<void>(`/api/workspace/me/plane-oauth`, { method: "DELETE" }),
     },
 
     scaffolder: {

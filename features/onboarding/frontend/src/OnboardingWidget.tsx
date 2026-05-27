@@ -4,15 +4,12 @@ import { useApi } from "@internal/api-client/react";
 import type { UserTaskDto } from "@internal/shared-types";
 
 interface TaskPresenter {
-  /** Card title shown in the widget. */
   title: string;
-  /** One-line helper text. */
   description: string;
-  /** Anchor for the primary CTA. */
   ctaHref: string;
   ctaLabel: string;
-  /** True when completion is computed from system state (e.g. */
   autoCompletes: boolean;
+  external?: boolean;
 }
 
 /** Map a task `kind` to its UI presentation. */
@@ -27,10 +24,18 @@ const PRESENTERS: Record<string, TaskPresenter> = {
   },
   "team-join": {
     title: "Join or create a team",
-    description: "Find your team — or request a new one if it doesn't exist yet.",
+    description: "Find your team or request a new one if it doesn't exist yet.",
     ctaHref: "/teams",
     ctaLabel: "Find a team",
     autoCompletes: true,
+  },
+  "connect-plane": {
+    title: "Connect your Plane account",
+    description: "Link your Plane account so work items are attributed to you.",
+    ctaHref: "/auth/plane",
+    ctaLabel: "Connect to Plane",
+    autoCompletes: true,
+    external: true,
   },
 };
 
@@ -139,12 +144,21 @@ export function OnboardingWidget() {
                 )}
                 {!done && (
                   <div className="mt-2 flex items-center gap-3">
-                    <Link
-                      to={p.ctaHref}
-                      className="text-sm font-medium text-app-primary hover:text-app-primary-hover"
-                    >
-                      {p.ctaLabel} →
-                    </Link>
+                    {p.external ? (
+                      <a
+                        href={p.ctaHref}
+                        className="text-sm font-medium text-app-primary hover:text-app-primary-hover"
+                      >
+                        {p.ctaLabel} →
+                      </a>
+                    ) : (
+                      <Link
+                        to={p.ctaHref}
+                        className="text-sm font-medium text-app-primary hover:text-app-primary-hover"
+                      >
+                        {p.ctaLabel} →
+                      </Link>
+                    )}
                     {!p.autoCompletes && (
                       <button
                         type="button"

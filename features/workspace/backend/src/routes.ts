@@ -4,7 +4,8 @@
 // createServer.ts via /api).
 
 import { Router } from "express";
-import { prisma } from "@internal/db";
+import { prisma, decryptSecret } from "@internal/db";
+import { createPlaneClient, PlaneApiError } from "@internal/plane-client";
 import type {
   MyWorkDto,
   PlaneCommentDto,
@@ -13,13 +14,15 @@ import type {
   PlaneLabelDto,
   PlaneMemberDto,
   PlaneModuleDto,
+  PlaneOAuthStatusDto,
   PlaneProjectDto,
   PlaneStateDto,
   PlaneUserMappingDto,
   PlaneWorkItemDetailDto,
   PlaneWorkItemSummaryDto,
 } from "@internal/shared-types";
-import { fullSync } from "./sync/engine";
+import { fullSync, clientForIntegration, workspaceSlugOf } from "./sync/engine";
+import { upsertComment } from "./sync/upsert";
 
 export const workspaceRoutes: Router = Router();
 
@@ -447,6 +450,171 @@ workspaceRoutes.get("/work-items/:id/comments", async (req, res) => {
   });
 });
 
+// -------- Write-through to Plane ---------------------------------------------
+
+workspaceRoutes.post("/work-items/:id/comments", async (req, res) => {
+  if (!req.user) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+  const comment = typeof req.body?.comment === "string" ? req.body.comment.trim() : "";
+  if (!comment) {
+    res.status(400).json({ error: "comment is required" });
+    return;
+  }
+
+  const workItem = await prisma.planeWorkItem.findUnique({
+    where: { id: req.params.id },
+    select: {
+      externalId: true,
+      project: {
+        select: { externalId: true, integrationId: true, workspaceId: true },
+      },
+    },
+  });
+  if (!workItem) {
+    res.status(404).json({ error: "Work item not found" });
+    return;
+  }
+  const integration = await prisma.integration.findUnique({
+    where: { id: workItem.project.integrationId },
+    select: { config: true, enabled: true },
+  });
+  if (!integration || !integration.enabled) {
+    res.status(400).json({ error: "Integration is disabled" });
+    return;
+  }
+
+  const slug = workspaceSlugOf(integration.config);
+  const cfg = (integration.config ?? {}) as Record<string, unknown>;
+  const baseUrl = typeof cfg.baseUrl === "string" ? cfg.baseUrl : "";
+
+  const oauthToken = await prisma.planeOAuthToken.findUnique({
+    where: {
+      userId_integrationId: {
+        userId: req.user.id,
+        integrationId: workItem.project.integrationId,
+      },
+    },
+    select: { encryptedAccessToken: true },
+  });
+
+  let commentHtml = `<p>${escapeHtml(comment)}</p>`;
+  const client = oauthToken
+    ? createPlaneClient({
+        baseUrl,
+        apiToken: decryptSecret(oauthToken.encryptedAccessToken),
+        authMode: "bearer",
+      })
+    : clientForIntegration(integration.config);
+  if (!oauthToken) {
+    commentHtml = `<p><strong>${escapeHtml(req.user.displayName)}:</strong> ${escapeHtml(comment)}</p>`;
+  }
+
+  try {
+    const created = await client.createComment(
+      slug,
+      workItem.project.externalId,
+      workItem.externalId,
+      { comment_html: commentHtml },
+    );
+    const persisted = await prisma.$transaction((tx) => upsertComment(tx, req.params.id, created));
+    const authorMap = await hydrateCommentAuthors(workItem.project.workspaceId, [
+      { authorExternalId: created.actor_detail?.id ?? created.actor ?? null },
+    ]);
+    const row = await prisma.planeComment.findUniqueOrThrow({ where: { id: persisted.id } });
+    const authorId = row.authorExternalId;
+    res.json(toCommentDto(row, authorId ? (authorMap.get(authorId) ?? null) : null));
+  } catch (err) {
+    if (err instanceof PlaneApiError) {
+      res.status(err.status).json({ error: `Plane: ${err.body.slice(0, 200)}` });
+      return;
+    }
+    throw err;
+  }
+});
+
+workspaceRoutes.patch("/work-items/:id", async (req, res) => {
+  if (!req.user) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+  const stateId = typeof req.body?.stateId === "string" ? req.body.stateId : undefined;
+  if (!stateId) {
+    res.status(400).json({ error: "stateId is required" });
+    return;
+  }
+
+  const state = await prisma.planeState.findUnique({
+    where: { id: stateId },
+    select: { externalId: true, projectId: true },
+  });
+  if (!state) {
+    res.status(404).json({ error: "State not found" });
+    return;
+  }
+
+  const workItem = await prisma.planeWorkItem.findUnique({
+    where: { id: req.params.id },
+    select: {
+      externalId: true,
+      project: {
+        select: { externalId: true, integrationId: true },
+      },
+    },
+  });
+  if (!workItem) {
+    res.status(404).json({ error: "Work item not found" });
+    return;
+  }
+  const integration = await prisma.integration.findUnique({
+    where: { id: workItem.project.integrationId },
+    select: { config: true, enabled: true },
+  });
+  if (!integration || !integration.enabled) {
+    res.status(400).json({ error: "Integration is disabled" });
+    return;
+  }
+
+  const slug = workspaceSlugOf(integration.config);
+  const cfg = (integration.config ?? {}) as Record<string, unknown>;
+  const baseUrl = typeof cfg.baseUrl === "string" ? cfg.baseUrl : "";
+
+  const oauthToken = await prisma.planeOAuthToken.findUnique({
+    where: {
+      userId_integrationId: {
+        userId: req.user.id,
+        integrationId: workItem.project.integrationId,
+      },
+    },
+    select: { encryptedAccessToken: true },
+  });
+  const client = oauthToken
+    ? createPlaneClient({
+        baseUrl,
+        apiToken: decryptSecret(oauthToken.encryptedAccessToken),
+        authMode: "bearer",
+      })
+    : clientForIntegration(integration.config);
+
+  try {
+    await client.updateWorkItem(slug, workItem.project.externalId, workItem.externalId, {
+      state: state.externalId,
+    });
+    await prisma.planeWorkItem.update({
+      where: { id: req.params.id },
+      data: { stateId },
+    });
+    res.json({ ok: true });
+  } catch (err) {
+    if (err instanceof PlaneApiError) {
+      res.status(err.status).json({ error: `Plane: ${err.body.slice(0, 200)}` });
+      return;
+    }
+    throw err;
+  }
+});
+
 // -------- My-work aggregator -------------------------------------------------
 
 workspaceRoutes.get("/my-work", async (req, res) => {
@@ -547,6 +715,60 @@ workspaceRoutes.get("/my-work", async (req, res) => {
   } satisfies MyWorkDto);
 });
 
+// -------- Plane OAuth (per-user) ---------------------------------------------
+
+workspaceRoutes.get("/me/plane-oauth", async (req, res) => {
+  if (!req.user) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+  const integration = await prisma.integration.findFirst({
+    where: { kind: "plane", enabled: true },
+    select: { id: true },
+  });
+  if (!integration) {
+    res.json({
+      connected: false,
+      planeEmail: null,
+      integrationId: null,
+    } satisfies PlaneOAuthStatusDto);
+    return;
+  }
+  const token = await prisma.planeOAuthToken.findUnique({
+    where: { userId_integrationId: { userId: req.user.id, integrationId: integration.id } },
+    select: { planeEmail: true },
+  });
+  res.json({
+    connected: !!token,
+    planeEmail: token?.planeEmail ?? null,
+    integrationId: integration.id,
+  } satisfies PlaneOAuthStatusDto);
+});
+
+workspaceRoutes.delete("/me/plane-oauth", async (req, res) => {
+  if (!req.user) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+  const integration = await prisma.integration.findFirst({
+    where: { kind: "plane", enabled: true },
+    select: { id: true },
+  });
+  if (!integration) {
+    res.status(404).json({ error: "No Plane integration configured" });
+    return;
+  }
+  try {
+    await prisma.planeOAuthToken.delete({
+      where: { userId_integrationId: { userId: req.user.id, integrationId: integration.id } },
+    });
+  } catch (err: unknown) {
+    const code = (err as { code?: string }).code;
+    if (code !== "P2025") throw err;
+  }
+  res.status(204).end();
+});
+
 // -------- Mappers ------------------------------------------------------------
 
 function toProjectDto(p: {
@@ -629,6 +851,15 @@ function toWorkItemSummary(w: WorkItemRow): PlaneWorkItemSummaryDto {
     externalUpdatedAt: w.externalUpdatedAt.toISOString(),
     project: w.project ?? null,
   };
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 type CommentAuthor = { displayName: string; email: string; avatarUrl: string | null };
