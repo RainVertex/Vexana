@@ -17,8 +17,9 @@ model Integration {
   config          Json
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
-  planeWorkspaces PlaneWorkspace[]
-  planeSyncCursor PlaneSyncCursor?
+  planeWorkspaces  PlaneWorkspace[]
+  planeSyncCursor  PlaneSyncCursor?
+  planeOAuthTokens PlaneOAuthToken[]
   // Team requests asking to mirror their team to this GitHub installation
   // when approved. Approve flow looks up accountLogin from `config`.
   teamRequests    TeamRequest[]

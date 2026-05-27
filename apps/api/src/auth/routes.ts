@@ -239,3 +239,109 @@ authRouter.post("/logout", authLogoutLimiter, async (req, res, next) => {
 authRouter.get("/me", authMeLimiter, requireAuth, (req, res) => {
   res.json(toCurrentUser(req.user!));
 });
+
+const PLANE_STATE_COOKIE = "mep_plane_oauth_state";
+
+authRouter.get("/plane", requireAuth, (req, res) => {
+  const env = loadEnv();
+  if (!env.plane) {
+    res.status(503).json({ error: "Plane OAuth not configured" });
+    return;
+  }
+  const integrationId = typeof req.query.integrationId === "string" ? req.query.integrationId : "";
+  const state = `${randomBytes(16).toString("base64url")}:${integrationId}`;
+  res.cookie(PLANE_STATE_COOKIE, state, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: env.nodeEnv === "production",
+    path: "/auth",
+    maxAge: 10 * 60 * 1000,
+    signed: true,
+  });
+  const params = new URLSearchParams({
+    client_id: env.plane.oauthClientId,
+    response_type: "code",
+    redirect_uri: `${env.webOrigin}/auth/plane/callback`,
+    scope: "read write",
+    state,
+  });
+  res.redirect(`${env.plane.baseUrl}/o/authorize?${params.toString()}`);
+});
+
+authRouter.get("/plane/callback", requireAuth, async (req, res, next) => {
+  try {
+    const env = loadEnv();
+    if (!env.plane) {
+      res.status(503).json({ error: "Plane OAuth not configured" });
+      return;
+    }
+    const code = typeof req.query.code === "string" ? req.query.code : "";
+    const state = typeof req.query.state === "string" ? req.query.state : "";
+    const expectedState = req.signedCookies?.[PLANE_STATE_COOKIE] ?? "";
+    res.clearCookie(PLANE_STATE_COOKIE, { path: "/auth" });
+
+    if (!code || !state || !expectedState || state !== expectedState) {
+      res.redirect(`${env.webOrigin}/workspace?error=bad_oauth_state`);
+      return;
+    }
+
+    const integrationId = state.includes(":") ? state.split(":").slice(1).join(":") : "";
+
+    const tokenRes = await fetch(`${env.plane.apiUrl}/auth/o/token/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        grant_type: "authorization_code",
+        code,
+        redirect_uri: `${env.webOrigin}/auth/plane/callback`,
+        client_id: env.plane.oauthClientId,
+        client_secret: env.plane.oauthClientSecret,
+      }),
+    });
+    if (!tokenRes.ok) {
+      const body = await tokenRes.text();
+      logger.error({ status: tokenRes.status, body }, "Plane token exchange failed");
+      res.redirect(`${env.webOrigin}/workspace?error=plane_token_exchange_failed`);
+      return;
+    }
+    const tokens = (await tokenRes.json()) as {
+      access_token: string;
+      refresh_token: string;
+      expires_in: number;
+    };
+
+    const infoRes = await fetch(`${env.plane.apiUrl}/auth/o/app-installation/`, {
+      headers: { Authorization: `Bearer ${tokens.access_token}` },
+    });
+    const info = infoRes.ok
+      ? ((await infoRes.json()) as { user_id: string; user_email: string })
+      : { user_id: "", user_email: "" };
+
+    const { encryptSecret } = await import("@internal/db");
+    await prisma.planeOAuthToken.upsert({
+      where: {
+        userId_integrationId: { userId: req.user!.id, integrationId },
+      },
+      create: {
+        userId: req.user!.id,
+        integrationId,
+        encryptedAccessToken: encryptSecret(tokens.access_token),
+        encryptedRefreshToken: encryptSecret(tokens.refresh_token),
+        planeUserId: info.user_id,
+        planeEmail: info.user_email,
+        expiresAt: new Date(Date.now() + tokens.expires_in * 1000),
+      },
+      update: {
+        encryptedAccessToken: encryptSecret(tokens.access_token),
+        encryptedRefreshToken: encryptSecret(tokens.refresh_token),
+        planeUserId: info.user_id,
+        planeEmail: info.user_email,
+        expiresAt: new Date(Date.now() + tokens.expires_in * 1000),
+      },
+    });
+
+    res.redirect(`${env.webOrigin}/workspace?plane_connected=true`);
+  } catch (err) {
+    next(err);
+  }
+});

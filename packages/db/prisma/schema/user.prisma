@@ -44,6 +44,7 @@ model User {
   starredEntities                 StarredEntity[]
   notifications                   Notification[]
   planeUserMappings               PlaneUserMapping[]
+  planeOAuthTokens                PlaneOAuthToken[]
   webhookSubscriptions            WebhookSubscription[]
   teamRequestsSubmitted           TeamRequest[]           @relation("TeamRequestRequester")
   teamRequestsReviewed            TeamRequest[]           @relation("TeamRequestReviewer")
