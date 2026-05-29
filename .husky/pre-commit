@@ -15,7 +15,7 @@ ESLINT_FILES=$(echo "$STAGED" | grep -E '\.(ts|tsx|js|jsx)$' || true)
 if [ -z "$ESLINT_FILES" ]; then
   echo "No files to lint"
 else
-  echo "$ESLINT_FILES" | xargs -I {} yarn eslint --fix "{}" || exit 1
-  echo "$ESLINT_FILES" | xargs -I {} git add "{}"
+  echo "$ESLINT_FILES" | xargs yarn eslint --fix || exit 1
+  echo "$ESLINT_FILES" | xargs git add
   echo "+-+-+ ESLINT DONE +-+-+"
 fi
