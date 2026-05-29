@@ -1,7 +1,7 @@
 // Wire types for the Platform Assistant chatbot. Shared between the backend
 // streaming executor (which emits SSE events) and the frontend chatStream
 // hook + components (which render them). Treat this file as the contract for
-// /api/chat/conversations/:id/messages — changes here ripple to both sides.
+// /api/chat/conversations/:id/messages, changes here ripple to both sides.
 
 type ID = string;
 type ISODateString = string;
@@ -34,7 +34,7 @@ export interface ChatConversationSummaryDto {
   title: string;
   createdAt: ISODateString;
   updatedAt: ISODateString;
-  /** Last assistant message timestamp; used by the widget unread badge. */
+  /** Last assistant message timestamp. used by the widget unread badge. */
   lastAssistantAt: ISODateString | null;
 }
 
@@ -42,11 +42,9 @@ export interface ChatConversationDetailDto extends ChatConversationSummaryDto {
   messages: ChatMessageDto[];
 }
 
-// -----------------------------------------------------------------------------
 // SSE event schema
-// -----------------------------------------------------------------------------
 // Each frame on the wire: `event: <type>\ndata: <json>\n\n`. The discriminator
-// is the SSE event name; the data payload is the JSON shape below.
+// is the SSE event name. the data payload is the JSON shape below.
 
 export interface ChatTokenEvent {
   text: string;

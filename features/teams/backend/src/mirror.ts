@@ -1,8 +1,6 @@
 import { octokitForInstallation } from "@feature/integrations-backend";
 
-// =============================================================================
 // GitHub mirror
-// =============================================================================
 //
 // Approve flow uses createGithubTeam BEFORE writing any platform-side rows.
 // On failure the approval returns a 502 and no DB writes happen. If the
@@ -22,13 +20,13 @@ export class GithubMirrorError extends Error {
 export interface CreateGithubTeamInput {
   installationId: number;
   orgLogin: string;
-  /** Platform slug — passed as `name` to GitHub since GitHub re-derives the slug from the name; */
+  /** Platform slug, passed as `name` to GitHub since GitHub re-derives the slug from the name. */
   name: string;
   description: string | null;
 }
 
 export interface CreateGithubTeamResult {
-  /** GitHub team node_id — stable across renames; what we stamp on Team.externalId. */
+  /** GitHub team node_id, stable across renames. what we stamp on Team.externalId. */
   nodeId: string;
   /** GitHub-assigned slug (may differ from input name's slugification). */
   githubSlug: string;

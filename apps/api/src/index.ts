@@ -35,7 +35,7 @@ async function bootstrap() {
 
   // Boot-time drift check: reconciles TemplateHashSnapshot and runs a
   // targeted sweep for templates whose content hash changed since last boot.
-  // Best-effort — failure here should not block the API coming up.
+  // Best-effort, failure here should not block the API coming up.
   runBootDriftCheck(
     { liveRepoRoot: resolve(__dirname, "../../..") },
     logger.child({ jobName: "scaffolder.bootDriftCheck" }),

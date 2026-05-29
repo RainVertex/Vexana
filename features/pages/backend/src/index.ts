@@ -40,7 +40,7 @@ async function audit(
       },
     });
   } catch {
-    // Audit is best-effort; don't fail the user request on audit errors.
+    // Audit is best-effort. don't fail the user request on audit errors.
   }
 }
 
@@ -303,7 +303,7 @@ pagesRouter.patch("/:id", async (req, res, next) => {
       fields.push("icon");
     }
     if (parsed.data.url !== undefined) {
-      // LINK pages must keep a non-null url; DASHBOARD pages must stay null.
+      // LINK pages must keep a non-null url. DASHBOARD pages must stay null.
       if (existing.type === "LINK" && (parsed.data.url === null || parsed.data.url === "")) {
         res.status(400).json({ error: "url is required for LINK pages" });
         return;
@@ -448,7 +448,7 @@ pagesRouter.post("/:id/move", async (req, res, next) => {
         res.status(400).json({ error: "Parent scope does not match" });
         return;
       }
-      // Walk ancestors of new parent — if we encounter target.id, it's a cycle.
+      // Walk ancestors of new parent, if we encounter target.id, it's a cycle.
       let cursor: { id: string; parentId: string | null } | null = parent;
       while (cursor && cursor.parentId) {
         if (cursor.parentId === target.id) {

@@ -17,7 +17,7 @@ import {
 // Platform Assistant agent boots.
 //
 // Reads + chat-core tools always register. Write tools register only when
-// CHAT_WRITE_TOOLS_ENABLED is unset or "true" — flip to "false" during
+// CHAT_WRITE_TOOLS_ENABLED is unset or "true", flip to "false" during
 // rollout if local-model write quality is poor.
 
 export const CHAT_READ_TOOLS: RegisteredTool[] = [

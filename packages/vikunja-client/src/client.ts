@@ -123,7 +123,7 @@ export class VikunjaClient {
     return this.request<VikunjaView[]>("GET", `/projects/${projectId}/views`);
   }
 
-  // Vikunja v2's /views/:view/tasks endpoint returns buckets with tasks nested inside,
+  // Vikunja v2's /views/:view/tasks endpoint returns buckets with tasks nested inside
   // not a flat task list. This is the accurate source for kanban task-bucket assignment.
   async listKanbanBuckets(projectId: number, viewId: number): Promise<VikunjaBucket[]> {
     return this.request<VikunjaBucket[]>("GET", `/projects/${projectId}/views/${viewId}/tasks`);

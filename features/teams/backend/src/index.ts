@@ -38,9 +38,7 @@ const slugSchema = z
   .max(64)
   .regex(/^[a-z0-9][a-z0-9-]*$/, "slug must be lowercase, digits and dashes");
 
-// ---------------------------------------------------------------------------
-// GET / — list (admin can include soft-deleted via ?includeDeleted=true)
-// ---------------------------------------------------------------------------
+// GET /, list (admin can include soft-deleted via ?includeDeleted=true)
 
 teamsRouter.get("/", async (req, res, next) => {
   try {
@@ -50,7 +48,7 @@ teamsRouter.get("/", async (req, res, next) => {
     // Org filter: by default, non-admin callers only see teams whose
     // accountLogin matches one of their UserOrgMembership rows. Admin and
     // ?allOrgs=1 bypass. (Per-team privacy filter still applies via the
-    // visibility helper; this is an additional org-level filter on top.)
+    // visibility helper. this is an additional org-level filter on top.)
     const where: Prisma.TeamWhereInput = includeDeleted ? {} : { deletedAt: null };
     if (!allOrgs && req.user && req.user.role !== "admin") {
       const memberships = await prisma.userOrgMembership.findMany({
@@ -76,9 +74,7 @@ teamsRouter.get("/", async (req, res, next) => {
   }
 });
 
-// ---------------------------------------------------------------------------
-// GET /:slug — detail
-// ---------------------------------------------------------------------------
+// GET /:slug, detail
 
 teamsRouter.get("/:slug", async (req, res, next) => {
   try {
@@ -94,9 +90,7 @@ teamsRouter.get("/:slug", async (req, res, next) => {
   }
 });
 
-// ---------------------------------------------------------------------------
-// POST / — admin direct-create (bypasses request flow)
-// ---------------------------------------------------------------------------
+// POST /, admin direct-create (bypasses request flow)
 
 const createSchema = z.object({
   slug: slugSchema,
@@ -175,9 +169,7 @@ teamsRouter.post("/", async (req, res, next) => {
   }
 });
 
-// ---------------------------------------------------------------------------
-// PATCH /:slug — admin or lead
-// ---------------------------------------------------------------------------
+// PATCH /:slug, admin or lead
 
 const patchSchema = z.object({
   slug: slugSchema.optional(),
@@ -242,9 +234,7 @@ teamsRouter.patch("/:slug", async (req, res, next) => {
   }
 });
 
-// ---------------------------------------------------------------------------
-// DELETE /:slug — admin soft-delete
-// ---------------------------------------------------------------------------
+// DELETE /:slug, admin soft-delete
 
 teamsRouter.delete("/:slug", async (req, res, next) => {
   try {
@@ -263,7 +253,7 @@ teamsRouter.delete("/:slug", async (req, res, next) => {
     });
     if (ownedEntities > 0) {
       // The 30-day grace can't recover if downstream catalog rows are still
-      // pointing at the team — they'd dangle. Force the actor to call
+      // pointing at the team, they'd dangle. Force the actor to call
       // /transfer-ownership first or detach the resources manually.
       res.status(409).json({
         error: "Team still owns resources",
@@ -291,9 +281,7 @@ teamsRouter.delete("/:slug", async (req, res, next) => {
   }
 });
 
-// ---------------------------------------------------------------------------
-// POST /:slug/restore — admin
-// ---------------------------------------------------------------------------
+// POST /:slug/restore, admin
 
 teamsRouter.post("/:slug/restore", async (req, res, next) => {
   try {
@@ -325,9 +313,7 @@ teamsRouter.post("/:slug/restore", async (req, res, next) => {
   }
 });
 
-// ---------------------------------------------------------------------------
-// POST /:slug/transfer-ownership — admin or lead
-// ---------------------------------------------------------------------------
+// POST /:slug/transfer-ownership, admin or lead
 
 const transferSchema = z.object({ targetTeamSlug: z.string().min(1) });
 
@@ -359,7 +345,7 @@ teamsRouter.post("/:slug/transfer-ownership", async (req, res, next) => {
 
     const result = await prisma.$transaction(async (tx) => {
       // Catalog ownership: re-key rows. Skip if the target already owns
-      // the entity to avoid PK collision; the source row still gets removed.
+      // the entity to avoid PK collision. the source row still gets removed.
       const fromOwnerships = await tx.catalogEntityOwner.findMany({
         where: { teamId: fromTeam.id },
         select: { entityId: true },
@@ -403,9 +389,7 @@ teamsRouter.post("/:slug/transfer-ownership", async (req, res, next) => {
   }
 });
 
-// ---------------------------------------------------------------------------
 // Membership endpoints
-// ---------------------------------------------------------------------------
 
 const addMemberSchema = z.object({
   userId: z.string().min(1),
@@ -577,7 +561,7 @@ teamsRouter.delete("/:slug/members/:userId", async (req, res, next) => {
 
     if (member.role === "lead" && selfInitiated && !isAdmin) {
       // The last lead leaving on their own would orphan the team. Force them
-      // to transfer the role first; admin override is allowed (e.g. cleanup
+      // to transfer the role first. admin override is allowed (e.g. cleanup
       // after an offboarding).
       const otherLead = await prisma.teamMembership.findFirst({
         where: { teamId: team.id, role: "lead", NOT: { userId: req.params.userId } },

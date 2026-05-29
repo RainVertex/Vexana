@@ -57,9 +57,7 @@ export { agentApprovalsRouter } from "./agentApprovalsRoutes";
 export const agentsRouter: Router = Router();
 export const llmRouter: Router = Router();
 
-// -----------------------------------------------------------------------------
 // Helpers
-// -----------------------------------------------------------------------------
 
 async function getCallerTeamIds(userId: string): Promise<string[]> {
   const memberships = await prisma.teamMembership.findMany({
@@ -79,7 +77,7 @@ async function isTeamLead(userId: string, teamId: string): Promise<boolean> {
 
 // Edit / delete permissions for an agent: admin, owner, or a lead of the
 // agent's owningTeamId. Run / read permissions stay open to any authenticated
-// user in Phase 1; Phase 3 tightens them.
+// user in Phase 1. Phase 3 tightens them.
 async function canManageAgent(
   agentId: string,
   user: { id: string; role: string },
@@ -100,9 +98,7 @@ async function canManageAgent(
   return { ok: false, agent };
 }
 
-// -----------------------------------------------------------------------------
 // LLM model registry
-// -----------------------------------------------------------------------------
 
 llmRouter.get("/models", async (_req, res) => {
   const models = await prisma.llmModel.findMany({
@@ -126,15 +122,13 @@ llmRouter.get("/models", async (_req, res) => {
   });
 });
 
-// -----------------------------------------------------------------------------
-// Agents — read
-// -----------------------------------------------------------------------------
+// Agents, read
 
 agentsRouter.get("/", async (req, res) => {
   if (!req.user) return res.status(401).json({ error: "Not authenticated" });
   const isAdmin = req.user.role === "admin";
 
-  // Scope: admin sees all; other callers see agents they own
+  // Scope: admin sees all. other callers see agents they own
   // (Agent.ownerUserId) plus agents owned by teams they lead. Members not in
   // any leadership role still see their personal agents.
   const ledTeams = isAdmin
@@ -201,9 +195,7 @@ agentsRouter.get("/:id/runs/:runId", async (req, res) => {
   res.json(run);
 });
 
-// -----------------------------------------------------------------------------
-// Agents — write
-// -----------------------------------------------------------------------------
+// Agents, write
 
 const createAgentSchema = z.object({
   name: z.string().min(1).max(120),
@@ -254,7 +246,7 @@ agentsRouter.post("/", async (req, res) => {
   }
 
   // Tiered creation rules (admin-only for role=admin or
-  // onBehalfOfRequired=false; team-led for owningTeamId; etc.). See
+  // onBehalfOfRequired=false. team-led for owningTeamId. etc.). See
   // creationGuard.ts for the full decision matrix.
   const guard = await checkAgentCreation({
     caller: { id: req.user.id, role: req.user.role },
@@ -269,7 +261,7 @@ agentsRouter.post("/", async (req, res) => {
   }
 
   // If a secretId was provided, sanity-check the caller can use it
-  // (own personal, lead-of team, or admin for org). Org rows are both-null;
+  // (own personal, lead-of team, or admin for org). Org rows are both-null.
   // we don't allow a non-admin to attach an org-scoped secret.
   if (data.secretId) {
     const sec = await prisma.secret.findUnique({
@@ -339,11 +331,9 @@ agentsRouter.post("/", async (req, res) => {
   res.status(201).json(created);
 });
 
-// ---------------------------------------------------------------------------
-// Lookup by backing User id — the sidebar's /agents/:userId pages address
+// Lookup by backing User id, the sidebar's /agents/:userId pages address
 // agents by their backing User row (since the wizard URLs treat agents as
 // users). Existing /:id routes by Agent.id continue to work for back-compat.
-// ---------------------------------------------------------------------------
 
 agentsRouter.get("/by-user/:userId", async (req, res) => {
   const agent = await prisma.agent.findUnique({
@@ -357,13 +347,11 @@ agentsRouter.get("/by-user/:userId", async (req, res) => {
   res.json(agent);
 });
 
-// ---------------------------------------------------------------------------
 // One-shot synchronous test run. Used by the wizard "Try it out" button to
 // verify an agent's configuration end-to-end before saving. Streaming is not
-// needed here — the wizard renders the final result + tool-call summary
-// once runAgent returns. For long-running production-style invocations,
+// needed here, the wizard renders the final result + tool-call summary
+// once runAgent returns. For long-running production-style invocations
 // callers continue to use POST /:id/run (async, returns runId).
-// ---------------------------------------------------------------------------
 
 const testAgentSchema = z.object({
   prompt: z.string().min(1).max(8000),
@@ -426,7 +414,7 @@ agentsRouter.patch("/:id", async (req, res) => {
     }
   }
   // Toggling an agent to autonomous matches the create-time admin gate in
-  // creationGuard.ts — the runtime blast radius is the same regardless of
+  // creationGuard.ts, the runtime blast radius is the same regardless of
   // when the bit gets flipped.
   if (data.onBehalfOfRequired === false && req.user.role !== "admin") {
     return res.status(403).json({ error: "Only admins can set onBehalfOfRequired=false" });
@@ -460,9 +448,7 @@ agentsRouter.delete("/:id", async (req, res) => {
   res.status(204).end();
 });
 
-// -----------------------------------------------------------------------------
-// Agents — run (async by default)
-// -----------------------------------------------------------------------------
+// Agents, run (async by default)
 
 const runAgentSchema = z.object({
   input: z.record(z.string(), z.unknown()).default({}),

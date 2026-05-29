@@ -15,7 +15,7 @@ import { ToolApprovalMatrix } from "./components/ToolApprovalMatrix";
 //
 // Read-mostly: each tab shows the current configuration plus targeted
 // edit affordances (e.g. an inline approval-matrix editor on the Tools
-// tab). Heavier edits route through the wizard's PATCH equivalent —
+// tab). Heavier edits route through the wizard's PATCH equivalent
 // not built in Pass 4 to keep scope manageable.
 //
 // The route is /agents/:userId, addressing the agent by its backing User
@@ -154,9 +154,7 @@ export function AgentDetailPage() {
   );
 }
 
-// ---------------------------------------------------------------------------
 // Tab panels
-// ---------------------------------------------------------------------------
 
 function OverviewTab({ agent }: { agent: Agent }) {
   return (
@@ -353,9 +351,7 @@ function RunsTab({ agent, api }: { agent: Agent; api: ReturnType<typeof useApi> 
   );
 }
 
-// ---------------------------------------------------------------------------
 // Chrome
-// ---------------------------------------------------------------------------
 
 function Tabs({ current, onChange }: { current: TabKey; onChange: (k: TabKey) => void }) {
   return (

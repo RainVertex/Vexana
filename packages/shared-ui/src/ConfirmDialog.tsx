@@ -17,7 +17,7 @@ export interface ConfirmDialogProps {
   onClose: () => void;
 }
 
-/** Themed replacement for window.confirm — use this for all confirmations. */
+/** Themed replacement for window.confirm, use this for all confirmations. */
 export function ConfirmDialog({
   open,
   title,

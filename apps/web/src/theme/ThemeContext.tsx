@@ -21,7 +21,7 @@ function readStoredTheme(): ThemeId {
     const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
     if (stored && VALID_THEME_IDS.has(stored as ThemeId)) return stored as ThemeId;
   } catch {
-    // localStorage blocked — fall through
+    // localStorage blocked, fall through
   }
   if (window.matchMedia?.("(prefers-color-scheme: dark)").matches) return "dark";
   return DEFAULT_THEME;

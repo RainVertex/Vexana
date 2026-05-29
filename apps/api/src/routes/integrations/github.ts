@@ -1,16 +1,16 @@
 // GitHub App install lifecycle. Two HTTP entry points:
 //
-//   GET /api/integrations/github/install
-//     Admin-initiated. Sets a signed cookie identifying the initiator,
-//     redirects to GitHub's install URL.
+// GET /api/integrations/github/install
+// Admin-initiated. Sets a signed cookie identifying the initiator
+// redirects to GitHub's install URL.
 //
-//   GET /api/integrations/github/callback
-//     GitHub redirects here after the admin completes installation.
-//     Verifies the cookie, fetches installation metadata, upserts an
-//     Integration row, redirects back to the web app.
+// GET /api/integrations/github/callback
+// GitHub redirects here after the admin completes installation.
+// Verifies the cookie, fetches installation metadata, upserts an
+// Integration row, redirects back to the web app.
 //
 // The webhook receiver lives separately at /integrations/github/app-webhook
-// because it must be mounted before express.json() — it's wired in
+// because it must be mounted before express.json(), it's wired in
 // createServer.ts.
 
 import { randomBytes } from "node:crypto";
@@ -95,7 +95,7 @@ githubIntegrationRouter.get("/callback", async (req, res, next) => {
     }
 
     if (setupAction !== "install" && setupAction !== "update") {
-      // "request" means an org member asked an org admin to install — nothing
+      // "request" means an org member asked an org admin to install, nothing
       // to record on our side.
       res.redirect(`${env.webOrigin}/integrations?info=github_install_pending`);
       return;
@@ -121,7 +121,7 @@ githubIntegrationRouter.get("/callback", async (req, res, next) => {
 
     // Fire-and-forget: bulk sync iterates every accessible repo and can take
     // minutes for large orgs. We respond to the admin immediately and let
-    // the sync run in the background. Errors are logged; the admin can
+    // the sync run in the background. Errors are logged. the admin can
     // re-trigger via /api/integrations/github/sync (Phase 3) if anything
     // didn't make it.
     void syncInstallation(installationId).then(
@@ -157,7 +157,7 @@ githubIntegrationRouter.get("/callback", async (req, res, next) => {
 
 // Manually trigger a differential reconciliation. Used by the admin "Resync"
 // button on the integrations page and by post-incident recovery scripts.
-// Always re-fetches from GitHub and applies the diff — never a full
+// Always re-fetches from GitHub and applies the diff, never a full
 // re-import. Idempotent and safe to run while webhooks are firing.
 githubIntegrationRouter.post("/:integrationId/resync", async (req, res, next) => {
   try {
@@ -205,7 +205,7 @@ githubIntegrationRouter.post("/:integrationId/resync", async (req, res, next) =>
 
 // Drift summary for the inline integrations-page badge. Returns just enough
 // for "is there drift?" + a short stale-team list. Detection itself is
-// backend-driven (webhook + weekly cron); this endpoint is read-only.
+// backend-driven (webhook + weekly cron). this endpoint is read-only.
 githubIntegrationRouter.get("/:integrationId/drift", async (req, res, next) => {
   try {
     if (!req.user || req.user.role !== "admin") {
@@ -284,11 +284,11 @@ githubIntegrationRouter.get("/:integrationId/drift", async (req, res, next) => {
 
 // Platform-side disconnect. Single endpoint that converges on the same end
 // state as the installation.deleted webhook:
-//   1. Revoke the App on GitHub (apps.deleteInstallation), tolerating 404.
-//   2. recordUninstallation → Integration.enabled = false.
-//   3. Stale every entity tied to the installation.
-//   4. Hard-delete the Integration row IFF no entities remain pointing at it
-//      (otherwise keep it, disabled, so audit lineage stays intact).
+// 1. Revoke the App on GitHub (apps.deleteInstallation), tolerating 404.
+// 2. recordUninstallation → Integration.enabled = false.
+// 3. Stale every entity tied to the installation.
+// 4. Hard-delete the Integration row IFF no entities remain pointing at it
+// (otherwise keep it, disabled, so audit lineage stays intact).
 githubIntegrationRouter.delete("/:integrationId", async (req, res, next) => {
   try {
     if (!req.user || req.user.role !== "admin") {
@@ -339,7 +339,7 @@ githubIntegrationRouter.delete("/:integrationId", async (req, res, next) => {
       if (status === 404 || status === 422) {
         githubRevoked = false;
       } else if (err instanceof GitHubAppNotConfiguredError) {
-        // App credentials are missing — we can't talk to GitHub. Still
+        // App credentials are missing, we can't talk to GitHub. Still
         // proceed with the platform-side cleanup since the user explicitly
         // asked to disconnect.
         logger.warn(
@@ -355,7 +355,7 @@ githubIntegrationRouter.delete("/:integrationId", async (req, res, next) => {
     await recordUninstallation(installationId);
 
     // 3. Revoke sessions of users whose only org coverage was this one, so
-    // they don't keep using a stale session. user.status is left untouched,
+    // they don't keep using a stale session. user.status is left untouched
     // verifyAnyOrgMembership at next sign-in is the authoritative gate.
     const accountLogin = typeof cfg.accountLogin === "string" ? cfg.accountLogin : "";
     const { affectedUserIds } = await revokeStrandedUserSessions(accountLogin);
@@ -364,7 +364,7 @@ githubIntegrationRouter.delete("/:integrationId", async (req, res, next) => {
     const staledCount = await staleEntitiesForInstallation(installationId);
 
     // 5. Drop the Integration row only if no entities point at it. Keeping
-    // the row preserves audit lineage; once all entities are hard-deleted
+    // the row preserves audit lineage. once all entities are hard-deleted
     // (e.g. via a future cleanup), the next disconnect attempt removes the
     // row too.
     const remaining = await prisma.catalogEntity.count({ where: { installationId } });

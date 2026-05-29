@@ -5,7 +5,7 @@ import { openaiCompatAdapter } from "./openaiCompat";
 import type { ProviderAdapter } from "./providerAdapter";
 
 // Adapter registry. selectAdapter(profile.modelProvider) is the only entry
-// point streamExecutor and runAgent need to know about — every provider
+// point streamExecutor and runAgent need to know about, every provider
 // returns an OpenAI-shaped AdapterResult so the rest of the loop is
 // model-agnostic.
 //

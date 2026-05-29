@@ -1,7 +1,7 @@
-// Shared helper for loading a Grafana integration row, decrypting its token,
+// Shared helper for loading a Grafana integration row, decrypting its token
 // and constructing a GrafanaClient. Used by both the Prometheus scrape job
 // (loops over every enabled integration) and the request-time observability
-// routes (logs / trace / dashboard-image; resolve a single integration).
+// routes (logs / trace / dashboard-image. resolve a single integration).
 
 import { decryptSecret, prisma } from "@internal/db";
 import { createGrafanaClient, type GrafanaClient } from "@internal/grafana-client";
@@ -84,7 +84,7 @@ export async function loadGrafanaIntegrations(): Promise<GrafanaIntegrationRecor
 /**
  * Load a specific Grafana integration by id, regardless of `enabled`. Returns
  * null if the row doesn't exist or isn't kind=grafana. Routes call this with
- * a request-supplied id; callers must check `record.enabled` themselves.
+ * a request-supplied id. callers must check `record.enabled` themselves.
  */
 export async function loadGrafanaIntegrationById(
   id: string,

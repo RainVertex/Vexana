@@ -54,7 +54,7 @@ export function RegisterEntityDialog({ open, onClose, onCreated }: Props) {
         if (opts.length > 0 && !accountLogin) setAccountLogin(opts[0].accountLogin);
       })
       .catch(() => setOrgs([]));
-    // accountLogin is intentionally not a dep here; we only initialize once
+    // accountLogin is intentionally not a dep here. we only initialize once
     // per open.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [api, open]);

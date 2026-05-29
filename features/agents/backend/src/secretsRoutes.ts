@@ -4,16 +4,16 @@ import { prisma } from "@internal/db";
 import type { SecretDto } from "@internal/shared-types";
 import { encryptSecret } from "./secrets";
 
-// /api/secrets — CRUD for encrypted-at-rest secrets used by agents to talk
+// /api/secrets, CRUD for encrypted-at-rest secrets used by agents to talk
 // to LLM providers (and potentially other secret-bearing integrations down
 // the line). Scope rules:
 //
-//   - personal: ownerUserId = caller, ownerTeamId = null
-//   - team:     ownerTeamId = a team the caller leads, ownerUserId = null
-//   - org:      both null, admin-only
+// - personal: ownerUserId = caller, ownerTeamId = null
+// - team: ownerTeamId = a team the caller leads, ownerUserId = null
+// - org: both null, admin-only
 //
-// The plaintext value never leaves this router — POST takes it, encrypts,
-// stores; GET returns metadata (never the value); DELETE removes the row.
+// The plaintext value never leaves this router, POST takes it, encrypts
+// stores. GET returns metadata (never the value). DELETE removes the row.
 // Decryption happens server-side only when an adapter needs the key
 // (resolveProviderApiKey in secrets.ts).
 
@@ -50,7 +50,7 @@ secretsRouter.get("/", async (req, res) => {
   const isAdmin = req.user.role === "admin";
 
   // Personal secrets: own. Team secrets: any team the caller belongs to
-  // (not just leads — a member can READ which keys exist; only leads can
+  // (not just leads, a member can READ which keys exist. only leads can
   // CREATE/DELETE). Org secrets: only visible to admins.
   const memberships = await prisma.teamMembership.findMany({
     where: { userId, team: { deletedAt: null } },
@@ -153,7 +153,7 @@ secretsRouter.delete("/:id", async (req, res) => {
   });
   if (!existing) return res.status(404).json({ error: "Secret not found" });
 
-  // Authorization mirrors the create rules: own secret, lead of its team,
+  // Authorization mirrors the create rules: own secret, lead of its team
   // or admin (the only role that can touch org-scoped secrets).
   let allowed = isAdmin || existing.ownerUserId === req.user.id;
   if (!allowed && existing.ownerTeamId) {

@@ -8,8 +8,8 @@ export interface Integration extends NamedEntity {
   config: Record<string, unknown>;
 }
 
-// Per-kind "safe view" of an integration's config — only fields safe to display.
-// Returned by GET /api/integrations/:id. Encrypted secrets are NEVER included;
+// Per-kind "safe view" of an integration's config, only fields safe to display.
+// Returned by GET /api/integrations/:id. Encrypted secrets are NEVER included.
 // `hasApiToken` / `hasWebhookSecret` flags let the UI show a "set / not set"
 // indicator without leaking the value.
 

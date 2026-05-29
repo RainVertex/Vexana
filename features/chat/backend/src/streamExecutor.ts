@@ -17,21 +17,12 @@ import { ThinkTagSplitter } from "./thinkTagSplitter";
 
 const PLATFORM_ASSISTANT_AGENT_ID = "seed-agent-assistant";
 
-// SSE-emitting sibling of runAgent. Same multi-turn tool loop, but:
-//
-// - Calls the OpenAI SDK with `stream: true` and forwards token deltas via
-//   onEvent("token") so the UI can show typing.
-// - Routes tool calls per the concurrency policy: reads run in parallel,
-//   *_prepare calls are serial per toolId in a turn, *_submit calls are
-//   always serial in a turn (extras are deferred to the next loop iteration).
-// - Persists conversation history to ChatMessage and audit/cost telemetry
-//   to AgentRun, mirroring runAgent's audit shape.
-// - Tracks `containsWrites` so admins can filter chat-driven writes in
-//   observability.
-//
-// The route handler wires onEvent to actual SSE frames; tests can pass any
-// callback. AbortSignal cooperates via ToolContext.signal — the loop checks
-// signal.aborted between turns and tools cooperate inside their handlers.
+// SSE sibling of runAgent. Streams token deltas via onEvent("token"), runs
+// the same multi-turn tool loop with policy-routed concurrency (parallel
+// reads, serial *_prepare per toolId, serial *_submit). Persists ChatMessage
+// + AgentRun mirroring runAgent's audit shape, tracks containsWrites for
+// admin filtering. Route handler maps onEvent to SSE frames, abort flows
+// through ToolContext.signal between turns and inside tool handlers.
 
 const MAX_HISTORY_PAIRS = 20;
 
@@ -66,7 +57,7 @@ export interface PrepareReturnEnvelope {
     sideEffects: string[];
     policyChecks: ChatPolicyCheck[];
   };
-  /** What the LLM sees — short handle + summary + checks only. */
+  /** What the LLM sees, short handle + summary + checks only. */
   forLlm: {
     handle: string;
     serverSummary: string;
@@ -138,9 +129,9 @@ export async function streamAgent(args: StreamAgentArgs): Promise<StreamAgentRes
 
   // The history loader currently strips tool calls (see its comment), so the
   // model loses the prv_NN handle from any prior *_prepare tool call across
-  // turns. Without this, when the user confirms in the next turn ("yes",
+  // turns. Without this, when the user confirms in the next turn ("yes"
   // "proceed"), the model has nothing to pass to *_submit and re-prepares
-  // instead — superseding the original preview and never actually submitting.
+  // instead, superseding the original preview and never actually submitting.
   // Re-inject any pending previews for this conversation as a system note so
   // the model knows which handles are available. Also build a per-prepare
   // toolId map for the dispatch-time guardrail that blocks re-prepare-after-
@@ -175,7 +166,7 @@ export async function streamAgent(args: StreamAgentArgs): Promise<StreamAgentRes
 
   const model = agent.llmModel as ResolvedModel;
 
-  // Resolve the provider API key once per turn — per-agent Secret override
+  // Resolve the provider API key once per turn, per-agent Secret override
   // takes precedence over the env-var pattern. The adapter receives the
   // pre-resolved key via AdapterRequest.apiKey (Pass 3).
   const apiKey = await resolveProviderApiKey({
@@ -185,7 +176,7 @@ export async function streamAgent(args: StreamAgentArgs): Promise<StreamAgentRes
   });
 
   // Per-tool approval policy in effect for this conversation. Chat-driven
-  // runs only enforce 'forbidden' — 'requires_approval' falls through to
+  // runs only enforce 'forbidden', 'requires_approval' falls through to
   // the existing *_prepare/*_submit confirmation pattern, which IS the
   // human-in-the-loop approval. Empty {} preserves the legacy "no gates"
   // behavior for the seeded Platform Assistant until an admin opts in.
@@ -193,7 +184,7 @@ export async function streamAgent(args: StreamAgentArgs): Promise<StreamAgentRes
 
   // Dispatch through the ProviderAdapter selected from the agent's
   // modelProvider field. Agents created before Pass 2 default to
-  // 'openai_compat' and behave identically to the previous streamChat path;
+  // 'openai_compat' and behave identically to the previous streamChat path.
   // Anthropic and Gemini agents now run on their native SDKs.
   const chatStream = (req: AdapterRequest) =>
     selectAdapter(agent.modelProvider).stream({ ...req, apiKey });
@@ -350,9 +341,7 @@ export async function streamAgent(args: StreamAgentArgs): Promise<StreamAgentRes
   }
 }
 
-// ---------------------------------------------------------------------------
 // Tool-call dispatch planner
-// ---------------------------------------------------------------------------
 
 interface DispatchPlan {
   parallel: OpenAI.Chat.Completions.ChatCompletionMessageFunctionToolCall[];
@@ -405,7 +394,7 @@ function planDispatch(
         // its matching prepare.
         plan.confirmationGated.push(tc);
       } else if (submitTaken) {
-        // Always serial. Only one per turn — the rest defer.
+        // Always serial. Only one per turn, the rest defer.
         plan.deferred.push(tc);
       } else {
         plan.serial.push(tc);
@@ -428,7 +417,7 @@ function planDispatch(
         seenPrepareIds.add(name);
       }
     } else {
-      // Reads — parallelizable.
+      // Reads, parallelizable.
       plan.parallel.push(tc);
     }
   }
@@ -548,7 +537,7 @@ async function runDispatched(
         input: safeParse(tc.function.arguments),
         output: refusal,
         durationMs: 0,
-        // Surface in the run's tool-call summaries as a non-error event —
+        // Surface in the run's tool-call summaries as a non-error event
         // the call wasn't a failure, just held back by policy.
         isError: false,
       },
@@ -601,7 +590,7 @@ async function runOne(
   }
 
   // Per-tool approval policy gate. Chat-driven runs only enforce 'forbidden'
-  // here — 'requires_approval' falls through to the existing
+  // here, 'requires_approval' falls through to the existing
   // *_prepare/*_submit confirmation pattern (the human user IS the approver
   // in-session). 'forbidden' refuses outright with a model-actionable error.
   const policyMode = decidePolicy(approvalPolicy, tc.function.name);
@@ -677,9 +666,7 @@ async function runOne(
   }
 }
 
-// ---------------------------------------------------------------------------
 // History loading
-// ---------------------------------------------------------------------------
 
 async function loadHistory(
   conversationId: string,
@@ -717,8 +704,8 @@ async function loadHistory(
   for (const pair of tail) {
     if (pair.user) out.push({ role: "user", content: pair.user.content });
     if (pair.assistant) {
-      // Persist the assistant text — tool calls in history are best-effort
-      // because the original tool_call ids are lost; v2 may store the raw
+      // Persist the assistant text, tool calls in history are best-effort
+      // because the original tool_call ids are lost. v2 may store the raw
       // OpenAI message. For now we emit assistant text only, which the model
       // can read back as conversational history.
       out.push({ role: "assistant", content: pair.assistant.content });
@@ -734,7 +721,7 @@ interface PendingPreview {
   serverSummary: string;
 }
 
-/** Load previews still awaiting confirmation in this conversation: unconsumed, non-superseded, */
+/** Load previews still awaiting confirmation in this conversation: unconsumed, non-superseded*/
 async function loadPendingPreviews(conversationId: string): Promise<PendingPreview[]> {
   return prisma.chatActionPreview.findMany({
     where: {
@@ -809,9 +796,7 @@ function looksLikeConfirmation(text: string | undefined | null): boolean {
   );
 }
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 function safeParse(s: string | undefined): unknown {
   if (!s) return null;

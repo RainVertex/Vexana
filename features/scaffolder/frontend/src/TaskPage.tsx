@@ -66,7 +66,7 @@ export function TaskPage() {
             status: s.status as StepView["status"],
           })),
         );
-        // logs come back newest-first; reverse for display.
+        // logs come back newest-first. reverse for display.
         setLogs(
           [...(t.logs ?? [])].reverse().map((l) => ({
             stepId: l.stepId,
@@ -79,7 +79,7 @@ export function TaskPage() {
       .catch((err) => setError(err.message ?? "Failed to load task"));
   }, [api, taskId]);
 
-  // Live stream — only opens while the task is still running. Once we receive
+  // Live stream, only opens while the task is still running. Once we receive
   // task.finished (or the initial load already showed a finished task), we
   // skip subscribing.
   useEffect(() => {
@@ -92,7 +92,7 @@ export function TaskPage() {
         const event = JSON.parse(msg.data) as StepEvent;
         applyEvent(event);
       } catch {
-        // malformed event — ignore.
+        // malformed event, ignore.
       }
     };
     source.onerror = () => {

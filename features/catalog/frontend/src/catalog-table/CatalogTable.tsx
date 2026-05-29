@@ -41,7 +41,7 @@ export function CatalogTable({ data, view, onFilteredCountChange }: Props) {
 
   // Status filters (hide stale / hide orphaned) apply before tag fan-out so a
   // hidden entity doesn't ghost into multiple groups. Stale and orphaned are
-  // independent: stale = staleSince set; orphaned = installationId set but no
+  // independent: stale = staleSince set. orphaned = installationId set but no
   // matching live Integration. An entity can be one, both, or neither.
   const statusFiltered = useMemo<CatalogRow[]>(() => {
     if (!view.hideStale && !view.hideOrphaned) return data;

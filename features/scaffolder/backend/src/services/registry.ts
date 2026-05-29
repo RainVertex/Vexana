@@ -56,7 +56,7 @@ export function getTemplateRegistry(): TemplateRegistry {
   return templates;
 }
 
-// Test-only — drops the singletons so a test can re-register against a fresh
+// Test-only, drops the singletons so a test can re-register against a fresh
 // registry without polluting later suites.
 export function resetRegistries(): void {
   actionsCache = null;

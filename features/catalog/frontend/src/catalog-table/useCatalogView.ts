@@ -229,7 +229,7 @@ export function useCatalogView(): CatalogView {
         ? visibleColumns.filter((c) => c !== id)
         : COLUMN_ORDER.filter((c) => visibleColumns.includes(c) || c === id);
       update((n) => {
-        // Only persist if it differs from defaults — keeps URL clean.
+        // Only persist if it differs from defaults, keeps URL clean.
         const dflt = defaultVisible();
         const same =
           nextVisible.length === dflt.length && nextVisible.every((c, i) => c === dflt[i]);

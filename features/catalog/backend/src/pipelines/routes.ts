@@ -1,6 +1,6 @@
 // REST surface for the Pipelines tab. Mounted under /api/catalog/:id/* by
 // catalogRouter so paths are entity-scoped. Reads require any authenticated
-// user; manual refresh requires admin or member.
+// user. manual refresh requires admin or member.
 
 import { Router, type Request, type Response } from "express";
 import { prisma } from "@internal/db";
@@ -36,9 +36,7 @@ async function ensureEntity(req: Request, res: Response): Promise<string | null>
   return id;
 }
 
-// ---------------------------------------------------------------------------
 // GET /:id/pipeline-runs?limit=&branch=
-// ---------------------------------------------------------------------------
 
 pipelinesRouter.get("/:id/pipeline-runs", async (req, res) => {
   const entityId = await ensureEntity(req, res);
@@ -71,9 +69,7 @@ pipelinesRouter.get("/:id/pipeline-runs", async (req, res) => {
   res.json({ items });
 });
 
-// ---------------------------------------------------------------------------
 // GET /:id/deployments?limit=&environment=
-// ---------------------------------------------------------------------------
 
 pipelinesRouter.get("/:id/deployments", async (req, res) => {
   const entityId = await ensureEntity(req, res);
@@ -103,9 +99,7 @@ pipelinesRouter.get("/:id/deployments", async (req, res) => {
   res.json({ items });
 });
 
-// ---------------------------------------------------------------------------
-// POST /:id/pipelines/refresh — admin/member only, audited.
-// ---------------------------------------------------------------------------
+// POST /:id/pipelines/refresh, admin/member only, audited.
 
 pipelinesRouter.post("/:id/pipelines/refresh", async (req, res, next) => {
   try {

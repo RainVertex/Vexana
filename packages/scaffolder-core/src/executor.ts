@@ -28,7 +28,7 @@ export type StepEvent =
 export interface ExecuteInput {
   taskId: string;
   plan: Plan;
-  /** Same shape returned by buildPlan — action ids + parsed inputs. */
+  /** Same shape returned by buildPlan, action ids + parsed inputs. */
   resolvedSteps: Array<{ stepId: string; action: string; input: unknown }>;
   actions: ActionRegistry;
   planCtx: PlanCtx;
@@ -149,7 +149,7 @@ export async function execute(input: ExecuteInput): Promise<ExecuteResult> {
 
   let rolledBack = false;
   if ((failure || cancelled) && compensations.length > 0 && !dryRun) {
-    // Roll back in reverse order. Skip irreversible mutations — they should
+    // Roll back in reverse order. Skip irreversible mutations, they should
     // never have been admitted without an approval token in the first place.
     for (let i = compensations.length - 1; i >= 0; i--) {
       const { compensation } = compensations[i]!;

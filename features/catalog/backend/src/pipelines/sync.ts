@@ -1,11 +1,11 @@
 // Cron-driven backfill for workflow runs and deployments. The webhook path
-// (./upsert.ts) handles real-time updates; this module covers:
-//   - new catalog entries that gained an installation after some history existed
-//   - events lost during webhook downtime / receiver outages
-//   - manual "Refresh now" presses from the UI
+// (./upsert.ts) handles real-time updates. this module covers:
+// - new catalog entries that gained an installation after some history existed
+// - events lost during webhook downtime / receiver outages
+// - manual "Refresh now" presses from the UI
 //
 // Per-entity cursors live on PipelineSyncCursor.lastWorkflowSyncAt /
-// lastDeploymentSyncAt — that lets each entity advance independently and lets
+// lastDeploymentSyncAt, that lets each entity advance independently and lets
 // the sweep scale linearly without a giant JSON cursor blob.
 
 import { prisma, type CatalogEntity } from "@internal/db";
@@ -14,12 +14,12 @@ import type { Octokit as OctokitClient } from "octokit";
 
 // Backfill window for entities the sweep has never seen before. Bounds the
 // cost of attaching the App to a long-lived org with thousands of historical
-// runs — anything older than this is considered out of scope for "recent
+// runs, anything older than this is considered out of scope for "recent
 // pipeline activity".
 const BACKFILL_DAYS = 14;
-// Per-sweep pagination cap. listWorkflowRunsForRepo returns the newest first,
+// Per-sweep pagination cap. listWorkflowRunsForRepo returns the newest first
 // so capping at 100 means we'll always pick up the last 100 changes since the
-// cursor — webhooks fill in anything we drop.
+// cursor, webhooks fill in anything we drop.
 const PER_REPO_RUN_CAP = 100;
 const PER_REPO_DEPLOYMENT_CAP = 50;
 
@@ -31,7 +31,7 @@ export interface SyncEntityResult {
 }
 
 interface SyncableEntity extends Pick<CatalogEntity, "id" | "installationId" | "repoUrl"> {
-  // Owner/name parsed from repoUrl; sync is skipped if we can't parse them.
+  // Owner/name parsed from repoUrl. sync is skipped if we can't parse them.
   ownerLogin: string | null;
   repoName: string | null;
 }
@@ -94,7 +94,7 @@ async function recordCursorError(entityId: string, message: string): Promise<voi
       data: { lastErrorAt: new Date(), lastError: message.slice(0, 500) },
     })
     .catch(() => {
-      // Cursor row doesn't exist yet — first-time failure. Best effort only.
+      // Cursor row doesn't exist yet, first-time failure. Best effort only.
     });
 }
 
@@ -107,9 +107,7 @@ function sinceFilter(d: Date): string {
   return `>=${d.toISOString()}`;
 }
 
-// ---------------------------------------------------------------------------
 // Workflow run sync
-// ---------------------------------------------------------------------------
 
 interface ListedRun {
   id: number;
@@ -178,9 +176,7 @@ async function syncWorkflowRuns(
   return count;
 }
 
-// ---------------------------------------------------------------------------
 // Deployment sync
-// ---------------------------------------------------------------------------
 
 interface ListedDeployment {
   id: number;
@@ -274,9 +270,7 @@ async function syncDeployments(
   return count;
 }
 
-// ---------------------------------------------------------------------------
 // Per-entity orchestrator + bulk sweep
-// ---------------------------------------------------------------------------
 
 export async function syncEntityPipelines(entityId: string): Promise<SyncEntityResult> {
   const result: SyncEntityResult = {

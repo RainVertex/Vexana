@@ -7,7 +7,7 @@ import globals from "globals";
 
 // Architectural boundary rules. Encodes the conventions documented in CLAUDE.md
 // as machine-enforced lint failures. Implemented with no-restricted-imports
-// (zero extra deps, no resolver setup) rather than eslint-plugin-boundaries —
+// (zero extra deps, no resolver setup) rather than eslint-plugin-boundaries
 // the patterns we need are simple workspace-package matches.
 const featureFrontendBoundaries = {
   files: ["features/*/frontend/**/*.{ts,tsx}"],

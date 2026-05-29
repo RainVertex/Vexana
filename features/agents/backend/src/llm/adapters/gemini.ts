@@ -17,7 +17,7 @@ import type { AdapterRequest, AdapterResult, ProviderAdapter } from "./providerA
 // tool calls + usage. Internally it converts to Gemini's `contents` /
 // `parts` shape and the `functionDeclarations` tool schema.
 //
-// Gemini's function-call tool ids are not first-class — the API reports
+// Gemini's function-call tool ids are not first-class, the API reports
 // only the function name in the `functionCall` part. We mint a synthetic
 // `call_<uuid>` so downstream tool_call_id wiring keeps working uniformly
 // across providers.
@@ -43,7 +43,7 @@ class GeminiAdapter implements ProviderAdapter {
     const toolConfig = mapToolChoiceToGemini(req.toolChoice, tools !== undefined);
 
     let content = "";
-    // Tool calls accumulate across chunks; Gemini emits them whole inside a
+    // Tool calls accumulate across chunks. Gemini emits them whole inside a
     // part (no incremental args), but we still iterate the stream so token
     // deltas can be forwarded.
     const toolCalls: OpenAI.Chat.Completions.ChatCompletionMessageFunctionToolCall[] = [];
@@ -59,7 +59,7 @@ class GeminiAdapter implements ProviderAdapter {
         tools,
         toolConfig,
         temperature: 0.2,
-        // Gemini reports usage on each chunk as cumulative; we just keep the
+        // Gemini reports usage on each chunk as cumulative. we just keep the
         // last value seen. Abort signal flows through the underlying fetch.
         abortSignal: req.signal,
       },
@@ -114,9 +114,7 @@ class GeminiAdapter implements ProviderAdapter {
 
 export const geminiAdapter: ProviderAdapter = new GeminiAdapter();
 
-// ---------------------------------------------------------------------------
 // Conversion helpers
-// ---------------------------------------------------------------------------
 
 interface GeminiConvertedMessages {
   systemInstruction: string | undefined;

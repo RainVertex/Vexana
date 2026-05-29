@@ -4,10 +4,10 @@ import type { ChatToolCallStartEvent, ChatToolCallEndEvent } from "@internal/sha
 // Hand-rolled SSE consumer for /api/chat/conversations/:id/messages. The
 // browser EventSource doesn't support POST bodies, so we use fetch() with a
 // streaming response and parse `event:`/`data:` frames manually. The hook
-// exposes everything the UI needs to render a turn: the streaming token text,
+// exposes everything the UI needs to render a turn: the streaming token text
 // the tool-call timeline (both reads and writes), and a final "done" signal.
 // Backend still emits `preview` SSE frames for *_prepare tools, but the UI
-// no longer renders them — confirmation happens in prose ("yes"/"confirm"),
+// no longer renders them, confirmation happens in prose ("yes"/"confirm")
 // detected server-side by looksLikeConfirmation().
 
 export type ChatStreamStatus = "idle" | "streaming" | "done" | "error";
@@ -29,10 +29,10 @@ export interface ChatStreamState {
   reasoning: string;
   /** Client-side timestamp captured on the first reasoning token, used to tick the live counter. */
   reasoningStartedAt: number | null;
-  /** Server-reported total ms once reasoning has fully ended; null while still reasoning. */
+  /** Server-reported total ms once reasoning has fully ended. null while still reasoning. */
   reasoningDurationMs: number | null;
   toolCalls: ChatToolCallView[];
-  /** True while a *_submit tool call is mid-execution; UI uses this to disable the Stop button */
+  /** True while a *_submit tool call is mid-execution. UI uses this to disable the Stop button */
   submitInFlight: boolean;
   error?: string;
 }
@@ -57,7 +57,7 @@ export function useChatStream(conversationId: string | null) {
 
   const send = useCallback(
     async (content: string, overrideConversationId?: string) => {
-      // Allow callers to pass a freshly-created conversation id directly,
+      // Allow callers to pass a freshly-created conversation id directly
       // bypassing the closed-over conversationId. Without this, sending the
       // very first message after creating a conversation reads the stale
       // null id from this hook's closure and throws.
@@ -124,7 +124,7 @@ export function useChatStream(conversationId: string | null) {
   const abort = useCallback(() => {
     if (!conversationId) return;
     abortRef.current?.abort();
-    // Tell the server to drop its in-flight controller. Best-effort — the
+    // Tell the server to drop its in-flight controller. Best-effort, the
     // route also detects req.close.
     void fetch(`/api/chat/conversations/${encodeURIComponent(conversationId)}/abort`, {
       method: "POST",
@@ -198,7 +198,7 @@ function handleFrame(
       break;
     }
     case "preview": {
-      // Backend still emits this for *_prepare tools; UI no longer renders it.
+      // Backend still emits this for *_prepare tools. UI no longer renders it.
       break;
     }
     case "error": {

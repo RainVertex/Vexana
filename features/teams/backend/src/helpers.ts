@@ -136,7 +136,7 @@ function resolveProposed(
   const out: TeamRequestDto["proposedMaintainers"] = [];
   for (const id of ids) {
     const u = userMap.get(id);
-    if (!u) continue; // user deleted between submit and now — silently drop
+    if (!u) continue; // user deleted between submit and now, silently drop
     out.push({ userId: id, displayName: u.displayName, avatarUrl: u.avatarUrl });
   }
   return out;

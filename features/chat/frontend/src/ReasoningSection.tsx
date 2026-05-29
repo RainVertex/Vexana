@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 // Collapsible header + body rendering the model's `<think>` content. The
 // header reads "Reasoning - Ns" while the model is still thinking, with the
 // counter ticking live, and flips to "Reasoned - Ns" once reasoning ends.
-// On the flip, the section auto-collapses exactly once; after that the user
+// On the flip, the section auto-collapses exactly once. after that the user
 // owns the toggle state.
 
 interface Props {
@@ -22,7 +22,7 @@ export function ReasoningSection({ reasoning, startedAt, durationMs, isStreaming
   const lastStreamingRef = useRef(isStreaming);
   const [now, setNow] = useState(() => Date.now());
 
-  // Auto-collapse exactly once when reasoning transitions from streaming → done,
+  // Auto-collapse exactly once when reasoning transitions from streaming → done
   // unless the user has manually toggled at some point.
   useEffect(() => {
     const wasStreaming = lastStreamingRef.current;

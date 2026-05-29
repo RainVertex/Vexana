@@ -34,7 +34,7 @@ export interface ApplyInput {
   /** Externally-controlled cancellation. */
   signal?: AbortSignal;
   dryRun?: boolean;
-  /** Used by the lock; defaults to plan.templateId + plan.params (paramsHash). */
+  /** Used by the lock. defaults to plan.templateId + plan.params (paramsHash). */
   targetRef?: string;
   /** Audit/observability: same id propagated through all generated rows. */
   requestId?: string;

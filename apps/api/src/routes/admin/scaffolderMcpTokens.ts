@@ -53,7 +53,7 @@ adminScaffolderMcpTokensRouter.post("/", async (req, res, next) => {
         requestId: req.id != null ? String(req.id) : null,
       },
     );
-    // The cleartext token is returned exactly once; the admin must copy it
+    // The cleartext token is returned exactly once. the admin must copy it
     // immediately. The DB only stores the sha256 hash.
     res.status(201).json({
       id: minted.id,

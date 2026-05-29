@@ -20,7 +20,7 @@ export class TargetLockBusyError extends Error {
   }
 }
 
-// Postgres advisory locks are session-scoped. Prisma multiplexes connections,
+// Postgres advisory locks are session-scoped. Prisma multiplexes connections
 // so the unlock must run in the same transaction as the lock. The interactive
 // transaction below holds one connection open until release() is called.
 export async function acquireTargetLock(

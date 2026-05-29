@@ -60,7 +60,7 @@ adminUsersRouter.patch("/:id", async (req, res, next) => {
       return;
     }
     if (id === SYSTEM_USER_ID) {
-      // Treat as nonexistent rather than 403 — keeps the system row invisible
+      // Treat as nonexistent rather than 403, keeps the system row invisible
       // to admins probing the API directly.
       res.status(404).json({ error: "User not found" });
       return;

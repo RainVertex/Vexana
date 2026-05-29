@@ -30,7 +30,7 @@ export const githubServiceTemplate = defineTemplate({
     icon: "rocket",
     audience: ["human", "agent"],
     requiredRole: "member",
-    // The default-target distinction (main vs branch) is in-repo; for an
+    // The default-target distinction (main vs branch) is in-repo. for an
     // out-of-repo target this collapses to a single value but we keep the
     // shape consistent so admin overrides remain available.
     defaultTarget: { agent: "worktree", human: "worktree" },

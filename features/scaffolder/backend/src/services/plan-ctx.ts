@@ -13,7 +13,7 @@ export interface BuildPlanCtxInput {
   actor: Actor;
   target: SandboxTarget;
   liveRepoRoot: string;
-  /** Frozen wall-clock for the plan; defaults to new Date(). */
+  /** Frozen wall-clock for the plan. defaults to new Date(). */
   now?: Date;
 }
 

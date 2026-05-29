@@ -41,7 +41,7 @@ export const fsWriteAction: Action<z.infer<typeof fsWriteInput>, { path: string 
   capabilities: ["fs:write"],
   async match(_input, _ctx: ReadCtx) {
     // We can't probe the live workspace from a ReadCtx (it's read-only repo
-    // probes). Treat fs:write as always-creating during plan; the executor's
+    // probes). Treat fs:write as always-creating during plan. the executor's
     // existence-check below makes apply itself idempotent.
     return "absent";
   },
@@ -212,5 +212,5 @@ export const fsActions = [fsWriteAction, fsDeleteAction, fsRenameAction];
 
 export { fsWriteInput, fsDeleteInput, fsRenameInput };
 
-// Internal use only — re-export for tests.
+// Internal use only, re-export for tests.
 export { join as _join };

@@ -1,14 +1,14 @@
 // Org-level repo sync driven by a GitHub App installation. Walks every repo
-// the installation has access to, attempts to discover catalog-info.yaml,
+// the installation has access to, attempts to discover catalog-info.yaml
 // and writes through the canonical registerCatalogEntity path. Repos with
 // no yaml become stub entities marked needsOnboarding for the Catalog Agent
 // to enrich (resolve owners, generate yaml, open PR).
 //
 // Side effects per repo:
-//   - registerCatalogEntity write (create or update, idempotent on githubRepoId)
-//   - if needsOnboarding or no owners → enqueue a CatalogAgentTask (resolve_ownership)
+// - registerCatalogEntity write (create or update, idempotent on githubRepoId)
+// - if needsOnboarding or no owners → enqueue a CatalogAgentTask (resolve_ownership)
 //
-// Errors are reported but do not abort the sweep — one bad repo shouldn't
+// Errors are reported but do not abort the sweep, one bad repo shouldn't
 // take down the whole org's import.
 
 import { prisma } from "@internal/db";
@@ -80,7 +80,7 @@ export async function syncInstallation(installationId: number): Promise<SyncInst
     throw err;
   }
 
-  // octokit.paginate flattens pages into a single array; the repos endpoint
+  // octokit.paginate flattens pages into a single array. the repos endpoint
   // tops out at 100 per page so this is one HTTP call per 100 repos.
   const repos = (await octo.paginate(octo.rest.apps.listReposAccessibleToInstallation, {
     per_page: 100,
@@ -148,7 +148,7 @@ export async function syncRepo(
     needsOnboarding = false;
   } else {
     if (fetched.kind === "error") parseError = fetched.reason;
-    // Stub entity from repo metadata. Default kind=service; the Catalog Agent
+    // Stub entity from repo metadata. Default kind=service. the Catalog Agent
     // refines this in Phase 4 using Dockerfile/package.json/openapi heuristics.
     registerInput = {
       kind: "service",
@@ -177,7 +177,7 @@ export async function syncRepo(
   );
 
   // Enqueue agent work whenever the entity is incomplete: missing yaml or
-  // missing owners. Idempotent — enqueueResolveOwnership skips if a pending
+  // missing owners. Idempotent, enqueueResolveOwnership skips if a pending
   // or running task already exists.
   const ownerCount = registerInput.ownerTeamIds?.length ?? 0;
   if (needsOnboarding || ownerCount === 0) {
@@ -307,7 +307,7 @@ export async function staleEntityByGithubRepoId(
 async function stampSyncedAt(installationId: number, syncedAt: Date): Promise<void> {
   // Find the matching Integration row and update config.syncedAt. The
   // installationId lives inside the JSON config field, so we scan kind=github
-  // rows (small set) and match in JS — same approach as
+  // rows (small set) and match in JS, same approach as
   // integrations-backend/install.ts.
   const rows = await prisma.integration.findMany({
     where: { kind: "github" },

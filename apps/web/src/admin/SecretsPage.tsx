@@ -12,7 +12,7 @@ import { useCurrentUser } from "../auth";
 // Encryption / decryption never happens client-side: the value field is
 // write-only (POST sends plaintext over HTTPS, server encrypts) and the
 // list endpoint never returns the decrypted value. Deletion cascades to
-// any Agent that references the secret (FK ON DELETE SET NULL — the
+// any Agent that references the secret (FK ON DELETE SET NULL, the
 // agent stays but loses its API key override).
 
 export function SecretsPage() {

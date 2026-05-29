@@ -41,7 +41,7 @@ function timeRemaining(iso: string): string {
   return `${hours}h remaining`;
 }
 
-/** Combined "My Requests" page — team-creation + maintainer requests in one scroll, grouped by */
+/** Combined "My Requests" page, team-creation + maintainer requests in one scroll, grouped by */
 export function MyRequestsTeamPage() {
   const api = useApi();
   const [teamRequests, setTeamRequests] = useState<TeamRequestDto[] | null>(null);

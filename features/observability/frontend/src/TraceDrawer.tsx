@@ -9,7 +9,7 @@ import { useApi } from "@internal/api-client/react";
 export interface TraceDrawerProps {
   traceId: string;
   /**
-   * Required for authorization — the backend gates trace access on whether
+   * Required for authorization, the backend gates trace access on whether
    * the user can read this entity. Pass the entityId of the log line that
    * surfaced the trace.
    */

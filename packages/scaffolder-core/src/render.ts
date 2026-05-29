@@ -2,7 +2,7 @@ import nunjucks from "nunjucks";
 import { stringHelpers } from "./plan-ctx";
 
 // Backstage uses ${{ ... }} for parameter interpolation. Nunjucks ships with
-// {{ ... }} by default; the tag overrides below switch it to the Backstage
+// {{ ... }} by default. the tag overrides below switch it to the Backstage
 // dialect so skeletons stay portable.
 const TAGS = {
   blockStart: "${%",

@@ -3,20 +3,20 @@ import { z } from "zod";
 import { prisma } from "@internal/db";
 import type { AgentApprovalRequestDto, AgentApprovalStatus } from "@internal/shared-types";
 
-// /api/agent-approvals — inbox + decision endpoints for autonomous-run
+// /api/agent-approvals, inbox + decision endpoints for autonomous-run
 // approvals. Chat-driven approvals continue to flow through the existing
-// ChatActionPreview / *_prepare-*_submit machinery; this router exists for
+// ChatActionPreview / *_prepare-*_submit machinery. this router exists for
 // agents that hit a `requires_approval` policy outside of an interactive
 // chat (cron jobs, webhooks, scheduled tasks).
 //
 // Authorization model:
-//   - The agent's primary contact (Agent.ownerUserId) sees its pending rows.
-//   - Team-owned agents: any lead of the owning team also sees them.
-//   - Admins see everything.
+// - The agent's primary contact (Agent.ownerUserId) sees its pending rows.
+// - Team-owned agents: any lead of the owning team also sees them.
+// - Admins see everything.
 // Decisions are recorded with the deciding user id so the audit trail is
 // complete. Once decided, the autonomous run that wrote the row is
 // responsible for picking up the decision on its next iteration (or for
-// re-submitting fresh) — the row is the persistence boundary, not the
+// re-submitting fresh), the row is the persistence boundary, not the
 // resumption mechanism.
 
 export const agentApprovalsRouter: Router = Router();

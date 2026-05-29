@@ -7,7 +7,7 @@ import type { ServiceHealthSample } from "@internal/shared-types";
 import { useApi } from "@internal/api-client/react";
 
 export interface ServiceHealthPanelProps {
-  /** When set, scope to a single entity; otherwise show the latest 200 across the org. */
+  /** When set, scope to a single entity. otherwise show the latest 200 across the org. */
   entityId?: string;
   limit?: number;
 }

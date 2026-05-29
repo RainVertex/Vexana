@@ -158,7 +158,7 @@ export interface ScaffolderDriftReport {
 }
 
 // Inline-badge summary of open scaffolder drifts. Replaces the previous
-// /drift?status= list endpoint. Members see only their own bindings; admins
+// /drift?status= list endpoint. Members see only their own bindings. admins
 // see everything.
 export interface ScaffolderDriftSummaryDto {
   openCount: number;

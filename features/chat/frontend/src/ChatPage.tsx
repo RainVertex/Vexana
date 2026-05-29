@@ -16,7 +16,7 @@ import { MenuIcon } from "./icons";
 // Below `md` (Tailwind's 768px) we ditch the resizable two-column layout and
 // fall back to a single pane + slide-in drawer. The resizable panels crush the
 // message area on phones, so the breakpoint flip is a hard switch in JS rather
-// than CSS — we only want one MessageList mounted at a time (the autoscroll
+// than CSS, we only want one MessageList mounted at a time (the autoscroll
 // ref + scrollIntoView would fight itself with two copies).
 function useIsMobile(): boolean {
   const query = "(max-width: 767px)";
@@ -42,9 +42,9 @@ interface ChatPageProps {
 // left rail with conversation list, main pane with messages + composer.
 //
 // Streaming + abort: useChatStream owns the SSE consumer. When a message is
-// in flight, the Composer renders a Stop button; while a *_submit is running,
+// in flight, the Composer renders a Stop button. while a *_submit is running
 // Stop is disabled (stream.submitInFlight) so we don't orphan a GitHub team
-// mid-runApproval. Confirmation of *_prepare actions happens in prose — the
+// mid-runApproval. Confirmation of *_prepare actions happens in prose, the
 // user replies "confirm"/"cancel" as the next message and the backend's
 // looksLikeConfirmation() routes the pending preview to its *_submit.
 
@@ -71,8 +71,8 @@ export function ChatPage({ userName, userAvatarUrl }: ChatPageProps = {}) {
   const [loading, setLoading] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   // Optimistic user message kept OUTSIDE `active` so that any transient
-  // setActive(null) — from a 404/race in the conv-load effect, or React
-  // rendering the navigate before setActive applies — can't make it
+  // setActive(null), from a 404/race in the conv-load effect, or React
+  // rendering the navigate before setActive applies, can't make it
   // disappear. Keyed by conversationId so a fast send-then-switch doesn't
   // leak the previous turn's pending bubble onto another conversation.
   const [pendingUserMessage, setPendingUserMessage] = useState<{
@@ -96,14 +96,14 @@ export function ChatPage({ userName, userAvatarUrl }: ChatPageProps = {}) {
   }, [api]);
 
   // Load the active conversation's messages on navigation. Skip the fetch
-  // when we already have this conversation loaded locally — handleSend
+  // when we already have this conversation loaded locally, handleSend
   // optimistically seeds active for a freshly-created conversation, and
   // re-fetching would clobber the user's just-sent message.
   //
   // CRITICAL: also skip when a stream is in flight. The first send of a new
   // conversation does setActive(...) + navigate(...) + send(...) in quick
   // succession. React may render the URL change in a transient state where
-  // `active` hasn't applied yet — that interleaved render would otherwise
+  // `active` hasn't applied yet, that interleaved render would otherwise
   // see active?.id !== conversationId, fire setLoading(true) (hiding the
   // streaming bubble), then on resolve overwrite the optimistic state with a
   // server snapshot that doesn't yet contain the in-flight assistant message.
@@ -137,7 +137,7 @@ export function ChatPage({ userName, userAvatarUrl }: ChatPageProps = {}) {
   // When a stream finishes, refresh the conversation so the new assistant
   // message + final tool calls land in persisted history, then reset the
   // stream. Without the reset, status stays "done" and stream.text keeps
-  // rendering a live bubble on top of the now-persisted assistant message,
+  // rendering a live bubble on top of the now-persisted assistant message
   // making it appear twice.
   useEffect(() => {
     if (stream.status !== "done" || !conversationId) return;
@@ -263,8 +263,8 @@ export function ChatPage({ userName, userAvatarUrl }: ChatPageProps = {}) {
     return (
       <div className="relative flex h-[calc(100vh-3.5rem)] flex-col">
         {mainPane}
-        {/* Slide-in drawer for the conversation list. Backdrop dismisses on tap;
-         *  ConversationList's onSelect closes us when a conv is chosen. */}
+        {/* Slide-in drawer for the conversation list. Backdrop dismisses on tap.
+         * ConversationList's onSelect closes us when a conv is chosen. */}
         <div
           className={`fixed inset-0 z-40 transition-opacity ${
             drawerOpen ? "opacity-100" : "pointer-events-none opacity-0"

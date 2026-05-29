@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { COLUMN_META, type CatalogColumnId } from "./columns";
 
 // Header-cell facet filter (Kind, Lifecycle, Owner, Tags). The dropdown is
-// rendered via a portal because the table wrapper uses `overflow-x-auto` —
+// rendered via a portal because the table wrapper uses `overflow-x-auto`
 // without the portal the popover gets clipped on the right edge and visually
 // "disappears" under the next column. Position is recomputed against the
 // trigger's bounding rect on open and on window resize/scroll while open.

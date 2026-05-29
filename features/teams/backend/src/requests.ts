@@ -35,9 +35,7 @@ const MAX_ROUNDS = 3;
 /** Statuses a request occupies while it's still under review or negotiation. */
 const ACTIVE_STATUSES = ["pending", "awaiting_user_confirmation"] as const;
 
-// =============================================================================
-// /api/teams/requests — submit
-// =============================================================================
+// /api/teams/requests, submit
 
 const mirrorTargetSchema = z
   .object({
@@ -115,7 +113,7 @@ teamRequestsRouter.post("/", async (req, res, next) => {
       if (!ok) return;
     }
 
-    // Strip out the requester themselves from either list — they're seeded
+    // Strip out the requester themselves from either list, they're seeded
     // as `lead` automatically and including them would be confusing in the
     // diff/UI even though the upsert in runApproval is idempotent.
     const cleanedMaintainers = proposedMaintainerUserIds.filter((id) => id !== req.user!.id);
@@ -146,7 +144,7 @@ teamRequestsRouter.post("/", async (req, res, next) => {
         res.status(422).json({ error: result.message });
         return;
       }
-      // slug_taken | duplicate_pending — both 409.
+      // slug_taken | duplicate_pending, both 409.
       res.status(409).json({ error: result.message });
       return;
     }
@@ -157,13 +155,11 @@ teamRequestsRouter.post("/", async (req, res, next) => {
   }
 });
 
-// =============================================================================
-// createTeamRequest — service function shared by the HTTP route above and the
+// createTeamRequest, service function shared by the HTTP route above and the
 // chatbot's team_request_submit tool. Same input shape, same Zod schema, same
 // audit calls. The chatbot path passes additional `extraAuditPayload` (e.g.
 // source: "chat", conversationId, agentRunId, previewId) which is merged into
 // the audit row's payload.
-// =============================================================================
 
 export interface CreateTeamRequestInput {
   slug: string;
@@ -302,9 +298,7 @@ export async function createTeamRequest(
   }
 }
 
-// =============================================================================
-// /api/teams/requests — list & detail
-// =============================================================================
+// /api/teams/requests, list & detail
 
 teamRequestsRouter.get("/", async (req, res, next) => {
   try {
@@ -384,9 +378,7 @@ teamRequestsRouter.get("/:id", async (req, res, next) => {
   }
 });
 
-// =============================================================================
-// Negotiation — propose (admin) and respond (requester)
-// =============================================================================
+// Negotiation, propose (admin) and respond (requester)
 
 const proposeSchema = z.object({
   slug: slugSchema.optional(),
@@ -621,8 +613,8 @@ async function applyEdit(
           roundCount: nextRound,
           lastEditedByUserId: req.user!.id,
           status: by === "admin" ? "awaiting_user_confirmation" : "pending",
-          // Counter-proposal extends the TTL window — both sides still need
-          // time to react. Propose does NOT extend; admins should keep moving.
+          // Counter-proposal extends the TTL window, both sides still need
+          // time to react. Propose does NOT extend. admins should keep moving.
           ...(by === "user" ? { expiresAt: requestExpiresAt() } : {}),
         },
         include: TEAM_REQUEST_INCLUDE,
@@ -693,9 +685,7 @@ async function applyEdit(
   }
 }
 
-// =============================================================================
 // Approve / reject / cancel
-// =============================================================================
 
 teamRequestsRouter.post("/:id/approve", async (req, res, next) => {
   try {
@@ -818,12 +808,10 @@ teamRequestsRouter.post("/:id/cancel", async (req, res, next) => {
   }
 });
 
-// =============================================================================
-// Helpers — approval / mirror / fanout
-// =============================================================================
+// Helpers, approval / mirror / fanout
 
 interface RunApprovalOptions {
-  /** True when the requester confirmed the admin's proposed values; the reviewer-of-record is */
+  /** True when the requester confirmed the admin's proposed values. the reviewer-of-record is */
   confirmedByRequester: boolean;
 }
 
@@ -891,7 +879,7 @@ async function runApproval(
 
     // GitHub's POST /orgs/:org/teams does NOT auto-add the actor, so without
     // this step the team lands empty in GitHub. Reconciliation reads GH as
-    // source-of-truth; an empty GH team would wipe the platform-side lead
+    // source-of-truth. an empty GH team would wipe the platform-side lead
     // we're about to insert. Adding the requester as maintainer (which the
     // reconciler maps to platform `lead`) keeps the two sides consistent.
     let maintainerState: "active" | "pending";
@@ -929,16 +917,16 @@ async function runApproval(
 
   // -- Pre-staged maintainers + members (set by the requester at submit) -----
   // Strategy:
-  //   * Strip the requester (already seated as `lead` below) and dedup.
-  //   * Resolve each id to a User row (skip if deleted between submit/now).
-  //   * For mirrored teams: push to GH first via best-effort
-  //     addGithubTeamMember; only seat platform-side if GH succeeds, since
-  //     GH is source-of-truth and the reconciler would otherwise wipe a
-  //     platform-only row. For non-mirrored teams: skip GH and seat
-  //     platform-side directly.
-  //   * Failures are reported in the approve response as `partialFailures`
-  //     and do NOT roll back the approval — the team and the requester's
-  //     lead seat still get committed.
+  // * Strip the requester (already seated as `lead` below) and dedup.
+  // * Resolve each id to a User row (skip if deleted between submit/now).
+  // * For mirrored teams: push to GH first via best-effort
+  // addGithubTeamMember. only seat platform-side if GH succeeds, since
+  // GH is source-of-truth and the reconciler would otherwise wipe a
+  // platform-only row. For non-mirrored teams: skip GH and seat
+  // platform-side directly.
+  // * Failures are reported in the approve response as `partialFailures`
+  // and do NOT roll back the approval, the team and the requester's
+  // lead seat still get committed.
   const dedupedProposedIds = Array.from(
     new Set([...request.proposedMaintainerUserIds, ...request.proposedMemberUserIds]),
   ).filter((id) => id !== request.requestedByUserId);
@@ -1005,7 +993,7 @@ async function runApproval(
       // Resolve the org binding for the new team. For mirrored teams the
       // accountLogin is the GitHub org the App is installed on. For non-mirror
       // (admin-side manual) teams we fall back to the requester's first known
-      // UserOrgMembership; if that returns nothing we abort the approval
+      // UserOrgMembership. if that returns nothing we abort the approval
       // since a team must always belong to exactly one org.
       let accountLogin: string;
       if (mirror) {
@@ -1068,7 +1056,7 @@ async function runApproval(
         update: { role: "lead" },
       });
       // Seat pre-staged maintainers + members. For mirrored teams these
-      // were already added on the GH side above; partialFailures users
+      // were already added on the GH side above. partialFailures users
       // were filtered out so we never write platform rows the reconciler
       // would wipe.
       for (const u of usersToSeed) {
@@ -1138,7 +1126,7 @@ async function runApproval(
           slug: team.slug,
           mirroredToGithub: !!mirror,
           githubOrgLogin: mirror?.orgLogin ?? null,
-          // "pending" = the requester wasn't yet an org member; GitHub sent
+          // "pending" = the requester wasn't yet an org member. GitHub sent
           // them an org invitation. Until they accept, they won't see the
           // team in GitHub even though the platform-side membership is live.
           githubMaintainerState: mirror?.maintainerState ?? null,

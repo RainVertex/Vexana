@@ -10,7 +10,7 @@ import type {
 } from "@internal/shared-types";
 import { RequestMaintainerDialog } from "./RequestMaintainerDialog";
 
-/** Self-service initiate page for "Request maintainership" — lists every team I'm a member of, */
+/** Self-service initiate page for "Request maintainership", lists every team I'm a member of*/
 export function RequestMaintainerPickerPage() {
   const api = useApi();
   const navigate = useNavigate();

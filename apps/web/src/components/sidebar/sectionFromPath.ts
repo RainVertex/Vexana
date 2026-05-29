@@ -10,7 +10,7 @@ export function sectionFromPath(pathname: string): SidebarSection {
   if (path === "/") return "home";
   if (path.startsWith("/chat")) return "chat";
   // Dashboard pages live under /p/:id and don't have a section in their URL.
-  // SidebarContext intercepts this — it falls back to the user's last tree
+  // SidebarContext intercepts this, it falls back to the user's last tree
   // section, and DashboardPage overrides it with the page's actual section
   // once loaded.
   if (path.startsWith("/p/")) return "home";
@@ -25,7 +25,7 @@ export function sectionFromPath(pathname: string): SidebarSection {
   if (path.startsWith("/admin")) return "admin";
   if (path.startsWith("/integrations")) return "integrations";
   if (path.startsWith("/settings") || path.startsWith("/notifications")) return "account";
-  // Placeholder pages render under whatever section they were created in;
+  // Placeholder pages render under whatever section they were created in.
   // there's no way to tell from the URL alone, so they fall through to home.
   return "home";
 }

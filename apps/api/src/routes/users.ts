@@ -10,7 +10,7 @@ interface UserSummary {
   avatarUrl: string | null;
 }
 
-/** GET /api/users?query=&limit= — search active users by displayName or email. */
+/** GET /api/users?query=&limit=, search active users by displayName or email. */
 usersRouter.get("/", async (req, res, next) => {
   try {
     if (!req.user) {

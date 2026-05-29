@@ -9,7 +9,7 @@ import type { AdapterRequest, AdapterResult, ProviderAdapter } from "./providerA
 //
 // The adapter takes OpenAI-shaped messages/tools on the way in and returns
 // OpenAI-shaped tool calls + usage on the way out, so streamExecutor and
-// runAgent stay model-agnostic. Conversion is straightforward — the only
+// runAgent stay model-agnostic. Conversion is straightforward, the only
 // non-obvious bit is that Anthropic puts the system prompt in a top-level
 // `system` field rather than as a "role: system" message, and tool calls
 // arrive as `tool_use` content blocks rather than as a separate field.
@@ -54,7 +54,7 @@ class AnthropicAdapter implements ProviderAdapter {
     let content = "";
     // Map of tool_use block index -> accumulating tool call. Anthropic emits a
     // content_block_start with input={} then a series of input_json_delta
-    // chunks; we concatenate the partial_json strings into final arguments.
+    // chunks. we concatenate the partial_json strings into final arguments.
     const toolUseAccum = new Map<number, { id: string; name: string; arguments: string }>();
     let usageInput = 0;
     let usageOutput = 0;
@@ -114,14 +114,14 @@ class AnthropicAdapter implements ProviderAdapter {
           break;
         }
         case "message_start": {
-          // Initial usage snapshot — input_tokens are reported here.
+          // Initial usage snapshot, input_tokens are reported here.
           const usage = event.message.usage;
           if (usage?.input_tokens != null) usageInput = usage.input_tokens;
           if (usage?.output_tokens != null) usageOutput = usage.output_tokens;
           break;
         }
         default:
-          // ping, content_block_stop, message_stop — nothing to do.
+          // ping, content_block_stop, message_stop, nothing to do.
           break;
       }
     }
@@ -159,16 +159,14 @@ class AnthropicAdapter implements ProviderAdapter {
 
 export const anthropicAdapter: ProviderAdapter = new AnthropicAdapter();
 
-// ---------------------------------------------------------------------------
 // Conversion helpers
-// ---------------------------------------------------------------------------
 
 interface AnthropicConvertedMessages {
   system: string | undefined;
   messages: Anthropic.MessageParam[];
 }
 
-/** OpenAI puts the system prompt(s) in the messages array; Anthropic wants them as a separate */
+/** OpenAI puts the system prompt(s) in the messages array. Anthropic wants them as a separate */
 function convertMessagesToAnthropic(
   messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[],
 ): AnthropicConvertedMessages {
@@ -203,7 +201,7 @@ function convertMessagesToAnthropic(
         blocks.push({ type: "text", text: m.content });
       }
       // OpenAI represents tool calls as a separate `tool_calls` array on the
-      // assistant message; Anthropic represents them as inline `tool_use`
+      // assistant message. Anthropic represents them as inline `tool_use`
       // content blocks. Convert each.
       const toolCalls = (
         m as { tool_calls?: OpenAI.Chat.Completions.ChatCompletionMessageFunctionToolCall[] }
@@ -259,7 +257,7 @@ function convertMessagesToAnthropic(
   };
 }
 
-/** OpenAI tools nest the schema under `function: { parameters }`; Anthropic flattens to */
+/** OpenAI tools nest the schema under `function: { parameters }`. Anthropic flattens to */
 function convertToolsToAnthropic(
   tools: OpenAI.Chat.Completions.ChatCompletionTool[],
 ): Anthropic.Tool[] {
@@ -286,7 +284,7 @@ function mapToolChoiceToAnthropic(
   if (!hasTools) return undefined;
   if (!choice) return undefined;
   if (choice === "auto") return { type: "auto" };
-  if (choice === "none") return undefined; // Anthropic has no "none"; omitting tool_choice + tools={} skips
+  if (choice === "none") return undefined; // Anthropic has no "none". omitting tool_choice + tools={} skips
   if (choice === "required") return { type: "any" };
   if (typeof choice === "object" && choice.type === "function") {
     return { type: "tool", name: choice.function.name };

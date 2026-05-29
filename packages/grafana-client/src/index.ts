@@ -1,11 +1,11 @@
 // Thin typed wrapper around the Grafana HTTP API. One client instance maps to
 // one Integration row (one baseUrl + one service-account token). Stateless
-// beyond that — safe to instantiate per-request.
+// beyond that, safe to instantiate per-request.
 //
 // Topology: backend never talks to Prometheus / Loki / Tempo directly. Every
-// upstream call goes through Grafana's `/api/datasources/proxy/uid/<uid>/...`,
+// upstream call goes through Grafana's `/api/datasources/proxy/uid/<uid>/...`
 // so this client owns three concerns: (1) datasource discovery, (2) proxying
-// queries to whichever datasource UID the integration was configured with,
+// queries to whichever datasource UID the integration was configured with
 // (3) the render endpoint for dashboard PNG embeds.
 
 import type { LokiLogLine, TempoSpan, TempoTrace } from "@internal/shared-types";
@@ -63,7 +63,7 @@ export interface GrafanaClient {
 // Default trace-id extraction regexes. Ordered most-specific first so we
 // prefer structured fields (`"trace_id": "..."`, `traceparent: ...`) over
 // the unstructured `traceID=` form which can match neighboring text.
-// Widths 16 (8-byte Jaeger) and 32 (16-byte W3C/OTel); case-insensitive
+// Widths 16 (8-byte Jaeger) and 32 (16-byte W3C/OTel). case-insensitive
 // where applicable.
 const DEFAULT_TRACE_ID_REGEXES: RegExp[] = [
   /"trace_id"\s*:\s*"([0-9a-f]{16,32})"/i,

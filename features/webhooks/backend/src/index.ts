@@ -166,7 +166,7 @@ webhooksRouter.post("/", async (req, res, next) => {
       });
       return created;
     });
-    // Secret is included once on create so the caller can record it; never
+    // Secret is included once on create so the caller can record it. never
     // returned by GET endpoints again.
     res.status(201).json(toSubDto(sub, true));
   } catch (err) {

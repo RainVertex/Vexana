@@ -17,7 +17,7 @@ const SEVERITY_CLASSES: Record<DriftBadgeSeverity, string> = {
 };
 
 /**
- * Inline drift indicator. Renders null when count === 0; otherwise a compact
+ * Inline drift indicator. Renders null when count === 0. otherwise a compact
  * pill that toggles an inline panel below on click. Feature-specific wrappers
  * pass their own data/action handlers via `children`.
  */

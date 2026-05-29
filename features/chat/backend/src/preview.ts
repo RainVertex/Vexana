@@ -5,20 +5,20 @@ import type { PrepareReturnEnvelope } from "./streamExecutor";
 // ChatActionPreview lifecycle helpers used by *_prepare and *_submit tools.
 //
 // Prepare flow:
-//   1. validate inputs against hard rules -> policyChecks
-//   2. allocate the next short handle (prv_NN) for (conversationId, toolId)
-//   3. supersede prior unconsumed prepares for the same (conversationId, toolId)
-//   4. insert the row, build the SSE preview event + LLM-facing payload
-//   5. return PrepareReturnEnvelope to streamExecutor which emits the event
-//      and feeds forLlm to the model
+// 1. validate inputs against hard rules -> policyChecks
+// 2. allocate the next short handle (prv_NN) for (conversationId, toolId)
+// 3. supersede prior unconsumed prepares for the same (conversationId, toolId)
+// 4. insert the row, build the SSE preview event + LLM-facing payload
+// 5. return PrepareReturnEnvelope to streamExecutor which emits the event
+// and feeds forLlm to the model
 //
 // Submit flow:
-//   1. resolve handle -> row by (conversationId, shortHandle)
-//   2. authorization (userId), scope (conversationId), idempotency
-//      (consumedAt), staleness (supersededAt), TTL (expiresAt)
-//   3. caller re-runs validation against current DB state
-//   4. caller runs the wrapped handler in a $transaction; we mark consumed
-//      and set resultRefId
+// 1. resolve handle -> row by (conversationId, shortHandle)
+// 2. authorization (userId), scope (conversationId), idempotency
+// (consumedAt), staleness (supersededAt), TTL (expiresAt)
+// 3. caller re-runs validation against current DB state
+// 4. caller runs the wrapped handler in a $transaction. we mark consumed
+// and set resultRefId
 
 const PREVIEW_TTL_MS = 10 * 60 * 1000; // 10 min
 
@@ -36,7 +36,7 @@ export interface CreatePreviewArgs {
 export async function createPreview(args: CreatePreviewArgs): Promise<PrepareReturnEnvelope> {
   return prisma.$transaction(async (tx) => {
     // Supersede any prior unconsumed preview for (conversation, toolId). The
-    // staleness rule: only the latest is submittable; older prepares are
+    // staleness rule: only the latest is submittable. older prepares are
     // silently superseded so the assistant can correct mid-conversation
     // without leaving a footgun.
     await tx.chatActionPreview.updateMany({
@@ -50,7 +50,7 @@ export async function createPreview(args: CreatePreviewArgs): Promise<PrepareRet
     });
 
     // Allocate the next short handle. Monotonic per (conversationId, toolId)
-    // — we count prior previews of any state, so handles never repeat within
+    //we count prior previews of any state, so handles never repeat within
     // a conversation/toolId pair (idempotent renumbering on retries).
     const priorCount = await tx.chatActionPreview.count({
       where: { conversationId: args.conversationId, toolId: args.toolId },
@@ -144,7 +144,7 @@ export async function resolveForSubmit(args: {
     };
   }
   if (row.consumedAt) {
-    // Idempotency — a re-submission returns the prior result instead of
+    // Idempotency, a re-submission returns the prior result instead of
     // re-executing the wrapped handler. resultRefId points at the row that
     // the original submit produced (e.g. created TeamRequest id).
     return {

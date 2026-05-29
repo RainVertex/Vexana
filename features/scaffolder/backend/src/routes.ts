@@ -122,7 +122,7 @@ export function createScaffolderRouter(deps: ScaffolderRouterDeps): Router {
   const templates = getTemplateRegistry();
   const actions = getActionRegistry();
 
-  // GET /templates — list templates visible to the actor.
+  // GET /templates, list templates visible to the actor.
   router.get("/templates", async (req, res, next) => {
     try {
       const actor = await actorFromRequest(req);
@@ -150,7 +150,7 @@ export function createScaffolderRouter(deps: ScaffolderRouterDeps): Router {
     }
   });
 
-  // GET /templates/:id — full template detail with parameter JSON Schema.
+  // GET /templates/:id, full template detail with parameter JSON Schema.
   router.get("/templates/:id", async (req, res, next) => {
     try {
       const actor = await actorFromRequest(req);
@@ -188,7 +188,7 @@ export function createScaffolderRouter(deps: ScaffolderRouterDeps): Router {
     }
   });
 
-  // POST /plans — build and persist a Plan for a template + params.
+  // POST /plans, build and persist a Plan for a template + params.
   router.post("/plans", async (req, res, next) => {
     try {
       const actor = await actorFromRequest(req);
@@ -440,7 +440,7 @@ export function createScaffolderRouter(deps: ScaffolderRouterDeps): Router {
     }
   });
 
-  // POST /approvals/:planId — admin grants approval for one or more capabilities.
+  // POST /approvals/:planId, admin grants approval for one or more capabilities.
   // Body: { capabilities: Capability[] }. Returns the updated plan with new
   // approvalsGranted and refreshed expiresAt.
   router.post("/approvals/:planId", async (req, res, next) => {
@@ -533,7 +533,7 @@ export function createScaffolderRouter(deps: ScaffolderRouterDeps): Router {
     }
   });
 
-  // GET /tasks/:id — task + steps + last 200 logs.
+  // GET /tasks/:id, task + steps + last 200 logs.
   router.get("/tasks/:id", async (req, res, next) => {
     try {
       const actor = await actorFromRequest(req);
@@ -563,7 +563,7 @@ export function createScaffolderRouter(deps: ScaffolderRouterDeps): Router {
     }
   });
 
-  // GET /tasks/:id/events — SSE stream.
+  // GET /tasks/:id/events, SSE stream.
   router.get("/tasks/:id/events", async (req, res, next) => {
     try {
       const actor = await actorFromRequest(req);
@@ -608,7 +608,7 @@ export function createScaffolderRouter(deps: ScaffolderRouterDeps): Router {
     }
   });
 
-  // GET /agent-tools — Anthropic SDK tool definitions for templates the actor
+  // GET /agent-tools, Anthropic SDK tool definitions for templates the actor
   // can run as an agent. Consumed by features/agents when an agent run wants
   // to call into the scaffolder.
   router.get("/agent-tools", async (req, res, next) => {
@@ -631,7 +631,7 @@ export function createScaffolderRouter(deps: ScaffolderRouterDeps): Router {
     }
   });
 
-  // GET /bindings — own (member) or all (admin).
+  // GET /bindings, own (member) or all (admin).
   router.get("/bindings", async (req, res, next) => {
     try {
       const actor = await actorFromRequest(req);
@@ -650,7 +650,7 @@ export function createScaffolderRouter(deps: ScaffolderRouterDeps): Router {
     }
   });
 
-  // POST /bindings/:id/replan — manual drift trigger. Re-runs the template
+  // POST /bindings/:id/replan, manual drift trigger. Re-runs the template
   // module against the binding's stored params and returns an applyable Plan.
   // Caller is the binding owner or an admin.
   router.post("/bindings/:id/replan", async (req, res, next) => {
@@ -733,9 +733,9 @@ export function createScaffolderRouter(deps: ScaffolderRouterDeps): Router {
     }
   });
 
-  // GET /drift/summary — open drift counts grouped by binding, for inline
+  // GET /drift/summary, open drift counts grouped by binding, for inline
   // badges on TemplatePage / BindingsPage. Members see only their own bindings
-  // (via appliedByUserId); admins see everything. Optional ?bindingId=
+  // (via appliedByUserId). admins see everything. Optional ?bindingId=
   // narrows the result to a single binding.
   router.get("/drift/summary", async (req, res, next) => {
     try {
@@ -815,7 +815,7 @@ export function createScaffolderRouter(deps: ScaffolderRouterDeps): Router {
     }
   });
 
-  // PATCH /drift/:id — update drift status (mark as ignored, applied, or
+  // PATCH /drift/:id, update drift status (mark as ignored, applied, or
   // superseded). Caller is the binding owner or an admin.
   router.patch("/drift/:id", async (req, res, next) => {
     try {

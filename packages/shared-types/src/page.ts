@@ -37,7 +37,7 @@ export interface PageDto {
   isFolder: boolean;
   type: PageType;
   scope: PageScope;
-  // Populated for DASHBOARD pages; null otherwise.
+  // Populated for DASHBOARD pages. null otherwise.
   layout: PageWidgetInstance[] | null;
   createdAt: ISODateString;
   updatedAt: ISODateString;

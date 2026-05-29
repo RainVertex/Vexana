@@ -18,7 +18,7 @@ export class ActionRegistry {
     return this.byId.get(id);
   }
 
-  /** Throws if missing — used by the executor where an unknown action is fatal. */
+  /** Throws if missing, used by the executor where an unknown action is fatal. */
   require(id: string): AnyAction {
     const a = this.byId.get(id);
     if (!a) throw new Error(`Unknown scaffolder action: ${id}`);

@@ -11,9 +11,9 @@ import { UserPicker } from "./UserPicker";
 export interface RequestTeamFormProps {
   /** Called with the createdTeamSlug from the response (almost always null since approval is */
   onSubmitted: (createdTeamSlug: string | null) => void;
-  /** Optional secondary action — drives a "Cancel" button when present. */
+  /** Optional secondary action, drives a "Cancel" button when present. */
   onCancel?: () => void;
-  /** Layout: in a modal we want minimal padding; on a page we want larger. */
+  /** Layout: in a modal we want minimal padding. on a page we want larger. */
   variant?: "dialog" | "page";
 }
 
@@ -22,7 +22,7 @@ interface SubmitError {
   policyViolation: TeamPolicyViolation | null;
 }
 
-/** Shared form body for "Request a team" — used by both the in-context RequestTeamDialog and */
+/** Shared form body for "Request a team", used by both the in-context RequestTeamDialog and */
 export function RequestTeamForm({
   onSubmitted,
   onCancel,
@@ -82,7 +82,7 @@ export function RequestTeamForm({
   }
 
   // Picker exclusion: a user can only appear once across both lists. Both
-  // pickers exclude every already-picked id; if the user clicks a name in
+  // pickers exclude every already-picked id. if the user clicks a name in
   // the maintainer picker that's currently in the members list, we move
   // them (handled via the addMaintainer/addMember handlers below).
   const excludeIds = useMemo(

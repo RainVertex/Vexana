@@ -513,7 +513,7 @@ export function createApiClient(options: ApiClientOptions = {}) {
           `/api/observability/traces/${encodeURIComponent(traceId)}?${qs.toString()}`,
         );
       },
-      // Constructs the URL only — the <img> tag fetches the PNG; the backend
+      // Constructs the URL only, the <img> tag fetches the PNG. the backend
       // is what holds the service-account token, never the browser. Non-admin
       // callers must pass entityId so the backend can authorize.
       dashboardImageUrl: (params: {
@@ -687,7 +687,7 @@ export function createApiClient(options: ApiClientOptions = {}) {
           method: "POST",
           body: JSON.stringify(body),
         }),
-      /** Admin-side proposal — bumps round, transitions to awaiting_user_confirmation. */
+      /** Admin-side proposal, bumps round, transitions to awaiting_user_confirmation. */
       propose: (
         id: string,
         body: {
@@ -702,7 +702,7 @@ export function createApiClient(options: ApiClientOptions = {}) {
           method: "POST",
           body: JSON.stringify(body),
         }),
-      /** Requester-side response — confirm runs the approval; counter bumps the round. */
+      /** Requester-side response, confirm runs the approval. counter bumps the round. */
       respond: (
         id: string,
         body:

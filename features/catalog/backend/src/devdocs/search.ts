@@ -27,7 +27,7 @@ export async function getDevDocsHits(
   const limit = Math.min(Math.max(opts.limit ?? 10, 1), 50);
 
   // ts_headline gives a snippet with the matched terms wrapped. We strip the
-  // markup on the way out so the API stays tag-free; the UI does its own
+  // markup on the way out so the API stays tag-free. the UI does its own
   // highlighting client-side.
   const tsQuery = Prisma.sql`plainto_tsquery('english', ${trimmed})`;
   const where = opts.entityId

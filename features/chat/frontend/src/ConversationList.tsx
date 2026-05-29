@@ -10,8 +10,8 @@ interface Props {
   onRequestDelete: (id: string) => void;
   onConfirmDelete: (id: string) => void;
   onCancelDelete: () => void;
-  /** Fired after picking a conversation or starting a new one — used by the
-   *  mobile drawer to close itself once the user makes a selection. */
+  /** Fired after picking a conversation or starting a new one, used by the
+   * mobile drawer to close itself once the user makes a selection. */
   onSelect?: () => void;
 }
 

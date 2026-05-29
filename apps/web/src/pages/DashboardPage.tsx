@@ -91,7 +91,7 @@ function DashboardView({
   // Stabilize the widget array across DashboardView re-renders. Without `useMemo`
   // the inline `.filter` produced a new array reference on every render, which made
   // the effect inside `useRemoteGridLayout` reset edit mode after every state
-  // change — Customize would appear to do nothing.
+  // change, Customize would appear to do nothing.
   const initialWidgets = useMemo(
     () =>
       (page.layout ?? []).filter((w) =>

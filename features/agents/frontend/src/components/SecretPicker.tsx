@@ -2,20 +2,20 @@ import { useEffect, useState } from "react";
 import { useApi } from "@internal/api-client/react";
 import type { SecretDto } from "@internal/shared-types";
 
-// SecretPicker — choose an existing Secret or create a new one inline. Used
+// SecretPicker, choose an existing Secret or create a new one inline. Used
 // by the agent wizard's Model step and the detail page's Model tab. Passes
 // the selected Secret id (or null to fall back to LlmProvider.apiKeyEnvVar)
 // to its parent via onChange.
 //
 // "Create new" inlines a small form rather than navigating away because the
-// wizard is itself a single-page flow — losing wizard state to a separate
+// wizard is itself a single-page flow, losing wizard state to a separate
 // /admin/secrets page would be a footgun. The form scope defaults to
 // 'personal' which the secrets backend allows for any caller.
 
 export interface SecretPickerProps {
   value: string | null;
   onChange: (secretId: string | null) => void;
-  /** Optional — when set, only personal+team secrets the caller can use here. */
+  /** Optional, when set, only personal+team secrets the caller can use here. */
   scope?: "personal" | "team" | "org";
 }
 

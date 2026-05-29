@@ -46,7 +46,7 @@ export interface GrafanaDataSourceUids {
 
 // Single Loki log line surfaced from a stream. `traceId` is extracted on the
 // backend via per-entity regex (or the grafana-client default list) and is
-// what makes a row clickable in EntityLogsPanel — clicking opens TraceDrawer.
+// what makes a row clickable in EntityLogsPanel, clicking opens TraceDrawer.
 export interface LokiLogLine {
   ts: ISODateString;
   line: string;

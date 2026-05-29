@@ -27,7 +27,7 @@ export interface BuildPlanInput<TParams> {
   bindingId?: string | null;
   policy: CapabilityPolicy;
   actions: ActionRegistry;
-  /** Plan id; caller supplies so it can be persisted alongside the artifact. */
+  /** Plan id. caller supplies so it can be persisted alongside the artifact. */
   planId?: string;
   now?: Date;
 }
@@ -61,8 +61,8 @@ export async function buildPlan<TParams>(input: BuildPlanInput<TParams>): Promis
   const resolvedSteps: BuiltPlan["resolvedSteps"] = [];
   const allCapabilities = new Set<Capability>();
   let irreversible = false;
-  // mode: "no-op" if every step matches; "update" if any drifts and a
-  // binding exists; "create" otherwise.
+  // mode: "no-op" if every step matches. "update" if any drifts and a
+  // binding exists. "create" otherwise.
   let anyAbsent = false;
   let anyDrift = false;
 

@@ -1,6 +1,6 @@
 // Business logic for the GitHub App install lifecycle. The HTTP install /
 // callback routes live in apps/api because they need session middleware and
-// audit access — this module owns the side effects (Integration upsert,
+// audit access, this module owns the side effects (Integration upsert
 // metadata fetch, sync trigger seam) that those routes call into.
 
 import { Prisma, prisma } from "@internal/db";
@@ -58,7 +58,7 @@ export async function recordInstallation(
     const updated = await prisma.integration.update({
       where: { id: existing.id },
       data: {
-        // Re-enable on re-install; account or repositorySelection may also change.
+        // Re-enable on re-install. account or repositorySelection may also change.
         enabled: true,
         config,
       },
@@ -130,7 +130,7 @@ export interface DisconnectResult {
   affectedUserIds: string[];
 }
 
-/** End-to-end disconnect: cascade-stale entities, revoke the App on GitHub, */
+/** End-to-end disconnect: cascade-stale entities, revoke the App on GitHub*/
 /** revoke sessions of users whose only org was this one, then delete the Integration row. */
 export async function disconnectGitHubInstallation(
   integrationId: string,
@@ -173,7 +173,7 @@ export async function disconnectGitHubInstallation(
   // Concurrent disconnect (e.g. user double-clicks the button, or the
   // installation.deleted webhook races us after revokeAppInstallation) can
   // leave the row already gone by the time we get here. Swallow P2025 so the
-  // caller still gets a clean result; everything else still ran.
+  // caller still gets a clean result. everything else still ran.
   try {
     await prisma.integration.delete({ where: { id: integ.id } });
   } catch (err) {
@@ -185,9 +185,9 @@ export async function disconnectGitHubInstallation(
 }
 
 async function findExistingByInstallationId(installationId: number) {
-  // Integration.config is JSON; Postgres can index/query JSON paths but the
+  // Integration.config is JSON. Postgres can index/query JSON paths but the
   // existing Integration table has no GIN index. Filtering by kind first
-  // narrows the candidates to a handful — fine to scan in JS.
+  // narrows the candidates to a handful, fine to scan in JS.
   const rows = await prisma.integration.findMany({
     where: { kind: "github" },
     select: { id: true, config: true },

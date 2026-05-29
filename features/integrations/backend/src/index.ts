@@ -106,11 +106,9 @@ integrationsRouter.get("/", async (req, res) => {
   });
 });
 
-// ---------------------------------------------------------------------------
 // GET /github/installations
-// ---------------------------------------------------------------------------
 // Public-org-login summary used by the team-request form to populate the
-// "Mirror to GitHub — which org?" dropdown. Authenticated members can see it
+// "Mirror to GitHub, which org?" dropdown. Authenticated members can see it
 // (the org login is public). Excludes any installation missing accountLogin
 // in its config (e.g. mid-install).
 

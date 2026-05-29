@@ -91,7 +91,7 @@ export interface CatalogEntityLink {
 export interface CatalogEntityOverview {
   entity: CatalogEntityWithOwners;
   drifts: CatalogDriftRow[];
-  /** Total open drifts for this entity; may exceed drifts.length (capped at 20). */
+  /** Total open drifts for this entity. may exceed drifts.length (capped at 20). */
   openDriftCount: number;
   dora: DoraMetricsSnapshot[];
   health: ServiceHealthSample[];

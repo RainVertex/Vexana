@@ -32,9 +32,6 @@ export async function acquireSandbox(input: AcquireSandboxInput): Promise<Sandbo
   switch (input.target) {
     case "main":
     case "branch":
-      // For PR 2: both targets point at the live repo. The branch-vs-main
-      // distinction lights up when simple-git lands in PR 7 — branch will
-      // checkout a generated branch in liveRepoRoot before apply.
       repoRoot = input.liveRepoRoot;
       break;
     case "worktree":
@@ -48,7 +45,7 @@ export async function acquireSandbox(input: AcquireSandboxInput): Promise<Sandbo
     repoRoot,
     target: input.target,
     dispose: async () => {
-      // Clean the workspace; never touch the live repoRoot.
+      // Clean the workspace. never touch the live repoRoot.
       await fs.rm(workspacePath, { recursive: true, force: true });
     },
   };

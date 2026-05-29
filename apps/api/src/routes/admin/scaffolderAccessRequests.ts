@@ -98,7 +98,7 @@ adminScaffolderAccessRequestsRouter.post("/:id/approve", async (req, res, next) 
           canExecute,
         },
         update: {
-          // Upgrade only — don't downgrade an existing grant
+          // Upgrade only, don't downgrade an existing grant
           canView: true,
           canExecute: canExecute || undefined,
         },

@@ -3,10 +3,10 @@ import { Prisma, prisma } from "@internal/db";
 
 /** Retry delays in milliseconds, indexed by zero-based attempt count after the first failure. */
 const RETRY_DELAYS_MS = [
-  60_000, //  1 min
-  5 * 60_000, //  5 min
+  60_000, // 1 min
+  5 * 60_000, // 5 min
   30 * 60_000, // 30 min
-  2 * 60 * 60_000, //  2 h
+  2 * 60 * 60_000, // 2 h
   12 * 60 * 60_000, // 12 h
 ];
 
@@ -31,7 +31,7 @@ function isSlackUrl(url: string): boolean {
 
 function asSlackPayload(eventKind: string, payload: Record<string, unknown>): SlackPayload {
   // Compact human-readable rendering. Webhook receivers can post to a Slack
-  // channel verbatim; native receivers can still parse the same JSON because
+  // channel verbatim. native receivers can still parse the same JSON because
   // Slack's payload is plain JSON.
   return {
     text: `[${eventKind}] ${JSON.stringify(payload)}`,

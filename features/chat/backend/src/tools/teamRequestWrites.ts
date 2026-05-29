@@ -6,9 +6,9 @@ import type { ChatPolicyCheck } from "@internal/shared-types";
 import { createPreview, resolveForSubmit, markConsumed } from "../preview";
 import { requireUserId } from "./core";
 
-// team_request_* — chat write tools wrapping createTeamRequest() (the
+// team_request_*, chat write tools wrapping createTeamRequest() (the
 // extracted service function in features/teams/backend/src/requests.ts).
-// Both phases enforce the same hard-rule policies the UI route enforces;
+// Both phases enforce the same hard-rule policies the UI route enforces.
 // the prepare/submit split exists so the user can confirm before any DB
 // state changes.
 
@@ -91,7 +91,7 @@ const prepare: RegisteredTool = {
     // Resolve githubIntegrationId leniently: accept either the Integration row
     // id (a cuid) or the GitHub accountLogin (e.g. "m-engineering-platform").
     // Without this, when the model passes the org login as the id (because
-    // that's what the user said and the model skipped integrations_list_github),
+    // that's what the user said and the model skipped integrations_list_github)
     // the submit step fails much later with a cryptic foreign-key violation
     // from Prisma. Resolving here turns it into a clean policy-check failure
     // the model can recover from in the same turn.
@@ -186,7 +186,7 @@ const prepare: RegisteredTool = {
     });
 
     // Pending-request availability check. The DB-level partial unique index
-    // (team_request_unique_pending_slug) blocks duplicates at submit time,
+    // (team_request_unique_pending_slug) blocks duplicates at submit time
     // but a chat user has already gone through slot-filling + confirmation by
     // then. Surface the conflict here so the model can warn the user before
     // they confirm. The status filter mirrors the partial unique index in

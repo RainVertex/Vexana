@@ -1,11 +1,11 @@
 import { prisma } from "@internal/db";
 
-// Side effects to run when a GitHub org's integration is disconnected,
+// Side effects to run when a GitHub org's integration is disconnected
 // regardless of whether the trigger was an admin DELETE or the
 // installation.deleted webhook. For every user whose only remaining org
 // coverage was this one, revoke their active sessions and drop their
 // UserOrgMembership row so they fall back to the standard verifyAnyOrgMembership
-// gate on next sign-in. user.status is intentionally left untouched here,
+// gate on next sign-in. user.status is intentionally left untouched here
 // the org membership check is the authoritative gate, and a separate manual
 // disable lever stays available for admins via /api/admin/users.
 export async function revokeStrandedUserSessions(accountLogin: string): Promise<{

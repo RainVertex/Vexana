@@ -30,7 +30,7 @@ function saveExpanded(entityId: string, set: Set<string>): void {
   try {
     window.localStorage.setItem(storageKey(entityId), JSON.stringify(Array.from(set)));
   } catch {
-    // localStorage can throw under quota or private-mode policies; sticky
+    // localStorage can throw under quota or private-mode policies. sticky
     // collapse state is best-effort, so swallow and continue.
   }
 }

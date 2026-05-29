@@ -5,7 +5,7 @@ export interface PlanCtx {
   actor: Actor;
   target: SandboxTarget;
 
-  // Frozen wall-clock — same value for the lifetime of the plan call.
+  // Frozen wall-clock, same value for the lifetime of the plan call.
   now(): Date;
 
   // Filesystem probes, scoped to repo root, read-only.

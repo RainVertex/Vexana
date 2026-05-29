@@ -11,8 +11,8 @@ import { requireUserId } from "./core";
 // the user for it (nobody knows it by heart) or hallucinates the org login as
 // the id, which then fails with a foreign-key violation at submit time.
 //
-// Auth: any authenticated user can list — the org login is public (mirrors
-// /api/integrations/github/installations). Config blob is never returned;
+// Auth: any authenticated user can list, the org login is public (mirrors
+// /api/integrations/github/installations). Config blob is never returned.
 // only id, display name, and accountLogin.
 
 const listGithub: RegisteredTool = {

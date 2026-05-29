@@ -17,7 +17,7 @@ export function useCatalogEntityNames(): Map<string, string> {
         setNames(m);
       })
       .catch(() => {
-        // Fall through with an empty map; formatPath uses its default
+        // Fall through with an empty map. formatPath uses its default
         // humanization when no name is found.
       });
     return () => {

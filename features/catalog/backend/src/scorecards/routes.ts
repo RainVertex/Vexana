@@ -128,7 +128,7 @@ scorecardsRouter.post("/:id/evaluate", async (req, res) => {
   const existing = await prisma.scorecard.findUnique({ where: { id: req.params.id } });
   if (!existing) return res.status(404).json({ error: "Scorecard not found" });
   // Evaluate this single scorecard against every applicable entity.
-  // Reuses the entity-wide evaluator but filters in-memory; since v1 only has
+  // Reuses the entity-wide evaluator but filters in-memory. since v1 only has
   // a handful of scorecards, just running evaluateAllScorecards is fine and
   // keeps semantics consistent with the scheduled job.
   const result = await evaluateAllScorecards();

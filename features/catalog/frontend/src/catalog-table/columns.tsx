@@ -163,7 +163,7 @@ export function buildColumns(): ColumnDef<CatalogRow>[] {
       filterFn: arrIncludesAny,
       getGroupingValue: tagsGroupingFn,
       // Sort by first tag (alphabetical, case-insensitive). Rows with no
-      // tags sort to the bottom in asc order — tags-grouping already treats
+      // tags sort to the bottom in asc order, tags-grouping already treats
       // empty as "(no tags)" so users see them grouped together either way.
       sortingFn: (a, b) => {
         const at = (a.original.tags ?? [])[0]?.toLowerCase() ?? "";

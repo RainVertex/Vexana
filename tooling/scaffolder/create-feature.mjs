@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Dev-time feature scaffolder. Reuses the runtime skeleton in
 // packages/scaffolder-templates/skeletons/in-repo-feature/ so dev-time and
-// runtime scaffolding stay in sync — update the template once, both pick it up.
+// runtime scaffolding stay in sync, update the template once, both pick it up.
 //
 // Usage: yarn create-feature <kebab-case-name>
 
@@ -53,9 +53,8 @@ const transforms = {
 };
 
 function renderContent(text) {
-  return text.replace(
-    /\$\{\{\s*values\.name(?:\s*\|\s*(\w+))?\s*\}\}/g,
-    (_, filter) => (filter ? transforms[filter](name) : name),
+  return text.replace(/\$\{\{\s*values\.name(?:\s*\|\s*(\w+))?\s*\}\}/g, (_, filter) =>
+    filter ? transforms[filter](name) : name,
   );
 }
 

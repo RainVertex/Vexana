@@ -5,18 +5,18 @@ import type {
   ToolApprovalPolicy,
 } from "@internal/shared-types";
 
-// ToolApprovalMatrix — composes the per-agent toolApprovalPolicy JSON. Two
+// ToolApprovalMatrix, composes the per-agent toolApprovalPolicy JSON. Two
 // rows of controls:
 //
-//   1. Section defaults — one mode per top-level section ("catalog",
-//      "scaffolder", etc.). The mode applies to every tool in that section
-//      unless overridden.
-//   2. Per-tool overrides — for each tool the agent has in its allowlist,
-//      a select that overrides the section default. "(default)" means the
-//      section default applies.
+// 1. Section defaults, one mode per top-level section ("catalog"
+// "scaffolder", etc.). The mode applies to every tool in that section
+// unless overridden.
+// 2. Per-tool overrides, for each tool the agent has in its allowlist
+// a select that overrides the section default. "(default)" means the
+// section default applies.
 //
 // The shape we emit matches what the backend's decidePolicy() reads:
-//   { _sectionDefaults: { catalog: "auto", ... }, "catalog_search": "auto", ... }
+// { _sectionDefaults: { catalog: "auto", ... }, "catalog_search": "auto", ... }
 
 const MODES: ReadonlyArray<{ value: ToolApprovalMode; label: string; description: string }> = [
   { value: "auto", label: "auto", description: "Run without prompting" },

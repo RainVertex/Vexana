@@ -1,17 +1,17 @@
 // Grafana Alertmanager webhook receiver. Grafana Alertmanager doesn't HMAC
 // payloads natively, but its Webhook contact point lets you set a static
-// `Authorization` header — we generate a per-integration bearer at connect
+// `Authorization` header, we generate a per-integration bearer at connect
 // time and require it here. The header is compared in constant time.
 //
 // Per-request flow:
-//   1. Bearer auth against decrypted integration.config.webhookSecret.
-//   2. Replay protection: reject 400 if max(startsAt) is older than 10min.
-//   3. For each alert, upsert AlertDeliveryState by (integrationId, fingerprint)
-//      and run the dedup state machine (see steps below).
-//   4. Recipient resolver: entity owners → team members → org admins.
-//   5. notify(tx, ...) per recipient inside a transaction.
+// 1. Bearer auth against decrypted integration.config.webhookSecret.
+// 2. Replay protection: reject 400 if max(startsAt) is older than 10min.
+// 3. For each alert, upsert AlertDeliveryState by (integrationId, fingerprint)
+// and run the dedup state machine (see steps below).
+// 4. Recipient resolver: entity owners → team members → org admins.
+// 5. notify(tx, ...) per recipient inside a transaction.
 //
-// MUST be mounted with express.raw() and BEFORE express.json() — same
+// MUST be mounted with express.raw() and BEFORE express.json(), same
 // constraint as the GitHub webhook receiver in apps/api/src/createServer.ts.
 
 import { Router } from "express";
@@ -119,9 +119,9 @@ async function resolveRecipients(
 }
 
 // Webhook receiver is mounted outside /api/* (see apps/api/src/createServer.ts)
-// so the global apiLimiter does not apply. Even with the bearer requirement,
+// so the global apiLimiter does not apply. Even with the bearer requirement
 // an attacker with the secret could flood the receiver with unique-fingerprint
-// alerts and bypass dedup — so we cap per (integrationId, IP) at 300/min.
+// alerts and bypass dedup, so we cap per (integrationId, IP) at 300/min.
 // Burst-friendly enough for a normal grouped Alertmanager batch, restrictive
 // enough that a flood gets back-pressure.
 const webhookLimiter = rateLimit({
@@ -184,7 +184,7 @@ grafanaWebhookRouter.post(
       return;
     }
 
-    // Replay protection. Reject the whole batch — partial acceptance is
+    // Replay protection. Reject the whole batch, partial acceptance is
     // harder to reason about than refusing.
     let maxStartsAt = -Infinity;
     for (const a of alerts) {
@@ -213,7 +213,7 @@ grafanaWebhookRouter.post(
       const status: AlertStatus = alert.status === "resolved" ? "resolved" : "firing";
       const fingerprint = alert.fingerprint;
       if (!fingerprint) {
-        // Without a fingerprint we can't dedup. Skip — Grafana always sends one.
+        // Without a fingerprint we can't dedup. Skip, Grafana always sends one.
         continue;
       }
 
@@ -291,7 +291,7 @@ grafanaWebhookRouter.post(
         fingerprint,
       };
 
-      // One transaction per recipient — notify() fans out webhook deliveries
+      // One transaction per recipient, notify() fans out webhook deliveries
       // and must run inside a tx.
       for (const recipientUserId of recipientUserIds) {
         await prisma.$transaction(async (tx) => {

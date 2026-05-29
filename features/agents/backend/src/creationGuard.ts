@@ -3,12 +3,12 @@ import type { UserRole } from "@internal/db";
 
 // Tiered creation rules for the agents wizard. Decision matrix:
 //
-//   admin caller       , can create anything
-//   team-lead caller   , can create team-owned agents (role = member);
-//                        cannot disable onBehalfOfRequired; cannot grant
-//                        admin role
-//   member caller      , can create personal agents only (role = member);
-//                        cannot disable onBehalfOfRequired
+// admin caller , can create anything
+// team-lead caller , can create team-owned agents (role = member).
+// cannot disable onBehalfOfRequired. cannot grant
+// admin role
+// member caller , can create personal agents only (role = member).
+// cannot disable onBehalfOfRequired
 //
 // Admin-role agents and onBehalfOfRequired=false (autonomous) are admin-only
 // because both increase blast radius materially: an admin agent gets the
@@ -35,7 +35,7 @@ export async function checkAgentCreation(args: CreationGuardArgs): Promise<Creat
   // Admins bypass all the tier checks.
   if (caller.role === "admin") return { ok: true };
 
-  // Only admins can mint admin-role agents — that's by definition the
+  // Only admins can mint admin-role agents, that's by definition the
   // privilege-escalation that this guard exists to prevent.
   if (desired.role === "admin") {
     return { ok: false, reason: "Only admins can create admin-role agents" };

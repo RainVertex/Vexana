@@ -15,7 +15,7 @@ async function loadOctokit(): Promise<typeof OctokitClient> {
 
 // publish:github creates a GitHub repo via Octokit, then pushes the apply
 // workspace's contents as the initial commit via simple-git. Both mutations
-// are flagged irreversible — the platform never auto-deletes a repo, so
+// are flagged irreversible, the platform never auto-deletes a repo, so
 // rollback is "noop + report" and the apply gate refuses to run without an
 // approval token covering repo:public + network:external.
 
@@ -29,7 +29,7 @@ const publishGithubInput = z.object({
   description: z.string().max(350).optional(),
   defaultBranch: z.string().default("main"),
   // Name of the secret in the SecretAccessor whose value is the GitHub token.
-  // Defaults to GITHUB_TOKEN; templates can override per-environment.
+  // Defaults to GITHUB_TOKEN. templates can override per-environment.
   tokenSecret: z.string().default("GITHUB_TOKEN"),
 });
 
@@ -58,7 +58,7 @@ async function createRepo(
   octo: OctokitClient,
   input: PublishGithubInput,
 ): Promise<{ fullName: string; cloneUrl: string }> {
-  // Try the org-creation endpoint first; if the org turns out to be a user
+  // Try the org-creation endpoint first. if the org turns out to be a user
   // login, fall back to the authenticated-user endpoint. We can't tell ahead
   // of time without a Get-org call, so trial-then-fallback is simpler than a
   // pre-flight type check.
@@ -100,7 +100,7 @@ async function pushInitialCommit(
   await git.addConfig("user.name", "Scaffolder");
   await git.add(".");
   // --allow-empty in case the workspace ended up with zero files (a misconfigured
-  // template); the user still gets a real repo with a sensible head.
+  // template). the user still gets a real repo with a sensible head.
   const commit = await git.commit("Initial scaffold", { "--allow-empty": null });
   await git.branch(["-M", defaultBranch]);
   await git.addRemote("origin", authedUrl);
@@ -115,7 +115,7 @@ export const publishGithubAction: Action<PublishGithubInput, PublishGithubOutput
   capabilities: ["network:external", "repo:public", "secrets:read:GITHUB_TOKEN"],
   irreversible: true,
   async match(_input, _ctx: ReadCtx) {
-    // Without a token we can't probe; treat as absent. The action's apply
+    // Without a token we can't probe. treat as absent. The action's apply
     // step will refuse if the repo already exists.
     return "absent";
   },
@@ -131,7 +131,7 @@ export const publishGithubAction: Action<PublishGithubInput, PublishGithubOutput
         kind: "github.push",
         remoteUrl: `https://github.com/${input.org}/${input.name}.git`,
         branch: input.defaultBranch,
-        // file count is computed at apply time; the plan-time mutation is
+        // file count is computed at apply time. the plan-time mutation is
         // illustrative only.
         fileCount: 0,
       },
@@ -139,7 +139,7 @@ export const publishGithubAction: Action<PublishGithubInput, PublishGithubOutput
   },
   async apply(input, ctx: WriteCtx) {
     const token = ctx.secrets.read(input.tokenSecret);
-    // ctx.secrets.read auto-registers with the redactor, but be explicit too —
+    // ctx.secrets.read auto-registers with the redactor, but be explicit too
     // protects against a future SecretAccessor that doesn't.
     if (token.length >= 4) {
       ctx.logger.info(`publish:github authenticating as token "${token.slice(0, 4)}***"`);
@@ -171,7 +171,7 @@ export const publishGithubAction: Action<PublishGithubInput, PublishGithubOutput
     const { fullName, cloneUrl } = await createRepo(octo, input);
     ctx.logger.info(`publish:github created ${fullName}`);
 
-    // Snapshot file list for the audit trail; intentionally no contents in logs.
+    // Snapshot file list for the audit trail. intentionally no contents in logs.
     const fileCount = await countWorkspaceFiles(ctx.workspacePath);
 
     const sha = await pushInitialCommit(
@@ -193,7 +193,7 @@ export const publishGithubAction: Action<PublishGithubInput, PublishGithubOutput
       },
       // Irreversible: rolling back a public push is not safe automatically.
       // The executor records the noop and surfaces a "manual cleanup" report
-      // via the audit trail; the operator must decide whether to delete the
+      // via the audit trail. the operator must decide whether to delete the
       // repo by hand.
       compensation: {
         kind: "noop",

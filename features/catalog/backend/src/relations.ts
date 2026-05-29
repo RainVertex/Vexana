@@ -15,7 +15,7 @@ const VALID_KINDS: ReadonlyArray<CatalogEntityKind> = [
   "infrastructure",
 ];
 
-/** Backstage ref: "[<kind>:][<namespace>/]<name>" — namespace is ignored. */
+/** Backstage ref: "[<kind>:][<namespace>/]<name>", namespace is ignored. */
 function parseRef(raw: string): { kind: CatalogEntityKind | null; name: string } {
   const trimmed = raw.trim();
   let kindPart: string | null = null;
@@ -41,7 +41,7 @@ function readOutgoing(yamlSpec: unknown): Array<{ type: CatalogRelationType; raw
   if (!yaml) return [];
   const out: Array<{ type: CatalogRelationType; rawRef: string }> = [];
 
-  // Backstage shape: spec.{dependsOn,consumesApis,providesApis,partOf,system}
+  // Backstage shape: spec.{dependsOn, consumesApis, providesApis, partOf, system}
   const spec = yaml.spec as Record<string, unknown> | undefined;
   if (spec) {
     pushRefs(out, "dependsOn", spec.dependsOn);
@@ -107,7 +107,7 @@ export async function getRelationsFor(entityId: string): Promise<CatalogRelation
   const entity = await prisma.catalogEntity.findUnique({ where: { id: entityId } });
   if (!entity) return { outgoing: [], incoming: [] };
 
-  // Pull every entity once; <500 entities is the design budget. We need yamlSpec
+  // Pull every entity once. <500 entities is the design budget. We need yamlSpec
   // for incoming-edge scanning anyway, and indexed lookup-per-ref would be N
   // queries per outgoing. One findMany + Map is cheaper.
   const all = await prisma.catalogEntity.findMany({

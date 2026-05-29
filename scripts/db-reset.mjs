@@ -31,20 +31,13 @@ async function runAllowFail(cmd, args) {
   try {
     await run(cmd, args);
   } catch {
-    // Volume may not exist yet; ignore.
+    // Volume may not exist yet. ignore.
   }
 }
 
 async function main() {
   console.log("[db-reset] Resetting platform Postgres DB...");
-  await run("yarn", [
-    "workspace",
-    "@internal/db",
-    "prisma",
-    "migrate",
-    "reset",
-    "--force",
-  ]);
+  await run("yarn", ["workspace", "@internal/db", "prisma", "migrate", "reset", "--force"]);
 
   console.log("[db-reset] Stopping Vikunja container...");
   await runAllowFail("docker", ["compose", "stop", "vikunja"]);

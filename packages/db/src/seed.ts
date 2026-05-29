@@ -43,12 +43,12 @@ async function main() {
     },
   });
 
-  // Slug uniqueness is enforced by a partial unique index (live teams only),
+  // Slug uniqueness is enforced by a partial unique index (live teams only)
   // so Prisma's generated WhereUniqueInput no longer accepts {slug}. Use
   // findFirst-then-create to keep the seed idempotent.
   // Seed teams are bound to a placeholder GitHub org slug "example". The
   // visibility filter looks at UserOrgMembership rows, so admins (who bypass
-  // the filter) still see seed data; non-admin demo logins won't see it
+  // the filter) still see seed data. non-admin demo logins won't see it
   // unless an integration with this accountLogin is also wired in.
   const SEED_ACCOUNT_LOGIN = "example";
 
@@ -168,7 +168,7 @@ async function main() {
   // Catalog enricher agent. The provider/model registry is created by the
   // agent_provider_registry migration with stable IDs, so we can reference
   // the Sonnet model row directly. The instructions string mirrors
-  // ENRICHER_SYSTEM_PROMPT in features/agents/backend/src/executor.ts —
+  // ENRICHER_SYSTEM_PROMPT in features/agents/backend/src/executor.ts
   // duplicated here because @internal/db cannot import from feature workspaces.
   // If you change one, change both.
   const enricherInstructions = `You are the Catalog Enricher agent.
@@ -232,20 +232,18 @@ Rules:
   console.log("Seed complete.");
 }
 
-// =============================================================================
 // Platform Assistant agent
 //
 // Seeds the chatbot agent that drives /api/chat. Tool ids and the system
 // prompt mirror features/chat/backend/src/prompts.ts and the read/write
 // tool aggregator at features/chat/backend/src/tools/index.ts. Kept inline
 // here (rather than imported) so @internal/db stays free of feature-backend
-// dependencies — feature backends depend on @internal/db, not the other way
+// dependencies, feature backends depend on @internal/db, not the other way
 // around. If you change the prompt or tool list, update both places.
 //
 // Env overrides:
-//   CHAT_LLM_MODEL_ID         — default llmmodel_qwen3_8b_local
-//   CHAT_WRITE_TOOLS_ENABLED  — "false" omits write tools (read-only assistant)
-// =============================================================================
+// CHAT_LLM_MODEL_ID , default llmmodel_qwen3_8b_local
+// CHAT_WRITE_TOOLS_ENABLED , "false" omits write tools (read-only assistant)
 
 async function seedPlatformAssistant() {
   const modelId = process.env.CHAT_LLM_MODEL_ID ?? "llmmodel_qwen3_8b_local";
@@ -335,7 +333,7 @@ Integrations.`;
 }
 
 // Class-table-inheritance backing User for an Agent (userKind='agent'). The
-// agents_section_and_identity migration created these for pre-existing agents;
+// agents_section_and_identity migration created these for pre-existing agents.
 // seed agents need them created here before the agent.upsert can satisfy
 // Agent.userId NOT NULL.
 async function upsertAgentBackingUser(input: { id: string; agentId: string; displayName: string }) {
@@ -479,7 +477,7 @@ async function seedDevDocs() {
 }
 
 async function seedScorecards() {
-  // Production Readiness — stage style, services only.
+  // Production Readiness, stage style, services only.
   await upsertScorecard({
     slug: "production-readiness",
     name: "Production Readiness",
@@ -532,7 +530,7 @@ async function seedScorecards() {
     ],
   });
 
-  // Catalog Hygiene — threshold style, every kind.
+  // Catalog Hygiene, threshold style, every kind.
   await upsertScorecard({
     slug: "catalog-hygiene",
     name: "Catalog Hygiene",
@@ -571,7 +569,7 @@ async function seedScorecards() {
     ],
   });
 
-  // API Maturity — stage style, APIs only.
+  // API Maturity, stage style, APIs only.
   await upsertScorecard({
     slug: "api-maturity",
     name: "API Maturity",
@@ -643,14 +641,12 @@ async function upsertScorecard(input: SeedScorecardInput) {
   });
 }
 
-// =============================================================================
 // LLM provider/model registry
 //
 // Static IDs (not cuids) so existing references in this file
 // (`llmmodel_claude_sonnet_4_6`, `llmmodel_qwen3_8b_local`) keep working.
-// Slug is unique; upsert by slug keeps re-runs idempotent. Cost is USD per 1k
-// tokens; local Qwen leaves cost null.
-// =============================================================================
+// Slug is unique. upsert by slug keeps re-runs idempotent. Cost is USD per 1k
+// tokens. local Qwen leaves cost null.
 
 async function seedLlmProviders() {
   const providers: Array<{
@@ -796,15 +792,13 @@ async function seedLlmProviders() {
   }
 }
 
-// =============================================================================
 // Default sidebar pages
 //
-// Synthetic `__system__` user owns pages that pre-date any real user; admins
+// Synthetic `__system__` user owns pages that pre-date any real user. admins
 // can rename, reorder, or delete them like any other shared page. ORDER values
 // use 1024 spacing (matching ORDER_STEP in the pages router) so admins can
 // insert between them without renumbering. Hardcoded IDs are stable so re-runs
 // don't duplicate.
-// =============================================================================
 
 async function seedDefaultPages() {
   await prisma.user.upsert({
@@ -980,13 +974,11 @@ async function seedDefaultPages() {
   }
 }
 
-// =============================================================================
 // Team policies
 //
 // Single starting policy is `name_pattern` (one row per kind, enforced by the
 // unique constraint on TeamPolicy.kind). Adding a new kind = enum migration +
 // new validator in features/teams/backend/src/policies.ts + new row here.
-// =============================================================================
 
 async function seedTeamPolicies() {
   await prisma.teamPolicy.upsert({

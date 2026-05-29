@@ -1,5 +1,5 @@
 // Installation-scoped Octokit factory. `@octokit/auth-app` handles RS256 JWT
-// signing, installation token minting, and TTL caching for us — we just hand
+// signing, installation token minting, and TTL caching for us, we just hand
 // it the appId/privateKey from env and an installationId from the Integration
 // row. App-only auth (no installation) is also exposed for the install
 // callback, which needs to call /app/installations/<id> to read account info

@@ -6,13 +6,13 @@ import { loadCapabilityPolicy } from "./policy";
 
 // One-pass drift detection. For every active binding (optionally filtered to a
 // single template), re-runs plan() against the current template module + the
-// stored params. If the resulting plan's mode is anything other than no-op,
-// open a ScaffoldDrift row. Existing open drifts for the same (binding,
+// stored params. If the resulting plan's mode is anything other than no-op
+// open a ScaffoldDrift row. Existing open drifts for the same (binding
 // fromVersion, toVersion) are coalesced.
 
 export interface DriftSweepInput {
   liveRepoRoot: string;
-  /** Restrict to a specific templateId; otherwise scans all active bindings. */
+  /** Restrict to a specific templateId. otherwise scans all active bindings. */
   templateId?: string;
   /** Sample drift detection actor used for replans triggered by the system. */
   systemUserId?: string;
@@ -101,7 +101,7 @@ export async function runDriftSweep(input: DriftSweepInput): Promise<DriftSweepR
       if (built.plan.mode === "no-op") {
         // Bring the binding's templateHash up to date so we don't re-scan the
         // same delta indefinitely. Version stays as-is until the plan is
-        // applied; this just records "we've considered this version a no-op".
+        // applied. this just records "we've considered this version a no-op".
         await prisma.scaffoldBinding.update({
           where: { id: binding.id },
           data: { templateHash: contentHash },
@@ -152,7 +152,7 @@ export async function runDriftSweep(input: DriftSweepInput): Promise<DriftSweepR
 
 // Records the current template content hash for every registered template.
 // Returns the set of templateIds whose hash differs from the previous snapshot
-// (or which were unseen) — those are the ones that need an immediate sweep.
+// (or which were unseen), those are the ones that need an immediate sweep.
 export async function reconcileTemplateHashSnapshots(): Promise<{
   changed: string[];
   unchanged: number;

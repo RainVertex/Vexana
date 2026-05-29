@@ -13,7 +13,7 @@ let registered = false;
 export function registerAllJobs(): void {
   if (registered) return;
   registerJob(heartbeatJob);
-  // Scaffolder cron jobs share the same JobDefinition shape; the feature
+  // Scaffolder cron jobs share the same JobDefinition shape. the feature
   // exports them so apps/api stays the single owner of the cron registry.
   const liveRepoRoot = resolve(__dirname, "../../../..");
   for (const def of getScaffolderJobs({ liveRepoRoot })) {

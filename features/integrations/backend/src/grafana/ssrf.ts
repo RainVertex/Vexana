@@ -1,6 +1,6 @@
 // SSRF guard for admin-entered Grafana baseUrls. Admin trust covers the
 // common misuse, but defense in depth: an admin who copy/pastes the wrong
-// URL — or whose account gets compromised — shouldn't be able to point the
+// URL, or whose account gets compromised, shouldn't be able to point the
 // platform at internal services (metadata endpoints, Redis, the admin API
 // of another service on the VPS).
 //
@@ -57,7 +57,7 @@ export async function assertNonPrivateHost(baseUrl: string): Promise<void> {
   try {
     records = await dns.lookup(host, { all: true });
   } catch {
-    // DNS failure — let the downstream fetch surface the error verbatim
+    // DNS failure, let the downstream fetch surface the error verbatim
     // rather than masking it with an SSRF rejection.
     return;
   }

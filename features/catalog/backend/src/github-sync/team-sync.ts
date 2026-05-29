@@ -2,17 +2,17 @@
 // repo-side bulk-sync pattern: pull a snapshot from GitHub, diff against
 // the platform DB, apply the delta in one transaction, and write a run
 // record. The same `runReconciliation` entry point is used by all three
-// reconciliation layers (webhook, manual /resync, weekly cron) — the source
+// reconciliation layers (webhook, manual /resync, weekly cron), the source
 // argument only flavors the audit row.
 //
 // Design constraints (from the plan):
-//   - Idempotent: re-running yields the same end state.
-//   - Concurrency-safe with itself: two overlapping runs both diff against
-//     current DB state, so the second one sees the first's writes and is a
-//     near-noop. The transaction prevents intermediate-state reads.
-//   - Members not yet on the platform are buffered into PendingTeamMembership
-//     with a 7-day TTL, drained by the SSO user-creation hook.
-//   - Outside collaborators (not org members) are filtered out at queue entry.
+// - Idempotent: re-running yields the same end state.
+// - Concurrency-safe with itself: two overlapping runs both diff against
+// current DB state, so the second one sees the first's writes and is a
+// near-noop. The transaction prevents intermediate-state reads.
+// - Members not yet on the platform are buffered into PendingTeamMembership
+// with a 7-day TTL, drained by the SSO user-creation hook.
+// - Outside collaborators (not org members) are filtered out at queue entry.
 
 import { Prisma, prisma, type UserKind, type UserRole } from "@internal/db";
 import { GitHubAppNotConfiguredError, octokitForInstallation } from "@feature/integrations-backend";
@@ -44,7 +44,7 @@ export interface ReconciliationResult {
 }
 
 interface GithubTeamRecord {
-  nodeId: string; // stable across renames — used as Team.externalId
+  nodeId: string; // stable across renames, used as Team.externalId
   databaseId: number;
   slug: string;
   name: string;
@@ -82,7 +82,7 @@ interface DbState {
   userKindById: Map<string, UserKind>;
   // userIds that currently hold a UserOrgMembership row for this run's org.
   existingOrgMembershipUserIds: Set<string>;
-  // slugs currently in use by NON-github teams that are not soft-deleted —
+  // slugs currently in use by NON-github teams that are not soft-deleted
   // used to detect collisions when assigning slugs to imported teams.
   manualSlugs: Set<string>;
 }
@@ -159,7 +159,7 @@ export async function runReconciliation(
     return result;
   }
 
-  // GitHub installations on personal accounts have no teams — the teams
+  // GitHub installations on personal accounts have no teams, the teams
   // endpoint returns 404. Skip cleanly so cron loops don't fail.
   let github: GithubState;
   try {
@@ -290,7 +290,7 @@ export async function fetchGithubState(
       }));
     } catch (err) {
       // 404 here means the team disappeared between list and members fetch.
-      // Treat as empty membership and continue — diff will pick this up.
+      // Treat as empty membership and continue, diff will pick this up.
       if ((err as { status?: number }).status !== 404) throw err;
     }
     teams.push({
@@ -341,7 +341,7 @@ async function loadDbState(installationId: number, orgLogin: string): Promise<Db
   }
 
   // Only fetch users with a githubId set (which is all of them per current
-  // schema, but the column is technically NOT NULL — keep the where for
+  // schema, but the column is technically NOT NULL, keep the where for
   // future flexibility). role and userKind drive the UserOrgMembership
   // reconcile filter (admins and agent-kind users are excluded).
   const users = await prisma.user.findMany({
@@ -404,11 +404,11 @@ export function computeDiff(github: GithubState, db: DbState): ReconciliationDif
     }
 
     // Membership diff per team. We can only emit add/remove for users we
-    // already know about; unknown githubIds become pending entries.
+    // already know about. unknown githubIds become pending entries.
     const desiredUserIds = new Map<string, "lead" | "member">();
     for (const m of gh.members) {
       if (!github.orgMemberIds.has(m.githubId)) {
-        // Outside collaborator on a team — by policy we don't track those.
+        // Outside collaborator on a team, by policy we don't track those.
         continue;
       }
       const userId = db.userIdByGithubId.get(m.githubId);
@@ -496,7 +496,7 @@ interface ApplyResult {
   pendingQueued: number;
   orgMembershipsAdded: number;
   orgMembershipsRemoved: number;
-  // userIds whose UserOrgMembership row for this org was deleted in this run;
+  // userIds whose UserOrgMembership row for this org was deleted in this run.
   // post-transaction caller uses this to detect newly-stranded users and
   // revoke their sessions.
   removedOrgMembershipUserIds: string[];
@@ -630,7 +630,7 @@ async function applyDiff(
         });
         out.membersRemoved++;
       } catch (err) {
-        // P2025 = record not found — already removed by another path.
+        // P2025 = record not found, already removed by another path.
         if ((err as { code?: string }).code !== "P2025") throw err;
       }
     }
@@ -656,7 +656,7 @@ async function applyDiff(
     }
 
     // Pass 4: UserOrgMembership reconcile for this org. Adds carry a fresh
-    // lastVerifiedAt; removes are tracked so the caller can revoke sessions
+    // lastVerifiedAt. removes are tracked so the caller can revoke sessions
     // for any newly-stranded user once the transaction commits.
     if (diff.orgMembershipsToAdd.length > 0) {
       const addRows = diff.orgMembershipsToAdd.map((a) => ({
@@ -704,7 +704,7 @@ function sanitizeSlug(input: string): string {
 }
 
 function shortHash(input: string): string {
-  // 6-char DJB2 hash. Plenty for a tiebreak suffix; no need for crypto.
+  // 6-char DJB2 hash. Plenty for a tiebreak suffix. no need for crypto.
   let h = 5381;
   for (let i = 0; i < input.length; i++) h = ((h << 5) + h + input.charCodeAt(i)) >>> 0;
   return h.toString(36).slice(0, 6);

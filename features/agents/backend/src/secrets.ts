@@ -2,14 +2,14 @@ import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import { prisma } from "@internal/db";
 
 // Encrypted-at-rest provider keys for agents. Format on disk:
-//   <iv (12 bytes)> | <ciphertext> | <auth tag (16 bytes)>
+// <iv (12 bytes)> | <ciphertext> | <auth tag (16 bytes)>
 // All packed into the Secret.encryptedValue Bytes column. AES-256-GCM with
 // a master key from APP_SECRET_MASTER_KEY (32 bytes, hex or base64). Never
-// store plaintext anywhere — the Secret table only holds the encrypted blob.
+// store plaintext anywhere, the Secret table only holds the encrypted blob.
 //
 // The master key fail-fasts at first use rather than at boot so test/dev
 // environments without secrets configured can still start the server. If
-// any code path that creates or reads a Secret runs without the env var,
+// any code path that creates or reads a Secret runs without the env var
 // it throws with an actionable message.
 
 const ALGORITHM = "aes-256-gcm";
@@ -50,7 +50,7 @@ export function encryptSecret(plain: string): Buffer {
 }
 
 export function decryptSecret(blob: Buffer | Uint8Array): string {
-  // Prisma's Bytes columns deserialize as Uint8Array; we accept both for
+  // Prisma's Bytes columns deserialize as Uint8Array. we accept both for
   // ergonomics. Wrapping in a Buffer view (zero-copy) lets us use the
   // subarray helpers and Buffer.concat below.
   const buf = Buffer.isBuffer(blob)

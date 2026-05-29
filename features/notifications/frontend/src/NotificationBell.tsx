@@ -8,9 +8,9 @@ const POLL_INTERVAL_MS = 30_000;
 function notificationHref(n: NotificationDto): string | null {
   const p = n.payload as Record<string, unknown>;
   // Both request kinds resolve into the unified Requests section now:
-  //   *.submitted → /approvals/team (the approver inbox)
-  //   everything else → /requests/team (the requester's status)
-  // The legacy /teams/maintainer-{requests,approvals} URLs still resolve via
+  // *.submitted → /approvals/team (the approver inbox)
+  // everything else → /requests/team (the requester's status)
+  // The legacy /teams/maintainer-{requests, approvals} URLs still resolve via
   // the redirect routes, so older notification rows keep working.
   if (n.kind === "team.request.submitted" || n.kind === "team.maintainer_request.submitted") {
     return "/approvals/team";
@@ -96,7 +96,7 @@ export function NotificationBell() {
       const res = await api.notifications.unreadCount();
       setUnread(res.count);
     } catch {
-      // network blip — leave previous count
+      // network blip, leave previous count
     }
   }, [api]);
 

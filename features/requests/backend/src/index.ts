@@ -29,7 +29,7 @@ requestsRouter.get("/pending-summary", async (req, res, next) => {
       prisma.maintainerRequest.count({
         where: { requestedByUserId: myId, status: "pending" },
       }),
-      // Cheap "do I lead any team" check; reused for canApprove.
+      // Cheap "do I lead any team" check. reused for canApprove.
       prisma.teamMembership.findFirst({
         where: { userId: myId, role: "lead" },
         select: { teamId: true },
@@ -45,7 +45,7 @@ requestsRouter.get("/pending-summary", async (req, res, next) => {
               },
             },
       }),
-      // Team-creation approvals are admin-only; non-admins always see 0.
+      // Team-creation approvals are admin-only. non-admins always see 0.
       isAdmin
         ? prisma.teamRequest.count({
             where: { status: { in: ["pending", "awaiting_user_confirmation"] } },

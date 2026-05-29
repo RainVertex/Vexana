@@ -13,15 +13,15 @@ export interface ChatRequest {
 
 export interface ChatResult {
   message: OpenAI.Chat.Completions.ChatCompletionMessage;
-  // Narrowed to function-shape calls; we don't currently emit custom tools.
+  // Narrowed to function-shape calls. we don't currently emit custom tools.
   toolCalls: OpenAI.Chat.Completions.ChatCompletionMessageFunctionToolCall[];
   usage: { input: number; output: number };
   finishReason: string | null;
 }
 
 // Single chat-completion turn against a registered provider/model. Every
-// provider — Ollama, OpenAI, Anthropic-via-its-OpenAI-compat-endpoint — is
-// reached through the OpenAI SDK; only baseUrl + the optional env-var-backed
+// provider, Ollama, OpenAI, Anthropic-via-its-OpenAI-compat-endpoint, is
+// reached through the OpenAI SDK. only baseUrl + the optional env-var-backed
 // API key differ. The caller drives the agentic loop (see runAgent).
 export async function chat(req: ChatRequest): Promise<ChatResult> {
   const client = buildClient(req.model.provider);
@@ -65,7 +65,7 @@ function buildClient(provider: LlmProvider): OpenAI {
     apiKey = fromEnv;
   } else {
     // Provider explicitly requires no key (e.g. Ollama). The OpenAI SDK still
-    // requires a non-empty string; the upstream just ignores it.
+    // requires a non-empty string. the upstream just ignores it.
     apiKey = "ollama";
   }
   return new OpenAI({ baseURL: provider.baseUrl, apiKey });

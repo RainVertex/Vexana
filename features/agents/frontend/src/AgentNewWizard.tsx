@@ -12,10 +12,10 @@ import { ProviderPicker, type ProviderPickerValue } from "./components/ProviderP
 import { ToolApprovalMatrix } from "./components/ToolApprovalMatrix";
 
 // 4-step wizard for creating a new agent. Steps:
-//   1. Identity   — name, description, system prompt
-//   2. Model      — provider adapter, LlmModel, optional Secret override
-//   3. Permissions — role, owning team (optional), onBehalfOfRequired
-//   4. Tools      — toolIds allowlist + per-tool approval policy
+// 1. Identity , name, description, system prompt
+// 2. Model , provider adapter, LlmModel, optional Secret override
+// 3. Permissions, role, owning team (optional), onBehalfOfRequired
+// 4. Tools , toolIds allowlist + per-tool approval policy
 //
 // State lives in a single object that we POST as-is on Save. Validation is
 // per-step + final: every step's "Continue" button enables only when its
@@ -24,25 +24,25 @@ import { ToolApprovalMatrix } from "./components/ToolApprovalMatrix";
 //
 // Server-side creationGuard (Pass 3) is the source of truth for what a
 // caller can mint. The wizard doesn't try to enforce the tier rules in JS
-// — it just submits whatever the user picked and surfaces the 403 reason
+//it just submits whatever the user picked and surfaces the 403 reason
 // inline if the guard refuses.
 
 type Step = 1 | 2 | 3 | 4;
 
 interface WizardState {
-  // Step 1 — Identity
+  // Step 1, Identity
   name: string;
   description: string;
   instructions: string;
-  // Step 2 — Model
+  // Step 2, Model
   modelProvider: ProviderKind;
   modelId: string;
   secretId: string | null;
-  // Step 3 — Permissions
+  // Step 3, Permissions
   role: "admin" | "member";
   owningTeamId: string | null;
   onBehalfOfRequired: boolean;
-  // Step 4 — Tools
+  // Step 4, Tools
   toolIds: string[];
   toolApprovalPolicy: ToolApprovalPolicy;
 }
@@ -71,7 +71,7 @@ export function AgentNewWizard() {
   const [teams, setTeams] = useState<TeamSummary[]>([]);
   // Caller's role drives which UI controls are enabled (role=admin and the
   // onBehalfOfRequired toggle are admin-only). Server-side creationGuard
-  // is the authoritative check; this just shows the right affordance.
+  // is the authoritative check. this just shows the right affordance.
   const [callerRole, setCallerRole] = useState<"admin" | "member">("member");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -226,9 +226,7 @@ export function AgentNewWizard() {
   );
 }
 
-// ---------------------------------------------------------------------------
 // Step components
-// ---------------------------------------------------------------------------
 
 function StepIdentity({
   state,
@@ -417,9 +415,7 @@ function StepTools({
   );
 }
 
-// ---------------------------------------------------------------------------
 // Helpers + chrome
-// ---------------------------------------------------------------------------
 
 function Field({
   label,

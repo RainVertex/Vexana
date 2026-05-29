@@ -13,13 +13,13 @@ const fetchTemplateInput = z.object({
   skeletonPath: z.string().min(1),
   // The {{ values.* }} object passed to Nunjucks.
   values: z.record(z.string(), z.unknown()),
-  // Files matching any of these (substring match) are copied verbatim,
+  // Files matching any of these (substring match) are copied verbatim
   // skipping the Nunjucks pass. Useful for binary fixtures.
   skipRender: z.array(z.string()).optional(),
   // Filename token substitutions applied before rendering. Skeleton authors
   // use markers like __PASCAL__ in paths because filenames cannot contain
   // Nunjucks expressions on Windows. Example:
-  //   { "__PASCAL__": "Payments", "__NAME__": "payments" }
+  // { "__PASCAL__": "Payments", "__NAME__": "payments" }
   pathSubstitutions: z.record(z.string(), z.string()).optional(),
 });
 

@@ -165,7 +165,7 @@ authRouter.get("/github/callback", authCallbackLimiter, async (req, res, next) =
 
     // Drain any GitHub-team pending memberships waiting for this user. Safe
     // to call on every sign-in (idempotent, fast no-op when nothing pending).
-    // Errors are logged but don't block sign-in — pending will get picked up
+    // Errors are logged but don't block sign-in, pending will get picked up
     // by the next webhook or weekly cron either way.
     try {
       const drained = await resolvePendingForUser(user.id, user.githubId);

@@ -3,12 +3,12 @@ import { ConfirmDialog } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
 import type { AgentApprovalRequestDto } from "@internal/shared-types";
 
-// ApprovalInbox — pending tool-call approvals from autonomous (non-chat)
+// ApprovalInbox, pending tool-call approvals from autonomous (non-chat)
 // agent runs. Hosted by AgentApprovalsPage at /agents/approvals. Each row
 // shows the requesting agent, the tool, the parsed arguments, and approve
 // / reject buttons that route to /api/agent-approvals/:id/decision.
 //
-// Approving doesn't re-execute the tool — the autonomous run that wrote
+// Approving doesn't re-execute the tool, the autonomous run that wrote
 // this row is responsible for picking up the decision on its next
 // iteration. Rejecting marks the row final so the run knows not to
 // retry.

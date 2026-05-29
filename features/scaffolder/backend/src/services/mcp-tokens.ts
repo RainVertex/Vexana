@@ -3,7 +3,7 @@ import { prisma } from "@internal/db";
 
 // Token format: `mcp_<id>_<48 base64url chars>`. The id prefix lets us
 // identify the row to verify against without scanning. Only the sha256 of
-// the full token is persisted; the cleartext is shown to the admin once
+// the full token is persisted. the cleartext is shown to the admin once
 // at mint time and never again.
 
 const TOKEN_PREFIX = "mcp_";
@@ -42,7 +42,7 @@ export async function mintMcpToken(input: {
       userId: input.userId,
       name: input.name,
       scopes: input.scopes,
-      // We need the row id before we know the cleartext token; insert with a
+      // We need the row id before we know the cleartext token. insert with a
       // placeholder hash, then update once we know the id.
       tokenHash: "pending",
       expiresAt,
@@ -76,7 +76,7 @@ export async function verifyMcpToken(token: string): Promise<VerifiedTokenContex
   if (!row) return null;
   if (row.expiresAt.getTime() <= Date.now()) return null;
   if (row.tokenHash !== hashToken(token)) return null;
-  // Best-effort touch — don't await; failure shouldn't block auth.
+  // Best-effort touch, don't await. failure shouldn't block auth.
   void prisma.scaffolderMcpToken
     .update({ where: { id: row.id }, data: { lastUsedAt: new Date() } })
     .catch(() => {});

@@ -1,5 +1,5 @@
 // Catalog of integration providers shown on the Integrations page. Providers
-// without a `ConnectDialog` render as "Coming soon" cards — the type system
+// without a `ConnectDialog` render as "Coming soon" cards, the type system
 // already lists them in `IntegrationKind`, but no backend connect flow exists
 // yet.
 

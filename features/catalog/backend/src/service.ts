@@ -16,7 +16,7 @@ export type RegisterCatalogEntityInput = {
   repoUrl?: string | null;
   tags?: string[];
   yamlSpec?: Prisma.InputJsonValue | null;
-  // Org the entity belongs to. Required on create; on update the existing
+  // Org the entity belongs to. Required on create. on update the existing
   // row's accountLogin is preserved (cross-org transfers are not allowed).
   accountLogin?: string;
 };
@@ -45,7 +45,7 @@ export async function registerCatalogEntity(
   opts: RegisterCatalogEntityOptions,
 ): Promise<RegisterCatalogEntityResult> {
   // Lookup precedence: githubRepoId is the stable id and survives renames, so
-  // try it first when provided. Fall back to (name, kind) — both for legacy
+  // try it first when provided. Fall back to (name, kind), both for legacy
   // callers and for the "claim" path where a manually-registered entity is
   // later observed via the App.
   const existing = await findExisting(input, opts);
@@ -120,7 +120,7 @@ export async function registerCatalogEntity(
   if (input.yamlSpec !== undefined) {
     patch.yamlSpec = input.yamlSpec === null ? Prisma.JsonNull : input.yamlSpec;
   }
-  // Allow App-driven updates to fix up name/kind when a repo is renamed —
+  // Allow App-driven updates to fix up name/kind when a repo is renamed
   // only when we matched on githubRepoId (otherwise we'd silently rewrite
   // identity for a (name, kind) match).
   if (opts.githubRepoId != null && existing.githubRepoId === opts.githubRepoId) {
@@ -136,9 +136,9 @@ export async function registerCatalogEntity(
   // Always reflect current owner count for unowned. Manual edits hit this
   // path too because the route layer calls registerCatalogEntity.
   patch.unowned = finalOwners.length === 0 && opts.source === "discovery";
-  // Write-once for installationId / githubRepoId — *except* during revival.
+  // Write-once for installationId / githubRepoId, *except* during revival.
   // When an entity is stale (uninstall-marked) and is being re-discovered by
-  // a new installation, the new installationId must overwrite the old one,
+  // a new installation, the new installationId must overwrite the old one
   // otherwise the next disconnect of the new install can't find this entity
   // to re-stale.
   const isReviving = existing.staleSince !== null;
@@ -195,7 +195,7 @@ async function findExisting(input: RegisterCatalogEntityInput, opts: RegisterCat
 
 function fireScorecardEvaluation(entityId: string): void {
   // Fire-and-forget: scorecard evaluation is a downstream concern that should
-  // never fail or delay the catalog write path. Errors are swallowed; the
+  // never fail or delay the catalog write path. Errors are swallowed. the
   // scheduled job (catalog.scorecardEvaluator) will reconcile state on its
   // next run.
   void evaluateScorecardsForEntity(entityId).catch(() => {});
@@ -231,8 +231,8 @@ function isNoopUpdate(
   if (input.tags !== undefined && !sameStringArray(input.tags, existing.tags)) return false;
   if (input.yamlSpec !== undefined) return false;
   // App-import bookkeeping: a sync that would flip needsOnboarding off, or
-  // populate installationId/githubRepoId on a row that's still missing them,
-  // is a real write — not a noop.
+  // populate installationId/githubRepoId on a row that's still missing them
+  // is a real write, not a noop.
   if (opts.needsOnboarding === false && existing.needsOnboarding) return false;
   if (opts.installationId != null && existing.installationId == null) return false;
   if (opts.githubRepoId != null && existing.githubRepoId == null) return false;

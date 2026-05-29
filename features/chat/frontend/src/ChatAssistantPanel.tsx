@@ -9,7 +9,7 @@ import { useChatStream } from "./chatStream";
 const KEY_CONV = (uid: string) => `mep:chat-widget:conversation_id:${uid}`;
 
 interface Props {
-  /** Auth identity of the current user; used to scope the per-user localStorage key so logging */
+  /** Auth identity of the current user. used to scope the per-user localStorage key so logging */
   userId: string;
   /** Display name + avatar drive the right-side bubble avatar on user messages. */
   userName?: string;
@@ -36,7 +36,7 @@ export function ChatAssistantPanel({ userId, userName, userAvatarUrl }: Props) {
     else window.localStorage.removeItem(storageKey);
   }, [conversationId, storageKey]);
 
-  // Hydrate active conversation. If the stored id 404s (deleted from /chat),
+  // Hydrate active conversation. If the stored id 404s (deleted from /chat)
   // null it out and let the next send create a fresh one.
   useEffect(() => {
     if (!conversationId) {
@@ -94,7 +94,7 @@ export function ChatAssistantPanel({ userId, userName, userAvatarUrl }: Props) {
 
   return (
     // -m-4 cancels WidgetFrame's inner padding so MessageList/Composer sit
-    // flush — Composer has its own border-t to separate from messages.
+    // flush, Composer has its own border-t to separate from messages.
     <div className="-m-4 flex h-[calc(100%+2rem)] flex-col">
       <div className="flex items-center justify-between gap-2 border-b border-app-border bg-app-surface px-3 py-1.5">
         <span className="truncate text-xs text-app-text-muted">{active?.title ?? "New chat"}</span>

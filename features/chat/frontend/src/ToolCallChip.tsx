@@ -1,8 +1,8 @@
 import { useState } from "react";
 import type { ChatToolCallView } from "./chatStream";
 
-// Compact pill summarizing one tool call. Reads use a muted style; *_prepare
-// uses a 📋 prefix; *_submit uses a solid style with ✅ on success or red on
+// Compact pill summarizing one tool call. Reads use a muted style. *_prepare
+// uses a 📋 prefix. *_submit uses a solid style with ✅ on success or red on
 // failure. Click to expand the JSON args/result inline.
 
 interface Props {

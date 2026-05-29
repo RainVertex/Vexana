@@ -11,11 +11,11 @@ import type {
 } from "@internal/shared-types";
 import { streamAgent } from "./streamExecutor";
 
-// /api/chat router — conversation CRUD plus the SSE message endpoint and a
+// /api/chat router, conversation CRUD plus the SSE message endpoint and a
 // small abort endpoint that signals the in-flight AbortController.
 //
 // All routes require an authenticated user (mounted under requireAuth in
-// apps/api/createServer). Conversations are scoped to req.user.id; cross-user
+// apps/api/createServer). Conversations are scoped to req.user.id. cross-user
 // access returns 404 rather than 403 to avoid leaking conversation existence.
 
 export const chatRouter: Router = Router();
@@ -24,9 +24,9 @@ const PLATFORM_ASSISTANT_AGENT_ID = "seed-agent-assistant";
 const MAX_CONCURRENT_SSE_PER_USER = 2;
 
 // In-process map of in-flight streaming connections. Keyed by conversationId
-// so /abort can find the controller; values include userId so we can also
+// so /abort can find the controller. values include userId so we can also
 // count concurrent connections per user. Multi-instance deployments need
-// sticky sessions on conversationId — see streamExecutor.ts notes.
+// sticky sessions on conversationId, see streamExecutor.ts notes.
 interface InFlightEntry {
   userId: string;
   controller: AbortController;
@@ -39,16 +39,12 @@ function countInFlightForUser(userId: string): number {
   return n;
 }
 
-// ---------------------------------------------------------------------------
 // Schemas
-// ---------------------------------------------------------------------------
 
 const createConversationSchema = z.object({ title: z.string().min(1).max(200).optional() });
 const sendMessageSchema = z.object({ content: z.string().min(1).max(8000) });
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 async function getCallerTeamIds(userId: string): Promise<string[]> {
   const memberships = await prisma.teamMembership.findMany({
@@ -90,9 +86,7 @@ async function findConversation(conversationId: string, userId: string) {
   });
 }
 
-// ---------------------------------------------------------------------------
 // Routes
-// ---------------------------------------------------------------------------
 
 chatRouter.get("/conversations", async (req, res) => {
   const userId = req.user!.id;
@@ -271,7 +265,7 @@ chatRouter.post("/conversations/:id/messages", async (req, res) => {
       onEvent: writeEvent,
     });
 
-    // Persist the assistant message — captures finalText, the run id, and
+    // Persist the assistant message, captures finalText, the run id, and
     // the tool calls so reload-of-conversation renders the full transcript
     // including chips. Reasoning (if any) is saved alongside so the collapsed
     // "Reasoned - Ns" affordance can re-expand its text after reload.
@@ -281,7 +275,7 @@ chatRouter.post("/conversations/:id/messages", async (req, res) => {
         role: "assistant",
         content: result.finalText,
         agentRunId: result.agentRunId,
-        toolCalls: undefined, // tool calls already streamed; reconstruct from AgentRun if needed for v2
+        toolCalls: undefined, // tool calls already streamed. reconstruct from AgentRun if needed for v2
         reasoning: result.reasoning,
         reasoningDurationMs: result.reasoningDurationMs,
       },

@@ -205,7 +205,7 @@ vikunjaRouter.get("/projects/:id/tasks", async (req, res) => {
       }
     }
   } catch {
-    // bucket info is best-effort; fall through with empty map
+    // bucket info is best-effort. fall through with empty map
   }
 
   const tasksWithBucket = liveTasks.map((t) => ({

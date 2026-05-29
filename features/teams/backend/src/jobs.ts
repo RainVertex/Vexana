@@ -180,7 +180,7 @@ export function teamHardDeleteJob(): TeamJobDefinition {
 export function githubTeamReconciliationJob(): TeamJobDefinition {
   return {
     name: "teams.githubReconciliation",
-    // Sundays at 04:00 server time. Off-peak; gives drift dashboard a fresh
+    // Sundays at 04:00 server time. Off-peak. gives drift dashboard a fresh
     // baseline going into Monday.
     schedule: "0 4 * * 0",
     timeoutMs: 30 * 60 * 1000,

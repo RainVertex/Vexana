@@ -3,15 +3,15 @@ import { useApi } from "@internal/api-client/react";
 import type { LlmModelSummary, ProviderKind } from "@internal/shared-types";
 import { SecretPicker } from "./SecretPicker";
 
-// ProviderPicker — picks an Agent.modelProvider (which adapter to use) plus
+// ProviderPicker, picks an Agent.modelProvider (which adapter to use) plus
 // an LlmModel row (which model to talk to) and an optional Secret override
 // for the API key. Used in the wizard's Model step and the detail page's
 // Model tab.
 //
-// The provider radio is the source of truth; we then filter the available
+// The provider radio is the source of truth. we then filter the available
 // LlmModel rows to match. A v1 simplification: we infer the adapter kind
 // from each model's provider.kind string (slugs like "anthropic-via-openai"
-// stay in 'openai_compat'; "anthropic" or future "anthropic-native"
+// stay in 'openai_compat'. "anthropic" or future "anthropic-native"
 // providers go to the native adapter). When the registry doesn't yet have
 // a model that fits the chosen adapter, we surface that with a help line.
 
@@ -51,7 +51,7 @@ export interface ProviderPickerProps {
 function inferProviderKind(model: LlmModelSummary): ProviderKind {
   const slug = model.provider.kind.toLowerCase();
   // Heuristic mapping: native Anthropic providers should be configured with
-  // kind='anthropic'; the existing seeded "anthropic-via-openai" stays as
+  // kind='anthropic'. the existing seeded "anthropic-via-openai" stays as
   // openai_compat. A future migration may rename these for clarity.
   if (slug === "anthropic" || slug === "anthropic-native") return "anthropic";
   if (slug === "gemini" || slug === "google-genai") return "gemini";

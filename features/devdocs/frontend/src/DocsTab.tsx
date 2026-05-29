@@ -36,7 +36,7 @@ export function DocsTab() {
         if (!cancelled) setCurrentUser(me);
       })
       .catch(() => {
-        // 401 means we're not signed in; the page guard will redirect, but
+        // 401 means we're not signed in. the page guard will redirect, but
         // failing silently here keeps the docs view from crashing.
       });
     return () => {

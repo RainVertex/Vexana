@@ -277,7 +277,7 @@ devdocsRouter.post("/pages/:pageId/stale-reports", async (req, res) => {
   });
   if (!page) return res.status(404).json({ error: "Doc page not found" });
 
-  // One open report per (pageId, reporterId): if an unresolved one exists,
+  // One open report per (pageId, reporterId): if an unresolved one exists
   // surface it instead of stacking duplicates.
   const existing = await prisma.docStaleReport.findFirst({
     where: { pageId: page.id, reporterId: req.user.id, resolvedAt: null },

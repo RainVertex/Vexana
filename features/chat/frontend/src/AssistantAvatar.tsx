@@ -1,6 +1,6 @@
 // Mirrors ProfileAvatar's initials-style fallback so the user and assistant
 // avatars look balanced side-by-side. Hard-coded "A" since there's no
-// per-agent avatar story yet — the only agent in the chat surface is the
+// per-agent avatar story yet, the only agent in the chat surface is the
 // Platform Assistant.
 
 const sizeClasses = {

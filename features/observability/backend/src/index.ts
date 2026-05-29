@@ -35,11 +35,9 @@ observabilityRouter.get("/health-samples/:entityId", async (req, res) => {
   res.json({ items: samples });
 });
 
-// ---------------------------------------------------------------------------
 // EntityObservabilityConfig CRUD
-// ---------------------------------------------------------------------------
 // Per-entity wiring (PromQL, LogQL selector, dashboard UID, trace-id regex
-// override). Admin-only on PUT; any authenticated user can read. PUT acts as
+// override). Admin-only on PUT. any authenticated user can read. PUT acts as
 // an upsert so the UI can use a single endpoint to create-or-update.
 
 function toConfigDto(row: {
@@ -151,9 +149,7 @@ observabilityRouter.delete("/entities/:entityId/config", async (req, res, next) 
   }
 });
 
-// ---------------------------------------------------------------------------
 // Loki + Tempo + dashboard-image proxies
-// ---------------------------------------------------------------------------
 
 observabilityRouter.get("/logs", async (req, res, next) => {
   try {
@@ -217,7 +213,7 @@ observabilityRouter.get("/traces/:traceId", async (req, res, next) => {
       res.status(401).json({ error: "Not authenticated" });
       return;
     }
-    // Trace IDs are global identifiers with no inherent ownership — we
+    // Trace IDs are global identifiers with no inherent ownership, we
     // require the caller to declare which entity they're looking at, then
     // gate access on that entity's owners. EntityLogsPanel passes the
     // entityId of the log line that surfaced the trace.
@@ -268,7 +264,7 @@ observabilityRouter.get("/dashboard-image", async (req, res, next) => {
     // Dashboards aren't owned by catalog entities, so authorization works
     // by checking that the caller can read SOME entity which has pinned
     // this dashboard via EntityObservabilityConfig.dashboardUid. Admins
-    // bypass — they can render anything (matches the Dashboards tab
+    // bypass, they can render anything (matches the Dashboards tab
     // admin-types-UID workflow).
     if (req.user.role !== "admin") {
       const entityId = String(req.query.entityId ?? "").trim();
@@ -324,17 +320,13 @@ observabilityRouter.get("/dashboard-image", async (req, res, next) => {
   }
 });
 
-// ---------------------------------------------------------------------------
 // Job exports
-// ---------------------------------------------------------------------------
 
 export function getObservabilityJobs(): ObservabilityJobDefinition[] {
   return [prometheusScrapeJob(), alertStateCleanupJob()];
 }
 
-// ---------------------------------------------------------------------------
 // Local helpers
-// ---------------------------------------------------------------------------
 
 function nullableString(value: unknown): string | null {
   if (typeof value !== "string") return null;

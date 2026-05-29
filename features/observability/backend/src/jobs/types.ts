@@ -1,6 +1,6 @@
 // Mirror of the apps/api JobDefinition shape. Features can't import from
 // apps/api (boundary rule), so each feature redeclares the structural type it
-// needs from JobContext — see features/catalog/backend/src/jobs.ts for the
+// needs from JobContext, see features/catalog/backend/src/jobs.ts for the
 // same pattern. Logger surface matches what the scrape job actually calls.
 
 export interface ObservabilityJobLogger {

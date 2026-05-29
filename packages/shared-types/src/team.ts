@@ -68,7 +68,7 @@ export interface TeamRequestDto {
   /** Number of submit/propose/counter-propose edits so far (cap = 3). */
   roundCount: number;
   lastEditedByUserId: ID | null;
-  /** "round_limit" when auto-cancelled by the negotiation cap; null otherwise. */
+  /** "round_limit" when auto-cancelled by the negotiation cap. null otherwise. */
   autoCancelReason: string | null;
   original: TeamRequestOriginal;
   rejectionReason?: string | null;

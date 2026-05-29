@@ -1,8 +1,8 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { ApprovalRequirement, Capability } from "@internal/scaffolder-core";
 
-// Approval tokens are short-lived HMACs scoped to (planId, capability,
-// approverUserId). Persisted in ScaffoldPlan.approvalsGranted as JSON; verified
+// Approval tokens are short-lived HMACs scoped to (planId, capability
+// approverUserId). Persisted in ScaffoldPlan.approvalsGranted as JSON. verified
 // at apply time before that capability counts as "approved". The signing
 // secret comes from SCAFFOLDER_APPROVAL_SECRET, falling back to SESSION_SECRET
 // so dev/test environments don't need a separate env var.

@@ -18,12 +18,12 @@ export type RequestEdit = {
 interface RequestEditFormProps {
   request: TeamRequestDto;
   busy: boolean;
-  /** Round number this submission would land on; >3 indicates the next edit will trigger */
+  /** Round number this submission would land on. >3 indicates the next edit will trigger */
   nextRound: number;
   onSubmit: (edit: RequestEdit) => Promise<void>;
   onCancel: () => void;
   submitLabel: string;
-  /** Side-channel so the wrapper can render shared error UI; null means no error currently. */
+  /** Side-channel so the wrapper can render shared error UI. null means no error currently. */
   error: { message: string; policyViolation: TeamPolicyViolation | null } | null;
 }
 

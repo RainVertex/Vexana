@@ -84,7 +84,7 @@ export function Rail() {
         aria-label="Primary navigation rail"
       >
         {/* In-flow content. Hidden when peeking (the overlay takes over) so we
-         *  don't double-render rows. */}
+         * don't double-render rows. */}
         {(!peeking || pinned) && (
           <RailContent
             expanded={pinned}
@@ -98,9 +98,9 @@ export function Rail() {
       </div>
 
       {/* Hover-peek overlay. Renders an expanded rail over the page content
-       *  without affecting layout. Mouse events on the overlay must propagate
-       *  the rail's enter/leave so peek doesn't end the moment the cursor
-       *  crosses the visual boundary. */}
+       * without affecting layout. Mouse events on the overlay must propagate
+       * the rail's enter/leave so peek doesn't end the moment the cursor
+       * crosses the visual boundary. */}
       {peeking && !pinned && (
         <div
           onMouseEnter={onRailMouseEnter}

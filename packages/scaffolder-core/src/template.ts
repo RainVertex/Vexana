@@ -34,7 +34,7 @@ export interface TemplateDefinition<TParams = unknown> {
   parameters: ZodType<TParams>;
   capabilities: Capability[];
   // Method-shorthand (not property) so the position is bivariant under
-  // strictFunctionTypes — lets the registry hold heterogeneous templates as
+  // strictFunctionTypes, lets the registry hold heterogeneous templates as
   // CompiledTemplate<unknown> without per-template casts at registration.
   plan(params: TParams, ctx: PlanCtx): Step[] | Promise<Step[]>;
 }

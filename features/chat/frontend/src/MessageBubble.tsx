@@ -17,7 +17,7 @@ export interface LiveAssistantMessage {
   id: "live";
   role: "assistant";
   content: string;
-  /** Streaming `<think>` content; empty until the first reasoning token arrives. */
+  /** Streaming `<think>` content. empty until the first reasoning token arrives. */
   reasoning?: string;
   /** Client-side timestamp of the first reasoning token, used to tick the live counter. */
   reasoningStartedAt?: number | null;
@@ -32,7 +32,7 @@ function isLive(m: Props["message"]): m is LiveAssistantMessage {
 export function MessageBubble({ message, liveCalls = [], userName, userAvatarUrl }: Props) {
   const isUser = message.role === "user";
 
-  // For assistant messages: pull reasoning from the live shape when present,
+  // For assistant messages: pull reasoning from the live shape when present
   // otherwise from the persisted DTO. Live mode = the bubble is still
   // streaming AND reasoning hasn't been marked done yet.
   const reasoning = isLive(message)

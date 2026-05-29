@@ -12,7 +12,7 @@ export interface TemplateDriftBadgeProps {
 }
 
 // Inline open-drift indicator for scaffolder bindings. Click to expand a list
-// of open drifts per binding; each row exposes Replan (navigates to the
+// of open drifts per binding. each row exposes Replan (navigates to the
 // resulting plan) and Ignore.
 export function TemplateDriftBadge({ bindingId, templateId }: TemplateDriftBadgeProps) {
   const api = useApi();

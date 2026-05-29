@@ -8,7 +8,7 @@ import {
   type RegisterCatalogEntityInput,
 } from "@feature/catalog-backend";
 
-// `octokit` v5 ships ESM-only; the api backend is CJS (uses __dirname), so a
+// `octokit` v5 ships ESM-only. the api backend is CJS (uses __dirname), so a
 // static `import { Octokit } from "octokit"` blows up Node's CJS loader at
 // module load. Mirror publish-github's pattern: defer the load until needed.
 async function loadOctokit(): Promise<typeof OctokitClient> {

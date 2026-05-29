@@ -2,7 +2,7 @@ import { prisma } from "@internal/db";
 
 // Reconcile a user's UserOrgMembership rows with the set of GitHub org logins
 // GitHub just confirmed they are an active member of. Rows for logins they no
-// longer belong to are removed; current logins get their lastVerifiedAt
+// longer belong to are removed. current logins get their lastVerifiedAt
 // refreshed. Called from the OAuth callback after a successful org check.
 export async function syncUserOrgMemberships(
   userId: string,

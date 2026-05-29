@@ -95,7 +95,7 @@ export function createServer() {
   app.use("/integrations/github/app-webhook", githubAppWebhookRouter);
 
   // Grafana Alertmanager webhook: needs the raw body for the Bearer-token
-  // header check (the body is parsed AFTER auth) and replay protection,
+  // header check (the body is parsed AFTER auth) and replay protection
   // matching the constraint above.
   app.use("/integrations/grafana/webhook", grafanaWebhookRouter);
 
@@ -107,9 +107,9 @@ export function createServer() {
   app.use("/auth", authRouter);
   app.use(oidcRouter);
 
-  // /mcp uses bearer-token auth (ScaffolderMcpToken), not the session cookie,
+  // /mcp uses bearer-token auth (ScaffolderMcpToken), not the session cookie
   // so it sits outside the /api requireAuth chain. The MCP transport handles
-  // its own request lifecycle, so apiLimiter is intentionally not applied —
+  // its own request lifecycle, so apiLimiter is intentionally not applied
   // a dedicated MCP-aware rate limiter slots in here once we have abuse data.
   app.use(
     "/mcp/scaffolder",

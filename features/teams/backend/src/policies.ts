@@ -4,12 +4,10 @@ import { Prisma, prisma, type TeamPolicyKind } from "@internal/db";
 import type { TeamPolicyDto, TeamPolicyViolation } from "@internal/shared-types";
 import { audit } from "./helpers";
 
-// =============================================================================
 // Policy registry
-// =============================================================================
 //
 // Each kind in the TeamPolicyKind enum has exactly one entry here. The DB row
-// stores per-kind enable + config; the validator and the field/format
+// stores per-kind enable + config. the validator and the field/format
 // definitions live in code so adding a new kind is: enum migration + new
 // registry entry. No DB-driven validator code path means no eval, no JSON-DSL.
 
@@ -51,7 +49,7 @@ const namePatternPolicy: PolicyDefinition<NamePatternConfig> = {
     if (config.requireHyphenSeparation) {
       // At least one hyphen, hyphens between word chunks, no leading/trailing
       // hyphen, no consecutive hyphens. The base slugSchema already enforces
-      // [a-z0-9-]; this layers on multi-word + hyphen separation.
+      // [a-z0-9-]. this layers on multi-word + hyphen separation.
       const ok = /^[a-z0-9]+(-[a-z0-9]+)+$/.test(slug);
       if (!ok) {
         return {
@@ -92,9 +90,7 @@ function mergeConfig<C>(def: PolicyDefinition<C>, raw: Prisma.JsonValue): C {
   return def.defaultConfig;
 }
 
-// =============================================================================
 // /api/teams/policies
-// =============================================================================
 
 export const teamPoliciesRouter: Router = Router();
 

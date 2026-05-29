@@ -1,6 +1,6 @@
-// Top-level /observability page. Tabbed view across Health, Logs, Alerts,
+// Top-level /observability page. Tabbed view across Health, Logs, Alerts
 // and Dashboards. Logs and Dashboards require picking an entity since both
-// are per-entity; Health and Alerts are org-wide.
+// are per-entity. Health and Alerts are org-wide.
 
 import { useState } from "react";
 import { Link } from "react-router-dom";

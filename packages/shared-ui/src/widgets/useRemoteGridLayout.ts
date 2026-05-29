@@ -44,7 +44,7 @@ export function useRemoteGridLayout<TId extends string>({
 
   // Reset state when the *content* of `initialWidgets` changes (e.g. navigating
   // to a different page). Comparing by content rather than reference protects
-  // against callers that forget to memoize — a fresh-but-equivalent array
+  // against callers that forget to memoize, a fresh-but-equivalent array
   // reference would otherwise reset editMode mid-edit.
   const initialKey = useMemo(() => JSON.stringify(initialWidgets), [initialWidgets]);
   useEffect(() => {
@@ -52,7 +52,7 @@ export function useRemoteGridLayout<TId extends string>({
     setDraft(initialWidgets);
     setEditMode(false);
     setSaveError(null);
-    // initialKey is the content-stable dep; initialWidgets is the value we copy in.
+    // initialKey is the content-stable dep. initialWidgets is the value we copy in.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialKey]);
 
@@ -91,7 +91,7 @@ export function useRemoteGridLayout<TId extends string>({
   }, []);
 
   const resetToDefault = useCallback(() => {
-    // Remote layouts have no inherent "default" — closest equivalent is reverting
+    // Remote layouts have no inherent "default", closest equivalent is reverting
     // unsaved edits, which is what `cancel` does. Provided as a no-op for parity.
   }, []);
 

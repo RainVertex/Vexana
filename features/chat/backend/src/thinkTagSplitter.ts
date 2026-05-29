@@ -4,14 +4,14 @@
 // that expose chain-of-thought.
 //
 // Designed to be:
-//   - Streaming: chunks may split a marker across boundaries; the splitter
-//     buffers up to MAX_LOOKAHEAD chars so we never miss a tag.
-//   - Multi-block: a single turn may contain several `<think>` blocks; durations
-//     accumulate across all of them.
-//   - Pass-through safe: if no `<think>` tag ever appears, every chunk reports
-//     all input as content and no reasoning timing is recorded.
+// - Streaming: chunks may split a marker across boundaries. the splitter
+// buffers up to MAX_LOOKAHEAD chars so we never miss a tag.
+// - Multi-block: a single turn may contain several `<think>` blocks. durations
+// accumulate across all of them.
+// - Pass-through safe: if no `<think>` tag ever appears, every chunk reports
+// all input as content and no reasoning timing is recorded.
 //
-// The splitter is stateful — instantiate one per assistant turn, push chunks
+// The splitter is stateful, instantiate one per assistant turn, push chunks
 // in order, then read `reasoning` / `content` / `totalReasoningMs` once the
 // upstream stream finishes.
 

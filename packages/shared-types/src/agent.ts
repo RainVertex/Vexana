@@ -76,7 +76,7 @@ export interface Agent extends NamedEntity {
   maxToolCalls: number;
   tokenBudget: number | null;
   // New in agents_section_and_identity migration. The backing User row id
-  // (User.userKind = 'agent'); same id used for permission checks, audit log
+  // (User.userKind = 'agent'). same id used for permission checks, audit log
   // actorUserId, team membership, etc.
   userId: ID;
   modelProvider: ProviderKind;

@@ -58,7 +58,7 @@ const shutdown = async (signal) => {
   try {
     await listener.close();
   } catch {
-    // best-effort; we're exiting anyway
+    // best-effort. we're exiting anyway
   }
   process.exit(0);
 };

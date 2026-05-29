@@ -9,7 +9,7 @@ const repoScaffoldInput = z.object({
   // Where in the live repo the workspace contents land. Relative to repoRoot.
   targetDir: z.string().min(1),
   // When true, preserves files in the target dir that the scaffold did not
-  // produce. Defaults to true; refusing to overwrite is enforced regardless.
+  // produce. Defaults to true. refusing to overwrite is enforced regardless.
   preserveExisting: z.boolean().optional(),
 });
 
@@ -76,7 +76,7 @@ export const repoScaffoldAction: Action<
       // Plan-time we don't have visibility into the workspace contents (the
       // workspace doesn't exist yet at plan time), so signal an update with a
       // single placeholder mutation. The diff viewer renders this as
-      // "scaffold target already exists; will write under here".
+      // "scaffold target already exists. will write under here".
       const mutations: Mutation[] = [
         {
           kind: "fs.write",

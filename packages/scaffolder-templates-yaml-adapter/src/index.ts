@@ -12,11 +12,11 @@ import {
 // Loads a Backstage-style template.yaml file and returns a CompiledTemplate
 // that the same registry / executor consumes. Supports the subset of
 // scaffolder.backstage.io/v1beta3 the platform actually exercises:
-//   - metadata.{name,title,description,tags,annotations}
-//   - spec.{owner,type,parameters,steps,output}
-//   - parameters: a single page or an array of pages, each with JSON Schema
-//   - steps[]: { id, name, action, input } where input is a Nunjucks-tagged
-//     map (kept as-is; the executor's render pass handles ${{ }} substitution)
+// - metadata.{name, title, description, tags, annotations}
+// - spec.{owner, type, parameters, steps, output}
+// - parameters: a single page or an array of pages, each with JSON Schema
+// - steps[]: { id, name, action, input } where input is a Nunjucks-tagged
+// map (kept as-is. the executor's render pass handles ${{ }} substitution)
 //
 // Anything outside this surface is preserved verbatim in the compiled
 // template's metadata for callers that want to reach in and read it, but
@@ -65,7 +65,7 @@ export interface YamlAdapterOptions {
   version?: string;
   /** Defaults to ["human"]. */
   audience?: Audience[];
-  /** Capabilities the template will use; defaults to []. */
+  /** Capabilities the template will use. defaults to []. */
   capabilities?: Capability[];
 }
 
@@ -76,7 +76,7 @@ function buildPermissiveSchema(
 ): z.ZodType<Record<string, unknown>> {
   // Build a Zod object that mirrors the JSON-Schema's required-vs-optional
   // shape. Required fields refine z.unknown() to reject undefined so a
-  // missing key fails parse; optional fields stay optional. Precise type
+  // missing key fails parse. optional fields stay optional. Precise type
   // validation is deferred to the JSON Schema consumed by the wizard, so
   // there is no need for a JSON-Schema-to-Zod compiler here.
   const pages = parameters ? (Array.isArray(parameters) ? parameters : [parameters]) : [];

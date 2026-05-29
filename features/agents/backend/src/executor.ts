@@ -13,7 +13,7 @@ import { buildAgentRequestContext } from "./agentRequestContext";
 import { resolveTools, type ToolContext } from "./llm/toolRegistry";
 
 // Generic agent execution. The agent row carries everything driving the loop:
-// the system prompt (`instructions`), which tools it may call (`toolIds`),
+// the system prompt (`instructions`), which tools it may call (`toolIds`)
 // the model + provider (`modelId` -> LlmModel -> LlmProvider), and the
 // per-loop and per-budget caps (`maxToolCalls`, `tokenBudget`). The chat
 // function is talked to via OpenAI shape regardless of provider so a single
@@ -96,7 +96,7 @@ export async function runAgent(
       >[0]));
   // Per-tool approval policy in effect for this run. Read once from the
   // Agent row so we don't re-fetch on every tool call. The policy is the
-  // JSONB column populated via the wizard (Pass 4) — empty for legacy rows
+  // JSONB column populated via the wizard (Pass 4), empty for legacy rows
   // which preserves the pre-Pass-3 "no gates" behavior for chat.
   const policy = (agent.toolApprovalPolicy ?? {}) as Parameters<typeof decidePolicy>[0];
   const toolIds = Array.isArray(agent.toolIds) ? (agent.toolIds as unknown as string[]) : [];
@@ -157,7 +157,7 @@ export async function runAgent(
       }
 
       // The assistant message goes back verbatim so the next turn includes
-      // the model's tool_calls; tool_result messages then follow per call.
+      // the model's tool_calls. tool_result messages then follow per call.
       messages.push(result.message as OpenAI.Chat.Completions.ChatCompletionMessageParam);
 
       for (const tc of result.toolCalls) {
@@ -171,7 +171,7 @@ export async function runAgent(
         } else {
           // Per-tool approval policy gate. 'forbidden' refuses any call.
           // 'requires_approval' on an autonomous run (no invoking human)
-          // writes an AgentApprovalRequest and refuses; the run will need
+          // writes an AgentApprovalRequest and refuses. the run will need
           // to re-attempt after a human approves. For chat runs (handled
           // in streamExecutor) the prepare/submit confirmation IS the
           // approval, so 'requires_approval' falls through there.
@@ -294,7 +294,7 @@ function safeJsonParse(s: string | undefined): unknown {
 // Async-by-default kickoff used by POST /api/agents/:id/run. Creates the
 // AgentRun row synchronously so the route can return its id, then runs the
 // executor in the background. runAgent's internal catch persists any failure
-// into the row — the .catch() here only catches catastrophic failures
+// into the row, the .catch() here only catches catastrophic failures
 // before that point.
 export async function startAgentRun(
   agentId: string,
@@ -312,14 +312,12 @@ export async function startAgentRun(
   return { runId: run.id };
 }
 
-// -----------------------------------------------------------------------------
 // Catalog enricher compatibility wrapper.
 //
 // The daily cron at jobs.ts calls runEnricherForEntity. New code should use
 // runAgent() directly. This wrapper adapts the generic result to the
 // enricher's pre-existing shape (notably `driftsProposed`, derived from
 // the tool-call list).
-// -----------------------------------------------------------------------------
 
 export interface EnricherInput {
   entityId: string;

@@ -12,7 +12,7 @@ import {
 // runs when the model emits a tool call. The agentic loop in runAgent reads
 // agent.toolIds and resolves them through this registry.
 //
-// Phase 1 scope: catalog tools only (lookup / discover / propose-drift),
+// Phase 1 scope: catalog tools only (lookup / discover / propose-drift)
 // moved verbatim from the previous hardcoded enricher executor. Scaffolder
 // tool integration arrives in Phase 2 once we have a UI for picking tools
 // and a story for propagating the calling Actor through the run loop. The
@@ -20,7 +20,7 @@ import {
 // scaffolder tools later is purely additive.
 
 export interface ToolContext {
-  // null for system / cron runs; required for actor-bound tools.
+  // null for system / cron runs. required for actor-bound tools.
   userId: string | null;
   isAdmin: boolean;
   teamIds: string[];
@@ -155,7 +155,7 @@ export function registerTools(tools: RegisteredTool[]): void {
   for (const t of tools) REGISTRY.set(t.id, t);
 }
 
-/** Internal — for tests that want a clean slate. */
+/** Internal, for tests that want a clean slate. */
 export function _resetExtraTools(): void {
   REGISTRY.clear();
   for (const t of CATALOG_TOOLS) REGISTRY.set(t.id, t);
@@ -169,7 +169,7 @@ export interface ToolDescriptor {
 
 // Lightweight metadata for the UI tool-multiselect. Filtered by what the
 // caller is allowed to see (Phase 1: all tools are visible to authenticated
-// users; finer ACL arrives with scaffolder integration in Phase 2).
+// users. finer ACL arrives with scaffolder integration in Phase 2).
 export function listAvailableTools(_ctx: ToolContext): ToolDescriptor[] {
   return CATALOG_TOOLS.map((t) => ({
     id: t.id,

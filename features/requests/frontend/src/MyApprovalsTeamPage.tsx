@@ -15,7 +15,7 @@ const PENDING_TEAM_STATUSES: ReadonlySet<TeamRequestStatus> = new Set([
   "awaiting_user_confirmation",
 ]);
 
-/** Combined "My Approvals" page — pending + history of requests where I'm authorized to act. */
+/** Combined "My Approvals" page, pending + history of requests where I'm authorized to act. */
 export function MyApprovalsTeamPage() {
   const api = useApi();
   const navigate = useNavigate();
@@ -28,7 +28,7 @@ export function MyApprovalsTeamPage() {
   const load = useCallback(() => {
     setError(null);
     // Maintainer is the universal approver view (admin or any lead). Team
-    // creation is admin-only — non-admins get 403 and we just hide the group.
+    // creation is admin-only, non-admins get 403 and we just hide the group.
     api.maintainerRequests
       .forMeAsApprover()
       .then((r) => setMaintainerRows(r.items))
@@ -37,7 +37,7 @@ export function MyApprovalsTeamPage() {
       .forMeAsApprover()
       .then((r) => setTeamRows(r.items))
       .catch((err) => {
-        // 403 just means the user isn't an admin; that's expected, suppress.
+        // 403 just means the user isn't an admin. that's expected, suppress.
         if (err instanceof ApiError && err.status === 403) {
           setTeamRows([]);
           return;
@@ -127,8 +127,8 @@ export function MyApprovalsTeamPage() {
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1 text-right text-xs">
                     <div className="text-app-text">{r.status}</div>
-                    {/* Negotiation UI lives on the deep admin page; keep this row a
-                     *  link rather than duplicating propose/counter here. */}
+                    {/* Negotiation UI lives on the deep admin page. keep this row a
+                     * link rather than duplicating propose/counter here. */}
                     <button
                       type="button"
                       onClick={() => navigate(`/admin/team-requests`)}

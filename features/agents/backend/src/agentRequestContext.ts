@@ -3,15 +3,15 @@ import type { UserRole } from "@internal/db";
 
 // Build the effective request context for an agent action. Two scenarios:
 //
-//   onBehalfOfRequired = true (default for new agents):
-//     Every action must come with an invoking human. The effective
-//     permissions are the intersection of the agent's grants and the
-//     invoker's grants — so an admin agent invoked by a member can only
-//     do member-things. This is the "no privilege escalation" guarantee.
+// onBehalfOfRequired = true (default for new agents):
+// Every action must come with an invoking human. The effective
+// permissions are the intersection of the agent's grants and the
+// invoker's grants, so an admin agent invoked by a member can only
+// do member-things. This is the "no privilege escalation" guarantee.
 //
-//   onBehalfOfRequired = false (admin opt-in for autonomous agents):
-//     The agent runs on its own (cron, webhook). The agent's role/teams
-//     govern. There is no invoker to intersect against.
+// onBehalfOfRequired = false (admin opt-in for autonomous agents):
+// The agent runs on its own (cron, webhook). The agent's role/teams
+// govern. There is no invoker to intersect against.
 //
 // `effectiveRole = min(agent.role, invoker.role)` where the role lattice
 // is admin > member. Team intersection is set-intersection on the

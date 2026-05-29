@@ -31,7 +31,7 @@ export const catalogDiscoverAction: Action<CatalogDiscoverInput, CatalogDiscover
   description:
     "Walk a repo for catalog-info.yaml and upsert each entity through the shared catalog service.",
   schema: catalogDiscoverInput,
-  // Network reads are scoped to repo:read; writes to db:write:catalog so the
+  // Network reads are scoped to repo:read. writes to db:write:catalog so the
   // capability gate matches what registerCatalogEntity actually does.
   capabilities: ["repo:read", "db:write:catalog"],
   // Discovery is non-idempotent at the action layer (the whether-to-update
@@ -96,7 +96,7 @@ export const catalogDiscoverAction: Action<CatalogDiscoverInput, CatalogDiscover
         entityIds: result.entityIds,
       },
       // The shared service's create call records its own compensation per
-      // entity; the discover action itself can't unwind a partial sweep
+      // entity. the discover action itself can't unwind a partial sweep
       // safely, so it's a noop at this layer.
       compensation: { kind: "noop", reason: "discovery results recorded individually" },
     };

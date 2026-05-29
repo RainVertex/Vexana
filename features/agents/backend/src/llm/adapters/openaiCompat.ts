@@ -3,10 +3,10 @@ import type { AdapterRequest, AdapterResult, ProviderAdapter } from "./providerA
 
 // Per-model sampling defaults. Different families have very different
 // "well-behaved" temperatures and there is no universal good value:
-//   - Qwen3 thinking-mode: Qwen team's guidance is temp=0.6, top_p=0.95. Lower
-//     temps trigger reasoning loops and repetition.
-//   - gpt-oss reasoning models: ~1.0 per OpenAI's guidance.
-// Add a branch here when registering a new family — don't rely on the fallback.
+// - Qwen3 thinking-mode: Qwen team's guidance is temp=0.6, top_p=0.95. Lower
+// temps trigger reasoning loops and repetition.
+// - gpt-oss reasoning models: ~1.0 per OpenAI's guidance.
+// Add a branch here when registering a new family, don't rely on the fallback.
 function samplingDefaults(modelSlug: string): { temperature: number; topP?: number } {
   if (modelSlug.startsWith("qwen3-")) return { temperature: 0.6, topP: 0.95 };
   if (modelSlug.startsWith("gpt-oss-")) return { temperature: 1.0 };
@@ -14,9 +14,9 @@ function samplingDefaults(modelSlug: string): { temperature: number; topP?: numb
   return { temperature: 0.2 };
 }
 
-// OpenAI-compatible adapter. Covers OpenAI proper, Ollama (local),
+// OpenAI-compatible adapter. Covers OpenAI proper, Ollama (local)
 // vLLM, llama.cpp's OpenAI-compat server, and Anthropic's OpenAI-compat
-// shim — anything that speaks the chat.completions wire format. Provider
+// shim, anything that speaks the chat.completions wire format. Provider
 // is differentiated solely by baseUrl + the optional env-var-referenced
 // API key on the LlmProvider row.
 //
@@ -47,11 +47,11 @@ class OpenAICompatAdapter implements ProviderAdapter {
 
     const sampling = samplingDefaults(req.model.slug);
     // Qwen3 thinking is a per-request soft switch. Ollama's chat template
-    // defaults to non-thinking for `qwen3:*` over the OpenAI-compat endpoint,
+    // defaults to non-thinking for `qwen3:*` over the OpenAI-compat endpoint
     // so we have to opt in explicitly or the model never emits `<think>` tags
     // and the chat UI's reasoning panel stays hidden. Send both spellings:
-    //   - `chat_template_kwargs: { enable_thinking: true }` — vLLM/SGLang
-    //   - `think: true` — Ollama 0.9+ native body field
+    // - `chat_template_kwargs: { enable_thinking: true }`, vLLM/SGLang
+    // - `think: true`, Ollama 0.9+ native body field
     // Unknown body fields are silently ignored by each backend, so sending
     // both is safe regardless of which one the live server speaks.
     const isQwen3 = req.model.slug.startsWith("qwen3-");
@@ -93,9 +93,9 @@ class OpenAICompatAdapter implements ProviderAdapter {
 
     // Some backends emit reasoning on a SEPARATE delta channel rather than
     // inline as `<think>...</think>` inside `delta.content`. Field names vary:
-    //   - Ollama 0.9+ with `think: true` → `delta.thinking`
-    //   - DeepSeek-R1 / SGLang             → `delta.reasoning_content`
-    //   - OpenAI reasoning models          → `delta.reasoning`
+    // - Ollama 0.9+ with `think: true` → `delta.thinking`
+    // - DeepSeek-R1 / SGLang → `delta.reasoning_content`
+    // - OpenAI reasoning models → `delta.reasoning`
     // To keep the downstream pipeline simple, we synthesize `<think>` / `</think>`
     // markers around runs of reasoning chunks and forward everything via the
     // same onTokenDelta. The ThinkTagSplitter on the receiving side then routes

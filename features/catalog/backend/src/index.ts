@@ -466,7 +466,7 @@ catalogRouter.patch("/:id", async (req, res) => {
     },
   );
 
-  // autoApply lives outside the shared-service contract; patch separately if provided.
+  // autoApply lives outside the shared-service contract. patch separately if provided.
   if (parsed.data.autoApply !== undefined) {
     await prisma.catalogEntity.update({
       where: { id: existing.id },

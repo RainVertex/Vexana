@@ -2,7 +2,7 @@
 // admin entered at connect time and exposes the recovery actions the backend
 // already supports (rotate API token, rotate webhook secret, re-pick
 // datasources, edit suppression). The webhook secret is never re-displayable
-// — it is hashed in the DB. The "I missed it when the dialog closed" case is
+//it is hashed in the DB. The "I missed it when the dialog closed" case is
 // solved here by rotating to a fresh one and showing the new value once.
 
 import { useEffect, useState } from "react";
@@ -33,7 +33,7 @@ export function GrafanaManagePanel({ integration, onChanged }: GrafanaManagePane
   const [confirmRotateWebhook, setConfirmRotateWebhook] = useState(false);
   const [newWebhookSecret, setNewWebhookSecret] = useState<string | null>(null);
 
-  // Runtime narrow — the registry only routes Grafana integrations here, but
+  // Runtime narrow, the registry only routes Grafana integrations here, but
   // the prop type is the full IntegrationDetail union, so we re-check.
   if (integration.kind !== "grafana") return null;
   const cfg = integration.config;
@@ -344,7 +344,7 @@ function EditDatasourcesDialog({
       cancelled = true;
     };
     // The integration id and current UIDs are effectively stable for a given
-    // dialog lifetime — the dialog unmounts and remounts when opened anew.
+    // dialog lifetime, the dialog unmounts and remounts when opened anew.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [integrationId]);
 

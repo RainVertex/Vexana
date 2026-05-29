@@ -22,7 +22,7 @@ export function useRequestsSummary(): RequestsSummary | null {
         const next = await api.requests.pendingSummary();
         if (!cancelled) setSummary(next);
       } catch {
-        // best-effort; keep last good value
+        // best-effort. keep last good value
       }
     }
     void tick();

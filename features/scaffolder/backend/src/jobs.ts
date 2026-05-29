@@ -34,7 +34,7 @@ export interface ScaffolderJobsConfig {
 
 // One-shot startup hook. Reconciles the TemplateHashSnapshot table and
 // immediately runs a targeted drift sweep for any template whose content
-// hash changed since last boot. apps/api calls this once during bootstrap;
+// hash changed since last boot. apps/api calls this once during bootstrap.
 // it is intentionally not a cron entry because the cron scheduler validates
 // every schedule and there is no clean "fire once at startup" expression.
 export async function runBootDriftCheck(
@@ -81,7 +81,7 @@ export function driftSweepJob(config: ScaffolderJobsConfig): ScaffolderJobDefini
 }
 
 // Hourly cleanup of stale apply workspaces. acquireSandbox writes each task's
-// workspace under <workspaceRoot>/<taskId>; the executor disposes its own on
+// workspace under <workspaceRoot>/<taskId>. the executor disposes its own on
 // success or failure, but cancelled or crashed runs may leak directories.
 // Anything older than 24h is fair game.
 export function workspaceGcJob(config: ScaffolderJobsConfig): ScaffolderJobDefinition {
@@ -114,7 +114,7 @@ export function workspaceGcJob(config: ScaffolderJobsConfig): ScaffolderJobDefin
             kept++;
           }
         } catch {
-          // best effort; the next sweep picks it up.
+          // best effort. the next sweep picks it up.
         }
       }
       log.info({ root, removed, kept }, "Workspace GC complete");
@@ -124,7 +124,7 @@ export function workspaceGcJob(config: ScaffolderJobsConfig): ScaffolderJobDefin
 
 // Daily sweep that walks every CatalogEntity with a repoUrl, fetches its
 // catalog-info.yaml from GitHub, and reconciles via the shared catalog
-// service. Entities not seen this run get flagged stale via staleSince —
+// service. Entities not seen this run get flagged stale via staleSince
 // surfaced in the UI as a "stale" badge so humans can investigate.
 export function catalogDiscoverySweepJob(): ScaffolderJobDefinition {
   return {

@@ -1,12 +1,12 @@
 // Grafana HTTP API response types. Keep these narrow to what the client
-// actually uses — Grafana's full surface is huge and largely irrelevant to
+// actually uses, Grafana's full surface is huge and largely irrelevant to
 // the integration. UI-facing DTOs (LokiLogLine, TempoTrace, ...) live in
 // @internal/shared-types and are derived from these in the normalizers.
 
 export interface GrafanaClientConfig {
   baseUrl: string;
   apiToken: string;
-  /** Optional fetch override — used by tests to inject a stub. */
+  /** Optional fetch override, used by tests to inject a stub. */
   fetch?: typeof fetch;
 }
 

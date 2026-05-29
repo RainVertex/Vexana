@@ -93,7 +93,7 @@ function auditFor(req: Request, kind: string, payload: Record<string, unknown>):
     .catch(() => {});
 }
 
-// Helper that lifts res() out of req — needed for the audit helper since the
+// Helper that lifts res() out of req, needed for the audit helper since the
 // closures below only have req in scope.
 function res(req: Request): { locals: { mcp?: McpAuthContext } } {
   return (req as Request & { res?: Response }).res ?? { locals: {} };
@@ -111,7 +111,7 @@ async function buildMcpServer(req: Request, deps: ScaffolderMcpDeps): Promise<Mc
   for (const template of visible) {
     if (!template.metadata.audience.includes("agent" as Audience)) continue;
     if (!templateAllowedForToken(template.metadata.id, auth.scopes)) continue;
-    // Pull the raw shape off z.object() so the SDK can wire validation;
+    // Pull the raw shape off z.object() so the SDK can wire validation.
     // non-object schemas (rare) fall back to undefined.
     const params = template.parameters as unknown as {
       shape?: Record<string, z.ZodTypeAny>;
@@ -372,7 +372,7 @@ async function runApplyPlan(
 }
 
 // Suppress the "createApprovalSigner imported but unused" warning by referencing
-// it; it's needed transitively to keep the approvals module imported here so
+// it. it's needed transitively to keep the approvals module imported here so
 // the bundler resolves all paths used by applyPlan.
 void createApprovalSigner;
 void randomUUID;
@@ -388,7 +388,7 @@ export function createScaffolderMcpRouter(deps: ScaffolderMcpDeps): Router {
         sessionIdGenerator: undefined,
       });
       await server.connect(transport);
-      // Express has already parsed JSON; pass it through so the SDK doesn't
+      // Express has already parsed JSON. pass it through so the SDK doesn't
       // try to re-read the request body.
       await transport.handleRequest(req, res, req.body);
     } catch (err) {
@@ -396,7 +396,7 @@ export function createScaffolderMcpRouter(deps: ScaffolderMcpDeps): Router {
     }
   });
 
-  // GET / returns 405; this MCP transport is POST-only in stateless mode.
+  // GET / returns 405. this MCP transport is POST-only in stateless mode.
   router.get("/", (_req, res) => {
     res.status(405).json({ error: "Method Not Allowed; use POST" });
   });
