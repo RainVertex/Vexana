@@ -1,12 +1,9 @@
 import type { PageSection } from "@internal/shared-types";
 
-/** A canonical route the user can pick when creating a LINK page. */
 export interface KnownRoute {
   path: string;
   label: string;
-  /** The section this route most naturally belongs to. */
   section: PageSection | "account";
-  /** Hidden from the suggestion list for non-admins. */
   adminOnly?: boolean;
 }
 
@@ -56,7 +53,6 @@ export const KNOWN_ROUTES: KnownRoute[] = [
   { path: "/settings/webhooks", label: "Webhook settings", section: "account" },
 ];
 
-/** Filter and rank routes by what the user has typed so far. */
 export function searchKnownRoutes(
   query: string,
   options: { isAdmin: boolean; limit?: number } = { isAdmin: false },

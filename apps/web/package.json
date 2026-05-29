@@ -13,6 +13,7 @@
     "@feature/notifications-frontend": "0.1.0",
     "@feature/observability-frontend": "0.1.0",
     "@feature/onboarding-frontend": "0.1.0",
+    "@feature/pages-frontend": "0.1.0",
     "@feature/requests-frontend": "0.1.0",
     "@feature/scaffolder-frontend": "0.1.0",
     "@feature/scorecards-frontend": "0.1.0",
