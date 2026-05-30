@@ -84,6 +84,9 @@ model Agent {
   approvalMode String      @default("ask")
   maxToolCalls Int         @default(10)
   tokenBudget  Int?
+  // Sampling temperature override. Null means use the per-model recommended
+  // default (samplingDefaults in the openai_compat adapter, 0.2 elsewhere).
+  temperature  Float?
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 

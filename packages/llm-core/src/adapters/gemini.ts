@@ -12,23 +12,13 @@ import type OpenAI from "openai";
 import { randomUUID } from "node:crypto";
 import type { AdapterRequest, AdapterResult, ProviderAdapter } from "./providerAdapter";
 
-// Native Gemini adapter using @google/genai. Same surface as the other
-// adapters: takes OpenAI-shaped messages/tools and returns OpenAI-shaped
-// tool calls + usage. Internally it converts to Gemini's `contents` /
-// `parts` shape and the `functionDeclarations` tool schema.
-//
-// Gemini's function-call tool ids are not first-class, the API reports
-// only the function name in the `functionCall` part. We mint a synthetic
-// `call_<uuid>` so downstream tool_call_id wiring keeps working uniformly
-// across providers.
+// Native Gemini streaming adapter; converts to/from the OpenAI message/tool shape and mints synthetic tool-call ids.
 
 class GeminiAdapter implements ProviderAdapter {
   readonly kind = "gemini" as const;
 
   async stream(req: AdapterRequest): Promise<AdapterResult> {
     const provider = req.model.provider;
-    // Prefer the caller-resolved key (per-agent Secret override) and fall
-    // back to the env var named on LlmProvider.apiKeyEnvVar.
     const apiKey =
       req.apiKey ?? (provider.apiKeyEnvVar ? process.env[provider.apiKeyEnvVar] : null);
     if (!apiKey) {
@@ -43,9 +33,6 @@ class GeminiAdapter implements ProviderAdapter {
     const toolConfig = mapToolChoiceToGemini(req.toolChoice, tools !== undefined);
 
     let content = "";
-    // Tool calls accumulate across chunks. Gemini emits them whole inside a
-    // part (no incremental args), but we still iterate the stream so token
-    // deltas can be forwarded.
     const toolCalls: OpenAI.Chat.Completions.ChatCompletionMessageFunctionToolCall[] = [];
     let usageInput = 0;
     let usageOutput = 0;
@@ -58,9 +45,7 @@ class GeminiAdapter implements ProviderAdapter {
         systemInstruction,
         tools,
         toolConfig,
-        temperature: 0.2,
-        // Gemini reports usage on each chunk as cumulative. we just keep the
-        // last value seen. Abort signal flows through the underlying fetch.
+        temperature: req.temperature ?? 0.2,
         abortSignal: req.signal,
       },
     });
@@ -114,23 +99,17 @@ class GeminiAdapter implements ProviderAdapter {
 
 export const geminiAdapter: ProviderAdapter = new GeminiAdapter();
 
-// Conversion helpers
-
 interface GeminiConvertedMessages {
   systemInstruction: string | undefined;
   contents: Content[];
 }
 
-/** OpenAI message roles map to Gemini's `user` and `model` roles. */
 function convertMessagesToGemini(
   messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[],
 ): GeminiConvertedMessages {
   const systemParts: string[] = [];
   const out: Content[] = [];
 
-  // Track which tool_call_id corresponds to which function name so we can
-  // populate `functionResponse.name` (Gemini requires it) when we see the
-  // matching `role: "tool"` message later.
   const toolCallNames = new Map<string, string>();
 
   for (const m of messages) {
@@ -211,7 +190,6 @@ function convertMessagesToGemini(
   };
 }
 
-/** OpenAI's `function.parameters` (JSON Schema) maps cleanly to Gemini's `parameters: Schema`. */
 function convertToolsToGemini(tools: OpenAI.Chat.Completions.ChatCompletionTool[]): Tool[] {
   const fns: FunctionDeclaration[] = tools.flatMap((t) => {
     if (t.type !== "function") return [];

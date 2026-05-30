@@ -1,21 +1,17 @@
+// Shared types for agents, LLM models/providers, and the admin AI / Models surface.
 import type { ID, ISODateString, NamedEntity, Timestamped } from "./common";
 
 export type AgentStatus = "idle" | "running" | "succeeded" | "failed";
 
-/** Adapter selector derived from the provider kind. */
 export type ProviderKind = "openai_compat" | "anthropic" | "gemini";
 
-/** How an agent should treat one specific tool call. */
 export type ToolApprovalMode = "auto" | "requires_approval" | "forbidden";
 
-/** Per-tool approval policy (used by the shared decidePolicy helper). */
 export interface ToolApprovalPolicy {
   [toolName: string]: ToolApprovalMode | Record<string, ToolApprovalMode> | undefined;
-  /** Defaults applied when no per-tool entry matches. */
   _sectionDefaults?: Record<string, ToolApprovalMode>;
 }
 
-/** Lean approval mode on an agent: auto-run write tools, or ask first. */
 export type ApprovalMode = "auto" | "ask";
 
 export interface LlmProviderSummary {
@@ -52,6 +48,7 @@ export interface Agent extends NamedEntity {
   approvalMode: ApprovalMode;
   maxToolCalls: number;
   tokenBudget: number | null;
+  temperature: number | null;
   llmModel?: {
     slug: string;
     displayName: string;
@@ -83,6 +80,7 @@ export interface CreateAgentInput {
   approvalMode?: ApprovalMode;
   maxToolCalls?: number;
   tokenBudget?: number | null;
+  temperature?: number | null;
 }
 
 export type UpdateAgentInput = Partial<CreateAgentInput>;
@@ -92,8 +90,6 @@ export interface RunAgentResponse {
   agentId: ID;
   status: AgentStatus;
 }
-
-// Admin AI / Models settings surface.
 
 export interface AdminAiModelRow {
   id: ID;
@@ -110,9 +106,7 @@ export interface AdminAiProviderGroup {
   slug: string;
   displayName: string;
   kind: string;
-  /** True when the provider needs no key (local), has an in-app key, or its env key is present. */
   ready: boolean;
-  /** True when an admin stored an encrypted key in the app for this provider. */
   hasStoredKey: boolean;
   apiKeyEnvVar: string | null;
   models: AdminAiModelRow[];

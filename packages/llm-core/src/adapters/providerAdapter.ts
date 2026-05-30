@@ -1,17 +1,7 @@
 import type OpenAI from "openai";
 import type { ResolvedModel } from "../client";
 
-// Single chat-completion turn against any LLM provider. The adapter accepts
-// the canonical OpenAI message/tool shape used everywhere else in the
-// codebase (history loading, dispatch planning, message building all assume
-// it) and returns the same shape, adapters that talk to native APIs do the
-// conversion internally so streamExecutor and runAgent never see Anthropic
-// or Gemini-specific types.
-//
-// Streaming is the only mode: token deltas are forwarded via onTokenDelta as
-// they arrive. the adapter returns the fully accumulated message + tool calls
-// + usage when the upstream stream ends. Non-streaming callers (runAgent)
-// just leave onTokenDelta unset and use the returned result directly.
+// Streaming chat-turn interface in OpenAI message/tool shape; native adapters convert internally.
 
 export interface AdapterRequest {
   model: ResolvedModel;
@@ -20,8 +10,8 @@ export interface AdapterRequest {
   toolChoice?: OpenAI.Chat.Completions.ChatCompletionToolChoiceOption;
   signal?: AbortSignal;
   onTokenDelta?: (text: string) => void;
-  /** Pre-resolved provider API key. */
   apiKey?: string | null;
+  temperature?: number | null;
 }
 
 export interface AdapterResult {

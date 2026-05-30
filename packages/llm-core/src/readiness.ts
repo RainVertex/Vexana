@@ -1,8 +1,5 @@
-// A provider is "ready" when the key it needs is actually available. Local
-// providers (Ollama) declare no apiKeyEnvVar and are always ready. Cloud
-// providers are ready when an admin stored an in-app key, or when their env
-// var is set in this deployment. Callers pass hasStoredKey so this stays a
-// pure, synchronous check (the DB lookup happens once in the caller).
+// Provider readiness check plus the role-aware messages shown when a provider
+// has no key or chat has no usable model.
 export function isProviderReady(
   provider: { apiKeyEnvVar: string | null },
   hasStoredKey: boolean,
@@ -10,4 +7,16 @@ export function isProviderReady(
   if (!provider.apiKeyEnvVar) return true;
   if (hasStoredKey) return true;
   return Boolean(process.env[provider.apiKeyEnvVar]);
+}
+
+export function providerKeyMissingMessage(isAdmin: boolean): string {
+  return isAdmin
+    ? "This provider has no API key set. Go to Admin -> AI / Models to add one."
+    : "The assistant isn't set up yet. Please contact your administrator.";
+}
+
+export function assistantNotConfiguredMessage(isAdmin: boolean): string {
+  return isAdmin
+    ? "The assistant isn't set up yet. Go to Admin -> AI / Models to select a chat model and add its API key."
+    : "The assistant isn't set up yet. Please contact your administrator.";
 }

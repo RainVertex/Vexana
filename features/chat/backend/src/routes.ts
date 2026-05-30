@@ -1,3 +1,4 @@
+// /api/chat router: conversation CRUD, the SSE message stream, and stream abort. All routes are auth-scoped to req.user.id (cross-user access 404s).
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "@internal/db";
@@ -10,25 +11,20 @@ import type {
   ChatRole,
   ChatSseEvent,
 } from "@internal/shared-types";
-import { getSetting, isProviderReady, providerHasStoredKey } from "@internal/llm-core";
+import {
+  getSetting,
+  isProviderReady,
+  providerHasStoredKey,
+  assistantNotConfiguredMessage,
+} from "@internal/llm-core";
 import { streamAgent } from "./streamExecutor";
-
-// /api/chat router, conversation CRUD plus the SSE message endpoint and a
-// small abort endpoint that signals the in-flight AbortController.
-//
-// All routes require an authenticated user (mounted under requireAuth in
-// apps/api/createServer). Conversations are scoped to req.user.id. cross-user
-// access returns 404 rather than 403 to avoid leaking conversation existence.
 
 export const chatRouter: Router = Router();
 
 const PLATFORM_ASSISTANT_AGENT_ID = "seed-agent-assistant";
 const MAX_CONCURRENT_SSE_PER_USER = 2;
 
-// In-process map of in-flight streaming connections. Keyed by conversationId
-// so /abort can find the controller. values include userId so we can also
-// count concurrent connections per user. Multi-instance deployments need
-// sticky sessions on conversationId, see streamExecutor.ts notes.
+// In-flight SSE connections keyed by conversationId; multi-instance deploys need sticky sessions on conversationId.
 interface InFlightEntry {
   userId: string;
   controller: AbortController;
@@ -41,12 +37,8 @@ function countInFlightForUser(userId: string): number {
   return n;
 }
 
-// Schemas
-
 const createConversationSchema = z.object({ title: z.string().min(1).max(200).optional() });
 const sendMessageSchema = z.object({ content: z.string().min(1).max(8000) });
-
-// Helpers
 
 async function getCallerTeamIds(userId: string): Promise<string[]> {
   const memberships = await prisma.teamMembership.findMany({
@@ -88,10 +80,6 @@ async function findConversation(conversationId: string, userId: string) {
   });
 }
 
-// The assistant is ready only when an admin selected an active chat model
-// (SystemSetting "chat.activeModelId") and that model is still enabled and its
-// provider is ready (env key present, or local). Otherwise chat shows the
-// not-configured state.
 async function resolveChatReadiness(): Promise<{ ready: boolean; reason: string | null }> {
   const activeModelId = await getSetting<string>("chat.activeModelId");
   if (!activeModelId) return { ready: false, reason: "no_active_model" };
@@ -108,8 +96,6 @@ async function resolveChatReadiness(): Promise<{ ready: boolean; reason: string 
   }
   return { ready: true, reason: null };
 }
-
-// Routes
 
 chatRouter.get("/config", async (_req, res) => {
   const { ready, reason } = await resolveChatReadiness();
@@ -203,9 +189,7 @@ chatRouter.delete("/conversations/:id", async (req, res) => {
     res.status(404).json({ error: "Conversation not found" });
     return;
   }
-  // Cancel any in-flight stream for this conversation before cascading the
-  // delete so the streamExecutor's persist-on-finish doesn't fight a deleted
-  // FK.
+  // Abort any in-flight stream first so persist-on-finish does not race the cascading delete.
   const flight = inFlight.get(id);
   if (flight) {
     flight.controller.abort();
@@ -238,20 +222,17 @@ chatRouter.post("/conversations/:id/messages", async (req, res) => {
     return;
   }
 
-  // Block before opening the SSE when no active chat model is configured, so
-  // the client gets a clean JSON 409 instead of an SSE error frame.
+  // Block before opening the SSE so an unconfigured assistant returns a clean JSON 409, not an SSE error frame.
   const readiness = await resolveChatReadiness();
   if (!readiness.ready) {
     res.status(409).json({
-      error: "The assistant is not set up yet. Ask an admin to select a chat model.",
+      error: assistantNotConfiguredMessage(user.role === "admin"),
       code: "not_configured",
       reason: readiness.reason,
     });
     return;
   }
 
-  // Concurrent SSE cap (per-user). Hits before we open the stream so the
-  // client gets a normal JSON 429 instead of an SSE error frame.
   if (countInFlightForUser(user.id) >= MAX_CONCURRENT_SSE_PER_USER) {
     res.status(429).json({
       error: "Too many concurrent chat streams open",
@@ -260,13 +241,11 @@ chatRouter.post("/conversations/:id/messages", async (req, res) => {
     return;
   }
 
-  // Persist the user's message before streaming so the transcript stays
-  // intact even if the network drops mid-stream.
+  // Persist the user message before streaming so the transcript survives a mid-stream network drop.
   await prisma.chatMessage.create({
     data: { conversationId, role: "user", content: parsed.content },
   });
 
-  // Lazy-title: the first user message becomes the conversation title.
   if (conv.title === "New chat") {
     const trimmed =
       parsed.content.length > 80 ? parsed.content.slice(0, 77) + "..." : parsed.content;
@@ -276,17 +255,15 @@ chatRouter.post("/conversations/:id/messages", async (req, res) => {
     });
   }
 
-  // SSE response headers. Disable proxy buffering so tokens arrive promptly.
+  // X-Accel-Buffering off so proxies do not buffer the token stream.
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache, no-transform");
   res.setHeader("Connection", "keep-alive");
   res.setHeader("X-Accel-Buffering", "no");
   res.flushHeaders?.();
 
-  // Wire up the abort controller for this turn.
   const controller = new AbortController();
   inFlight.set(conversationId, { userId: user.id, controller });
-  // If the client disconnects, treat it as an abort.
   req.on("close", () => controller.abort());
 
   function writeEvent(e: ChatSseEvent): void {
@@ -306,23 +283,18 @@ chatRouter.post("/conversations/:id/messages", async (req, res) => {
       onEvent: writeEvent,
     });
 
-    // Persist the assistant message, captures finalText, the run id, and
-    // the tool calls so reload-of-conversation renders the full transcript
-    // including chips. Reasoning (if any) is saved alongside so the collapsed
-    // "Reasoned - Ns" affordance can re-expand its text after reload.
     await prisma.chatMessage.create({
       data: {
         conversationId,
         role: "assistant",
         content: result.finalText,
         agentRunId: result.agentRunId,
-        toolCalls: undefined, // tool calls already streamed. reconstruct from AgentRun if needed for v2
+        toolCalls: undefined,
         reasoning: result.reasoning,
         reasoningDurationMs: result.reasoningDurationMs,
       },
     });
 
-    // Bump the conversation's updatedAt so the rail re-orders.
     await prisma.chatConversation.update({
       where: { id: conversationId },
       data: { updatedAt: new Date() },
@@ -339,7 +311,6 @@ chatRouter.post("/conversations/:id/messages", async (req, res) => {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     writeEvent({ event: "error", data: { message } });
-    // Save a [aborted] / [error] message so the transcript stays consistent.
     await prisma.chatMessage.create({
       data: {
         conversationId,

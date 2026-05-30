@@ -1,3 +1,4 @@
+// Admin form to create or edit an agent (model, prompt, tools, approval mode, limits).
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { PageLayout } from "@internal/shared-ui";
@@ -31,12 +32,12 @@ export function AgentFormPage() {
   const [approvalMode, setApprovalMode] = useState<ApprovalMode>("ask");
   const [maxToolCalls, setMaxToolCalls] = useState(10);
   const [tokenBudget, setTokenBudget] = useState<string>("");
+  const [temperature, setTemperature] = useState<string>("");
 
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(isEdit);
 
-  // Load model registry + tool registry once.
   useEffect(() => {
     api.llm
       .listModels()
@@ -48,7 +49,6 @@ export function AgentFormPage() {
       .catch(() => {});
   }, [api]);
 
-  // Load the existing agent when editing.
   useEffect(() => {
     if (!isEdit || !id) return;
     api.agents
@@ -63,12 +63,12 @@ export function AgentFormPage() {
         setApprovalMode(a.approvalMode);
         setMaxToolCalls(a.maxToolCalls);
         setTokenBudget(a.tokenBudget != null ? String(a.tokenBudget) : "");
+        setTemperature(a.temperature != null ? String(a.temperature) : "");
       })
       .catch((err) => setError(err.message ?? "Failed to load agent"))
       .finally(() => setLoading(false));
   }, [api, id, isEdit]);
 
-  // Refresh recommendations whenever the kind changes.
   const loadRecommendations = useCallback(
     (k: string) => {
       api.llm
@@ -91,8 +91,6 @@ export function AgentFormPage() {
 
   const toolsSelected = toolIds.length > 0;
 
-  // Recommended models first, then the rest. Models that cannot support the
-  // selected tools are disabled in the picker.
   const sortedModels = useMemo(() => {
     const rank = (m: LlmModelSummary) => (recommendedIds.includes(m.id) ? 0 : 1);
     return [...models].sort((a, b) => rank(a) - rank(b));
@@ -129,6 +127,7 @@ export function AgentFormPage() {
       approvalMode,
       maxToolCalls,
       tokenBudget: tokenBudget.trim() ? Number(tokenBudget) : null,
+      temperature: temperature.trim() ? Number(temperature) : null,
     };
     setSaving(true);
     try {
@@ -278,6 +277,22 @@ export function AgentFormPage() {
               onChange={(e) => setTokenBudget(e.target.value)}
               className={inputCls}
             />
+          </Labeled>
+          <Labeled label="Temperature (optional)">
+            <input
+              type="number"
+              min={0}
+              max={2}
+              step={0.1}
+              value={temperature}
+              placeholder="Recommended"
+              onChange={(e) => setTemperature(e.target.value)}
+              className={inputCls}
+            />
+            <p className="mt-1 text-xs text-app-text-muted">
+              Higher is more creative, lower is more deterministic. Leave blank to use the
+              recommended default for the model.
+            </p>
           </Labeled>
         </div>
 

@@ -1,3 +1,4 @@
+// Express routers for the agent CRUD API and the LLM model/recommendation registry.
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "@internal/db";
@@ -22,8 +23,6 @@ export {
   type AgentJobContext,
 } from "./jobs";
 export { registerAgentTools, CATALOG_TOOLS } from "./catalogTools";
-// Re-export the shared LLM plumbing for any caller that still imports it from
-// the agents package. Chat imports @internal/llm-core directly.
 export {
   registerTools,
   resolveTools,
@@ -34,8 +33,7 @@ export {
 export const agentsRouter: Router = Router();
 export const llmRouter: Router = Router();
 
-// Seeded agents are referenced by id elsewhere (the chat conversation FK and
-// the enrichment cron) so the API must not delete them.
+// Seeded agents are referenced by FK and the enrichment cron, so they cannot be deleted.
 const PROTECTED_AGENT_IDS = new Set(["seed-agent-assistant", "seed-agent-catalog-enricher"]);
 
 async function getCallerTeamIds(userId: string): Promise<string[]> {
@@ -46,8 +44,6 @@ async function getCallerTeamIds(userId: string): Promise<string[]> {
   return memberships.map((m) => m.teamId);
 }
 
-// Capability guardrail: the model must be registered + enabled (provider too),
-// and a tool-using agent needs a tool-capable model.
 async function validateModelForTools(
   modelId: string,
   toolIds: string[],
@@ -81,8 +77,6 @@ async function validateModelForTools(
   return { ok: true };
 }
 
-// LLM model registry
-
 llmRouter.get("/models", async (_req, res) => {
   const models = await prisma.llmModel.findMany({
     where: { enabled: true, provider: { enabled: true } },
@@ -105,8 +99,6 @@ llmRouter.get("/models", async (_req, res) => {
   });
 });
 
-// Recommended models for an agent kind. Resolves recommended slugs to ids,
-// preserving order and skipping any that are not registered/enabled.
 llmRouter.get("/recommendations", async (req, res) => {
   const kind = typeof req.query.kind === "string" ? req.query.kind : "custom";
   const rec = recommendationsForKind(kind);
@@ -120,8 +112,6 @@ llmRouter.get("/recommendations", async (req, res) => {
     .filter((id): id is string => Boolean(id));
   res.json({ kind, requiresTools: rec.requiresTools, recommendedModelIds });
 });
-
-// Agents, read (any authenticated user)
 
 agentsRouter.get("/", async (req, res) => {
   if (!req.user) return res.status(401).json({ error: "Not authenticated" });
@@ -171,8 +161,6 @@ agentsRouter.get("/:id/runs/:runId", async (req, res) => {
   res.json(run);
 });
 
-// Agents, write (admin only, ownership was removed in the lean rebuild)
-
 const createAgentSchema = z.object({
   name: z.string().min(1).max(120),
   description: z.string().max(500).optional(),
@@ -183,6 +171,7 @@ const createAgentSchema = z.object({
   approvalMode: z.enum(["auto", "ask"]).default("ask"),
   maxToolCalls: z.number().int().min(1).max(50).default(10),
   tokenBudget: z.number().int().min(1).nullable().optional(),
+  temperature: z.number().min(0).max(2).nullable().optional(),
 });
 
 agentsRouter.post("/", async (req, res) => {
@@ -217,6 +206,7 @@ agentsRouter.post("/", async (req, res) => {
       approvalMode: data.approvalMode,
       maxToolCalls: data.maxToolCalls,
       tokenBudget: data.tokenBudget ?? null,
+      temperature: data.temperature ?? null,
     },
   });
   res.status(201).json(created);
@@ -237,7 +227,6 @@ agentsRouter.patch("/:id", async (req, res) => {
   }
   const data = parsed.data;
 
-  // Validate the effective model + tool combination after applying the patch.
   const effectiveModelId = data.modelId ?? existing.modelId;
   const effectiveToolIds =
     data.toolIds ??
@@ -265,6 +254,7 @@ agentsRouter.patch("/:id", async (req, res) => {
       approvalMode: data.approvalMode,
       maxToolCalls: data.maxToolCalls,
       tokenBudget: data.tokenBudget,
+      temperature: data.temperature,
     },
   });
   res.json(updated);
@@ -285,8 +275,6 @@ agentsRouter.delete("/:id", async (req, res) => {
   await prisma.agent.delete({ where: { id: req.params.id } });
   res.status(204).end();
 });
-
-// One-shot synchronous test run used by the create/edit form's "Try it out".
 
 const testAgentSchema = z.object({ prompt: z.string().min(1).max(8000) });
 

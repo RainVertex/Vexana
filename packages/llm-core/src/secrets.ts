@@ -1,15 +1,13 @@
 import { prisma } from "@internal/db";
 import { decryptSecret } from "./crypto";
+import { providerKeyMissingMessage } from "./readiness";
 
-// Resolve the API key a provider should authenticate with. Precedence:
-//   1. An admin-entered, encrypted ProviderCredential stored in the DB.
-//   2. The env var named on the provider row (e.g. ANTHROPIC_API_KEY).
-// Providers that need no key (local Ollama) leave apiKeyEnvVar null and have
-// no stored credential, so they resolve to null.
+// Resolve a provider's API key: stored encrypted credential first, then its env var, else null.
 export async function resolveProviderApiKey(args: {
   providerId: string;
   providerSlug: string;
   apiKeyEnvVar: string | null;
+  isAdmin?: boolean;
 }): Promise<string | null> {
   const stored = await prisma.providerCredential.findUnique({
     where: { providerId: args.providerId },
@@ -20,9 +18,7 @@ export async function resolveProviderApiKey(args: {
   if (args.apiKeyEnvVar) {
     const fromEnv = process.env[args.apiKeyEnvVar];
     if (!fromEnv) {
-      throw new Error(
-        `Missing API key for provider '${args.providerSlug}': no in-app key set and env var ${args.apiKeyEnvVar} is unset`,
-      );
+      throw new Error(providerKeyMissingMessage(args.isAdmin ?? false));
     }
     return fromEnv;
   }

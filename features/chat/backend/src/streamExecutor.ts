@@ -16,10 +16,10 @@ import type { ChatSseEvent, ChatToolCallSummary, ChatPolicyCheck } from "@intern
 import { platformAssistantToolIds } from "./tools";
 import { ThinkTagSplitter } from "./thinkTagSplitter";
 
+// SSE streaming chat loop: multi-turn tool dispatch with prepare/submit confirmation, reasoning split, and AgentRun persistence.
+
 const PLATFORM_ASSISTANT_AGENT_ID = "seed-agent-assistant";
 
-// Thrown when no active chat model is configured (or the configured one is
-// unavailable). The route turns this into a 409 not_configured response.
 export class ChatNotConfiguredError extends Error {
   readonly code = "not_configured";
   readonly reason: string;
@@ -28,13 +28,6 @@ export class ChatNotConfiguredError extends Error {
     this.reason = reason;
   }
 }
-
-// SSE sibling of runAgent. Streams token deltas via onEvent("token"), runs
-// the same multi-turn tool loop with policy-routed concurrency (parallel
-// reads, serial *_prepare per toolId, serial *_submit). Persists ChatMessage
-// + AgentRun mirroring runAgent's audit shape, tracks containsWrites for
-// admin filtering. Route handler maps onEvent to SSE frames, abort flows
-// through ToolContext.signal between turns and inside tool handlers.
 
 const MAX_HISTORY_PAIRS = 20;
 
@@ -53,13 +46,10 @@ export interface StreamAgentResult {
   agentRunId: string;
   containsWrites: boolean;
   finalText: string;
-  /** Concatenated reasoning text from all `<think>` blocks across the turn. */
   reasoning: string | null;
-  /** Total ms spent inside `<think>` blocks during the turn. */
   reasoningDurationMs: number | null;
 }
 
-/** Server-emitted preview side-channel from a *_prepare tool's handler back up to */
 export interface PrepareReturnEnvelope {
   __previewEvent: {
     shortHandle: string;
@@ -69,7 +59,6 @@ export interface PrepareReturnEnvelope {
     sideEffects: string[];
     policyChecks: ChatPolicyCheck[];
   };
-  /** What the LLM sees, short handle + summary + checks only. */
   forLlm: {
     handle: string;
     serverSummary: string;
@@ -94,7 +83,6 @@ export async function streamAgent(args: StreamAgentArgs): Promise<StreamAgentRes
   });
   if (!agent) throw new Error(`Agent not found: ${args.agentId}`);
 
-  // Allocate the AgentRun row up front so failures are recorded.
   const run = await prisma.agentRun.create({
     data: {
       agentId: args.agentId,
@@ -112,10 +100,6 @@ export async function streamAgent(args: StreamAgentArgs): Promise<StreamAgentRes
     teamIds: args.callerTeamIds,
     signal: args.signal,
   };
-  // Carry conversationId + the AgentRun id on the context so chat-aware tools
-  // (write actions especially) can scope to the conversation and stamp the
-  // audit row with the agentRunId. Stashed on the same object so we don't
-  // break ToolContext's public shape.
   const chatCtx = toolCtx as ToolContext & {
     conversationId?: string;
     agentRunId?: string;
@@ -123,31 +107,14 @@ export async function streamAgent(args: StreamAgentArgs): Promise<StreamAgentRes
   chatCtx.conversationId = args.conversationId;
   chatCtx.agentRunId = run.id;
 
-  // For the seeded Platform Assistant, prefer the canonical computed list
-  // over agent.toolIds in DB so newly-added chat tools (e.g.
-  // integrations_list_github) are picked up without requiring a re-seed.
-  // Other agents continue to use whatever was persisted on the row.
   const persistedIds = Array.isArray(agent.toolIds) ? (agent.toolIds as unknown as string[]) : [];
   const toolIds =
     args.agentId === PLATFORM_ASSISTANT_AGENT_ID ? platformAssistantToolIds() : persistedIds;
   const tools = resolveTools(toolIds);
   const openaiTools = tools.map((t) => t.openaiDef);
 
-  // Build the message history from prior ChatMessage rows. Truncation rules:
-  // keep the last MAX_HISTORY_PAIRS user/assistant pairs verbatim, including
-  // each assistant's tool_calls + tool results so the model has the context
-  // it emitted previously.
   const history = await loadHistory(args.conversationId);
 
-  // The history loader currently strips tool calls (see its comment), so the
-  // model loses the prv_NN handle from any prior *_prepare tool call across
-  // turns. Without this, when the user confirms in the next turn ("yes"
-  // "proceed"), the model has nothing to pass to *_submit and re-prepares
-  // instead, superseding the original preview and never actually submitting.
-  // Re-inject any pending previews for this conversation as a system note so
-  // the model knows which handles are available. Also build a per-prepare
-  // toolId map for the dispatch-time guardrail that blocks re-prepare-after-
-  // confirm.
   const pendingPreviews = await loadPendingPreviews(args.conversationId);
   const pendingPreviewNote = buildPendingPreviewNote(pendingPreviews);
   const pendingPreviewsByPrepareToolId = new Map<
@@ -155,8 +122,6 @@ export async function streamAgent(args: StreamAgentArgs): Promise<StreamAgentRes
     { shortHandle: string; serverSummary: string }
   >();
   for (const p of pendingPreviews) {
-    // Map keyed by the *_prepare toolId so planDispatch can look up by the
-    // tool name on incoming tool_calls. Prefer the latest if duplicates exist.
     pendingPreviewsByPrepareToolId.set(p.toolId, {
       shortHandle: p.shortHandle,
       serverSummary: p.serverSummary,
@@ -176,10 +141,6 @@ export async function streamAgent(args: StreamAgentArgs): Promise<StreamAgentRes
   let finalText = "";
   let containsWrites = false;
 
-  // Resolve the active chat model the admin selected (SystemSetting
-  // "chat.activeModelId"), not the agent's placeholder modelId. The route
-  // pre-checks readiness and returns 409 before opening the SSE; these throws
-  // are a defensive backstop.
   const activeModelId = await getSetting<string>("chat.activeModelId");
   if (!activeModelId) throw new ChatNotConfiguredError("no_active_model");
   const model = (await prisma.llmModel.findUnique({
@@ -190,22 +151,16 @@ export async function streamAgent(args: StreamAgentArgs): Promise<StreamAgentRes
     throw new ChatNotConfiguredError("model_unavailable");
   }
 
-  // Resolve the provider API key once per turn from the env var on the
-  // provider row. Local providers (Ollama) resolve to null.
   const apiKey = await resolveProviderApiKey({
     providerId: model.provider.id,
     providerSlug: model.provider.slug,
     apiKeyEnvVar: model.provider.apiKeyEnvVar,
+    isAdmin: args.callerIsAdmin,
   });
 
-  // Dispatch through the ProviderAdapter selected from the resolved model's
-  // provider kind. The three seeded providers all map to openai_compat.
   const chatStream = (req: AdapterRequest) =>
     selectAdapter(providerKindFromProvider(model.provider)).stream({ ...req, apiKey });
 
-  // One splitter per turn (entire streamAgent invocation): a reasoning-capable
-  // model may emit multiple `<think>` blocks across tool-call iterations, and
-  // we want to persist the concatenated reasoning + total duration once.
   const splitter = new ThinkTagSplitter();
 
   try {
@@ -217,6 +172,7 @@ export async function streamAgent(args: StreamAgentArgs): Promise<StreamAgentRes
         messages,
         tools: openaiTools.length > 0 ? openaiTools : undefined,
         signal: args.signal,
+        temperature: agent.temperature,
         onTokenDelta: (text) => {
           if (!text) return;
           const chunk = splitter.push(text);
@@ -239,9 +195,6 @@ export async function streamAgent(args: StreamAgentArgs): Promise<StreamAgentRes
       tokensOutput += turn.usage.output;
 
       if (turn.message.content && typeof turn.message.content === "string") {
-        // The adapter returns the *raw* model content (still containing any
-        // `<think>` tags). Re-derive the user-visible final text from the
-        // splitter so persisted history never contains stray reasoning markup.
         finalText = splitter.content;
       }
 
@@ -249,15 +202,8 @@ export async function streamAgent(args: StreamAgentArgs): Promise<StreamAgentRes
         break;
       }
 
-      // Re-feed the assistant's message verbatim so the next chat() call has
-      // the matching tool_call ids.
       messages.push(turn.message as OpenAI.Chat.Completions.ChatCompletionMessageParam);
 
-      // Apply the concurrency policy: reads parallel, prepares serial per
-      // toolId, submits always serial. Submits beyond the first in a single
-      // tool_calls array are deferred to the next turn. Also inspects the
-      // user's latest message + the pending-preview list to redirect any
-      // re-prepare-after-confirmation back to *_submit.
       const dispatch = planDispatch(turn.toolCalls, {
         userMessageContent: args.userMessageContent,
         pendingPreviewsByPrepareToolId,
@@ -285,8 +231,6 @@ export async function streamAgent(args: StreamAgentArgs): Promise<StreamAgentRes
       });
     }
 
-    // Flush any reasoning/content held back in the lookahead buffer (e.g. a
-    // model that stopped mid-tag), then snapshot the totals for persistence.
     const tail = splitter.finalize();
     if (tail.reasoning) {
       args.onEvent({ event: "reasoning_token", data: { text: tail.reasoning } });
@@ -300,9 +244,6 @@ export async function streamAgent(args: StreamAgentArgs): Promise<StreamAgentRes
         data: { durationMs: splitter.totalReasoningMs },
       });
     }
-    // Prefer the splitter's accumulated content over whatever the last turn
-    // happened to set (covers max-tool-calls and other edge paths where the
-    // final `finalText` came from a fallback string rather than the stream).
     if (splitter.content) {
       finalText = splitter.content;
     }
@@ -341,8 +282,6 @@ export async function streamAgent(args: StreamAgentArgs): Promise<StreamAgentRes
       },
     });
     args.onEvent({ event: "error", data: { message } });
-    // Best-effort: still surface any reasoning collected before the failure so
-    // the persisted message reflects what actually happened mid-stream.
     const partialReasoning = splitter.reasoning || null;
     const partialDurationMs = partialReasoning ? splitter.totalReasoningMs : null;
     return {
@@ -355,15 +294,11 @@ export async function streamAgent(args: StreamAgentArgs): Promise<StreamAgentRes
   }
 }
 
-// Tool-call dispatch planner
-
 interface DispatchPlan {
   parallel: OpenAI.Chat.Completions.ChatCompletionMessageFunctionToolCall[];
   serial: OpenAI.Chat.Completions.ChatCompletionMessageFunctionToolCall[];
   deferred: OpenAI.Chat.Completions.ChatCompletionMessageFunctionToolCall[];
-  /** Submits that ran in the same turn as their matching prepare. */
   confirmationGated: OpenAI.Chat.Completions.ChatCompletionMessageFunctionToolCall[];
-  /** Prepare calls intercepted because the user just confirmed and a fresh preview already */
   redirectedToSubmit: Array<{
     tc: OpenAI.Chat.Completions.ChatCompletionMessageFunctionToolCall;
     pendingPreview: { shortHandle: string; serverSummary: string };
@@ -386,12 +321,9 @@ function planDispatch(
     confirmationGated: [],
     redirectedToSubmit: [],
   };
-  // Track in-turn prepare toolIds and whether we've already taken a submit.
   const seenPrepareIds = new Set<string>();
   let submitTaken = false;
 
-  // Pre-compute which prepare names appear in this turn so we can refuse
-  // any submit whose matching prepare is also being called now.
   const prepareNamesInTurn = new Set<string>();
   for (const tc of toolCalls) {
     if (tc.function.name.endsWith("_prepare")) prepareNamesInTurn.add(tc.function.name);
@@ -404,26 +336,19 @@ function planDispatch(
     if (name.endsWith("_submit")) {
       const matchingPrepare = name.replace(/_submit$/, "_prepare");
       if (prepareNamesInTurn.has(matchingPrepare)) {
-        // Confirmation gate: we will not run a submit in the same turn as
-        // its matching prepare.
         plan.confirmationGated.push(tc);
       } else if (submitTaken) {
-        // Always serial. Only one per turn, the rest defer.
         plan.deferred.push(tc);
       } else {
         plan.serial.push(tc);
         submitTaken = true;
       }
     } else if (name.endsWith("_prepare")) {
-      // Inverse confirmation gate: if the user just confirmed and a fresh
-      // preview already exists for this prepare's toolId, the model should
-      // be calling *_submit, not re-preparing. Redirect it.
       const existing = inputs.pendingPreviewsByPrepareToolId.get(name);
       if (userJustConfirmed && existing) {
         plan.redirectedToSubmit.push({ tc, pendingPreview: existing });
         continue;
       }
-      // Serial per toolId in the same turn (collisions defer).
       if (seenPrepareIds.has(name)) {
         plan.deferred.push(tc);
       } else {
@@ -431,7 +356,6 @@ function planDispatch(
         seenPrepareIds.add(name);
       }
     } else {
-      // Reads, parallelizable.
       plan.parallel.push(tc);
     }
   }
@@ -441,7 +365,6 @@ function planDispatch(
 interface DispatchedResult {
   toolCallId: string;
   toolName: string;
-  /** What goes back into the LLM as the tool message. */
   contentForLlm: unknown;
   summary: ChatToolCallSummary;
 }
@@ -454,18 +377,14 @@ async function runDispatched(
 ): Promise<DispatchedResult[]> {
   const results: DispatchedResult[] = [];
 
-  // Reads in parallel.
   const parallelPromises = plan.parallel.map((tc) => runOne(tc, tools, ctx, onEvent));
   const parallelResults = await Promise.all(parallelPromises);
   results.push(...parallelResults);
 
-  // Serial: each prepare/submit one at a time, in submission order.
   for (const tc of plan.serial) {
     results.push(await runOne(tc, tools, ctx, onEvent));
   }
 
-  // Deferred: emit a stub tool result so the protocol stays consistent (every
-  // tool_call_id needs a tool reply or the next chat() call rejects).
   for (const tc of plan.deferred) {
     const deferred: DispatchedResult = {
       toolCallId: tc.id,
@@ -493,10 +412,6 @@ async function runDispatched(
     results.push(deferred);
   }
 
-  // Redirected-to-submit: model called *_prepare for an action that already
-  // has a fresh preview AND the user just confirmed. Refuse with the existing
-  // handle so the model emits *_submit next iteration instead of superseding
-  // and chasing a hallucinated cuid.
   for (const { tc, pendingPreview } of plan.redirectedToSubmit) {
     const submitTool = tc.function.name.replace(/_prepare$/, "_submit");
     const refusal = {
@@ -514,7 +429,6 @@ async function runDispatched(
         input: safeParse(tc.function.arguments),
         output: refusal,
         durationMs: 0,
-        // Held back by policy, not a tool failure.
         isError: false,
       },
     };
@@ -529,9 +443,6 @@ async function runDispatched(
     results.push(dispatched);
   }
 
-  // Confirmation-gated: a submit was called in the same turn as its matching
-  // prepare. Refuse with a clear, model-actionable message so the model asks
-  // the user to confirm and then re-emits submit on the next turn.
   for (const tc of plan.confirmationGated) {
     const message =
       'Refused: cannot run a *_submit tool in the same turn as its matching *_prepare. Wait for the user to explicitly confirm ("yes", "proceed", "Confirm submission") in the NEXT turn, then call this submit with the prv_NN handle returned by the prepare just executed. For this turn, finish by paraphrasing the preview\'s serverSummary and asking for confirmation — do NOT claim the request was submitted.';
@@ -548,8 +459,6 @@ async function runDispatched(
         input: safeParse(tc.function.arguments),
         output: refusal,
         durationMs: 0,
-        // Surface in the run's tool-call summaries as a non-error event
-        // the call wasn't a failure, just held back by policy.
         isError: false,
       },
     };
@@ -647,14 +556,9 @@ async function runOne(
   }
 }
 
-// History loading
-
 async function loadHistory(
   conversationId: string,
 ): Promise<OpenAI.Chat.Completions.ChatCompletionMessageParam[]> {
-  // Pull recent messages and their tool-call payloads. We then truncate to
-  // the last MAX_HISTORY_PAIRS user/assistant pairs while keeping the
-  // assistant's tool_call + tool result messages adjacent.
   const rows = await prisma.chatMessage.findMany({
     where: { conversationId },
     orderBy: { createdAt: "asc" },
@@ -685,24 +589,18 @@ async function loadHistory(
   for (const pair of tail) {
     if (pair.user) out.push({ role: "user", content: pair.user.content });
     if (pair.assistant) {
-      // Persist the assistant text, tool calls in history are best-effort
-      // because the original tool_call ids are lost. v2 may store the raw
-      // OpenAI message. For now we emit assistant text only, which the model
-      // can read back as conversational history.
       out.push({ role: "assistant", content: pair.assistant.content });
     }
   }
   return out;
 }
 
-/** A pending ChatActionPreview row in a shape both the system-note builder and the */
 interface PendingPreview {
   shortHandle: string;
   toolId: string;
   serverSummary: string;
 }
 
-/** Load previews still awaiting confirmation in this conversation: unconsumed, non-superseded*/
 async function loadPendingPreviews(conversationId: string): Promise<PendingPreview[]> {
   return prisma.chatActionPreview.findMany({
     where: {
@@ -716,7 +614,6 @@ async function loadPendingPreviews(conversationId: string): Promise<PendingPrevi
   });
 }
 
-/** Render the pending-preview list as a system-message note. */
 function buildPendingPreviewNote(pending: PendingPreview[]): string | null {
   if (pending.length === 0) return null;
   const lines = pending.map((p) => {
@@ -730,11 +627,6 @@ function buildPendingPreviewNote(pending: PendingPreview[]): string | null {
   ].join("\n");
 }
 
-// Tight confirmation detector. Used by the dispatch-time guardrail to decide
-// whether a *_prepare tool call should be redirected to the matching *_submit
-// (because the user is confirming an existing pending preview, not asking for
-// a fresh prepare). Conservative on purpose: short, contains a confirmation
-// keyword, no change-indicating words.
 const CONFIRMATION_KEYWORDS = [
   "yes",
   "yeah",
@@ -769,15 +661,12 @@ function looksLikeConfirmation(text: string | undefined | null): boolean {
   if (!text) return false;
   const norm = text.trim().toLowerCase();
   if (norm.length === 0 || norm.length > 60) return false;
-  // Pad with spaces so word-boundary checks like "no " also match end-of-string.
   const padded = ` ${norm} `;
   if (CONFIRMATION_CONTRADICTIONS.some((c) => padded.includes(c))) return false;
   return CONFIRMATION_KEYWORDS.some(
     (k) => padded.includes(` ${k} `) || padded.includes(`${k} `) || padded.includes(` ${k}`),
   );
 }
-
-// Helpers
 
 function safeParse(s: string | undefined): unknown {
   if (!s) return null;

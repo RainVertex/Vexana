@@ -12,12 +12,7 @@ import {
   type ToolContext,
 } from "@internal/llm-core";
 
-// Generic agent execution. The agent row carries everything driving the loop:
-// the system prompt (`instructions`), which tools it may call (`toolIds`), the
-// model + provider (`modelId` -> LlmModel -> LlmProvider), the per-loop cap
-// (`maxToolCalls`), the optional per-run token budget, and the approval mode.
-// Every provider is talked to via the OpenAI shape so a single loop serves
-// Ollama, OpenAI, and Anthropic without branching.
+// Generic agent execution loop (runAgent) plus the async kickoff and catalog-enricher wrapper.
 
 export type RunAgentInput = Record<string, unknown>;
 
@@ -41,19 +36,11 @@ export interface RunAgentResult {
 }
 
 export interface RunAgentOptions {
-  // Override the chat function for tests. Defaults to the real adapter path.
   chat?: (req: ChatRequest) => Promise<ChatResult>;
   signal?: AbortSignal;
-  // For runs initiated by an authenticated user. null for cron / system runs.
-  // The id flows into ToolContext.userId so every tool scopes to this user
-  // (per-user isolation). Autonomous runs (cron) pass null.
   callerUserId?: string | null;
   callerIsAdmin?: boolean;
   callerTeamIds?: string[];
-  // When set, runAgent updates this existing AgentRun row instead of creating
-  // a new one. The async-by-default route handler uses this so it can return
-  // the runId to the client immediately while the executor runs in the
-  // background.
   existingRunId?: string;
 }
 
@@ -75,17 +62,13 @@ export async function runAgent(
       });
   await prisma.agent.update({ where: { id: agentId }, data: { status: "running" } });
 
-  // Provider key resolved once per run from the env var named on the provider
-  // row. Local providers (Ollama) resolve to null. The adapter receives the
-  // pre-resolved key via AdapterRequest.apiKey.
   const apiKey = await resolveProviderApiKey({
     providerId: agent.llmModel.provider.id,
     providerSlug: agent.llmModel.provider.slug,
     apiKeyEnvVar: agent.llmModel.provider.apiKeyEnvVar,
+    isAdmin: opts.callerIsAdmin ?? false,
   });
 
-  // Adapter selected from the provider's kind. Tests inject opts.chat to skip
-  // the network.
   const chatFn =
     opts.chat ??
     ((req: ChatRequest) =>
@@ -112,12 +95,6 @@ export async function runAgent(
 
   const model = agent.llmModel as ResolvedModel;
 
-  // Lean approval: per-user isolation flows through ToolContext.userId. An
-  // autonomous run (no invoking human) with approvalMode "ask" cannot confirm
-  // any tool call, so tools are blocked; with "auto" they run (e.g. the
-  // Catalog Enricher). Human-invoked runs always allow tools, the caller is
-  // the human in the loop. Chat's interactive prepare/submit confirmation
-  // lives in the chat streamExecutor, not here.
   const isAutonomousRun = (opts.callerUserId ?? null) == null;
   const blockToolsAutonomously = isAutonomousRun && agent.approvalMode === "ask";
 
@@ -135,6 +112,7 @@ export async function runAgent(
         messages,
         tools: openaiTools.length > 0 ? openaiTools : undefined,
         signal: opts.signal,
+        temperature: agent.temperature,
       });
       tokensInput += result.usage.input;
       tokensOutput += result.usage.output;
@@ -151,8 +129,6 @@ export async function runAgent(
         break;
       }
 
-      // The assistant message goes back verbatim so the next turn includes
-      // the model's tool_calls. tool_result messages then follow per call.
       messages.push(result.message as OpenAI.Chat.Completions.ChatCompletionMessageParam);
 
       for (const tc of result.toolCalls) {
@@ -254,10 +230,6 @@ function safeJsonParse(s: string | undefined): unknown {
   }
 }
 
-// Async-by-default kickoff used by POST /api/agents/:id/run. Creates the
-// AgentRun row synchronously so the route can return its id, then runs the
-// executor in the background. runAgent's internal catch persists any failure
-// into the row.
 export async function startAgentRun(
   agentId: string,
   input: RunAgentInput,
@@ -273,12 +245,6 @@ export async function startAgentRun(
   });
   return { runId: run.id };
 }
-
-// Catalog enricher compatibility wrapper.
-//
-// The daily cron at jobs.ts calls runEnricherForEntity. It adapts the generic
-// result to the enricher's pre-existing shape (notably `driftsProposed`,
-// derived from the tool-call list).
 
 export interface EnricherInput {
   entityId: string;
@@ -321,5 +287,4 @@ export async function runEnricherForEntity(
   };
 }
 
-// Re-exports kept for callers that imported types from the old module shape.
 export type { RunAgentToolCall as EnricherToolCall };
