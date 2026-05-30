@@ -55,6 +55,32 @@ export function AdminAiModelsPage() {
     }
   }
 
+  async function saveKey(slug: string, apiKey: string) {
+    setBusy(`key:${slug}`);
+    setError(null);
+    try {
+      await client.adminAi.setProviderKey(slug, apiKey);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save key");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function removeKey(slug: string) {
+    setBusy(`key:${slug}`);
+    setError(null);
+    try {
+      await client.adminAi.clearProviderKey(slug);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to remove key");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   if (me.role !== "admin") {
     return (
       <PageLayout title="AI / Models" description="Admin only.">
@@ -119,6 +145,8 @@ export function AdminAiModelsPage() {
               busy={busy}
               onToggle={toggleEnabled}
               onSetActive={setActive}
+              onSaveKey={saveKey}
+              onRemoveKey={removeKey}
             />
           ))}
         </div>
@@ -142,18 +170,25 @@ function ProviderCard({
   busy,
   onToggle,
   onSetActive,
+  onSaveKey,
+  onRemoveKey,
 }: {
   provider: AdminAiProviderGroup;
   activeId: string | null;
   busy: string | null;
   onToggle: (m: AdminAiModelRow) => void;
   onSetActive: (id: string) => void;
+  onSaveKey: (slug: string, apiKey: string) => void;
+  onRemoveKey: (slug: string) => void;
 }) {
-  const readinessLabel = provider.apiKeyEnvVar
-    ? provider.ready
-      ? `${provider.apiKeyEnvVar} present`
-      : `Missing ${provider.apiKeyEnvVar}`
-    : "Local, no key needed";
+  const [keyInput, setKeyInput] = useState("");
+  const keyStatus = !provider.apiKeyEnvVar
+    ? "Local, no key needed"
+    : provider.hasStoredKey
+      ? "Key set in app"
+      : provider.ready
+        ? `Key set via ${provider.apiKeyEnvVar}`
+        : `No key (${provider.apiKeyEnvVar})`;
 
   return (
     <section className="rounded-lg border border-app-border bg-app-surface p-4">
@@ -166,7 +201,7 @@ function ProviderCard({
               : "bg-app-danger/10 text-app-danger"
           }`}
         >
-          {readinessLabel}
+          {keyStatus}
         </span>
       </div>
 
@@ -225,6 +260,44 @@ function ProviderCard({
           );
         })}
       </div>
+
+      {provider.apiKeyEnvVar && (
+        <div className="mt-3 border-t border-app-border pt-3">
+          <div className="mb-1 text-xs text-app-text-muted">API key</div>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="password"
+              value={keyInput}
+              onChange={(e) => setKeyInput(e.target.value)}
+              placeholder={
+                provider.hasStoredKey ? "Replace key…" : `Paste ${provider.apiKeyEnvVar}…`
+              }
+              className="min-w-0 flex-1 rounded-md border border-app-border bg-app-bg-sunken px-2 py-1 text-sm text-app-text focus:outline-none focus:ring-2 focus:ring-app-primary"
+            />
+            <button
+              type="button"
+              disabled={!keyInput.trim() || busy === `key:${provider.slug}`}
+              onClick={() => {
+                onSaveKey(provider.slug, keyInput.trim());
+                setKeyInput("");
+              }}
+              className="rounded-md bg-app-primary px-2.5 py-1 text-xs font-medium text-app-primary-on hover:opacity-90 disabled:opacity-50"
+            >
+              Save key
+            </button>
+            {provider.hasStoredKey && (
+              <button
+                type="button"
+                disabled={busy === `key:${provider.slug}`}
+                onClick={() => onRemoveKey(provider.slug)}
+                className="rounded-md border border-app-danger px-2.5 py-1 text-xs text-app-danger hover:bg-app-danger/10 disabled:opacity-50"
+              >
+                Remove
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

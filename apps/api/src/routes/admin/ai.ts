@@ -6,7 +6,16 @@ import type {
   AdminAiProviderGroup,
   ActiveChatModelDto,
 } from "@internal/shared-types";
-import { getSetting, setSetting, clearSetting, isProviderReady } from "@internal/llm-core";
+import {
+  getSetting,
+  setSetting,
+  clearSetting,
+  isProviderReady,
+  getProviderIdsWithStoredKey,
+  providerHasStoredKey,
+  setProviderKey,
+  clearProviderKey,
+} from "@internal/llm-core";
 import { requireAuth, requireRole } from "../../middleware/requireAuth";
 import { adminLimiter } from "../../middleware/rateLimit";
 
@@ -25,6 +34,7 @@ const ACTIVE_KEY = "chat.activeModelId";
 adminAiRouter.get("/models", async (_req, res, next) => {
   try {
     const activeChatModelId = await getSetting<string>(ACTIVE_KEY);
+    const storedKeyProviderIds = await getProviderIdsWithStoredKey();
     const providers = await prisma.llmProvider.findMany({
       orderBy: { slug: "asc" },
       include: { models: { orderBy: { slug: "asc" } } },
@@ -33,7 +43,8 @@ adminAiRouter.get("/models", async (_req, res, next) => {
       slug: p.slug,
       displayName: p.displayName,
       kind: p.kind,
-      ready: isProviderReady(p),
+      hasStoredKey: storedKeyProviderIds.has(p.id),
+      ready: isProviderReady(p, storedKeyProviderIds.has(p.id)),
       apiKeyEnvVar: p.apiKeyEnvVar,
       models: p.models.map((m) => ({
         id: m.id,
@@ -129,9 +140,10 @@ adminAiRouter.put("/active-chat-model", async (req, res, next) => {
       res.status(400).json({ error: "Provider is disabled", code: "provider_disabled" });
       return;
     }
-    if (!isProviderReady(model.provider)) {
+    const hasStoredKey = await providerHasStoredKey(model.provider.id);
+    if (!isProviderReady(model.provider, hasStoredKey)) {
       res.status(400).json({
-        error: `Provider is not ready (missing ${model.provider.apiKeyEnvVar})`,
+        error: `Provider is not ready (no in-app key and ${model.provider.apiKeyEnvVar} is unset)`,
         code: "provider_not_ready",
       });
       return;
@@ -144,6 +156,55 @@ adminAiRouter.put("/active-chat-model", async (req, res, next) => {
       return;
     }
     await setSetting(ACTIVE_KEY, model.id, req.user?.id ?? null);
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Provider API key management. Keys are encrypted at rest and never returned
+// to clients (GET /models only exposes hasStoredKey). Setting a key here takes
+// precedence over the provider's env var.
+
+const putKeySchema = z.object({ apiKey: z.string().min(1).max(500) });
+
+adminAiRouter.put("/providers/:slug/key", async (req, res, next) => {
+  try {
+    const parsed = putKeySchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid body" });
+      return;
+    }
+    const provider = await prisma.llmProvider.findUnique({ where: { slug: req.params.slug } });
+    if (!provider) {
+      res.status(404).json({ error: "Provider not found" });
+      return;
+    }
+    if (!provider.apiKeyEnvVar) {
+      res.status(400).json({ error: "This provider needs no API key.", code: "no_key_needed" });
+      return;
+    }
+    try {
+      await setProviderKey(provider.id, parsed.data.apiKey.trim(), req.user?.id ?? null);
+    } catch (err) {
+      // Most likely APP_SECRET_MASTER_KEY is unset; surface the actionable message.
+      res.status(500).json({ error: (err as Error).message, code: "encryption_unavailable" });
+      return;
+    }
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
+adminAiRouter.delete("/providers/:slug/key", async (req, res, next) => {
+  try {
+    const provider = await prisma.llmProvider.findUnique({ where: { slug: req.params.slug } });
+    if (!provider) {
+      res.status(404).json({ error: "Provider not found" });
+      return;
+    }
+    await clearProviderKey(provider.id);
     res.status(204).end();
   } catch (err) {
     next(err);

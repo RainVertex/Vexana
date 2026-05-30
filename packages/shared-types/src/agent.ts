@@ -110,8 +110,10 @@ export interface AdminAiProviderGroup {
   slug: string;
   displayName: string;
   kind: string;
-  /** True when the provider needs no key (local) or its env key is present. */
+  /** True when the provider needs no key (local), has an in-app key, or its env key is present. */
   ready: boolean;
+  /** True when an admin stored an encrypted key in the app for this provider. */
+  hasStoredKey: boolean;
   apiKeyEnvVar: string | null;
   models: AdminAiModelRow[];
 }

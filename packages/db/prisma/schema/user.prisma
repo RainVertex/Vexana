@@ -55,6 +55,7 @@ model User {
   maintainerRequestsReviewed      MaintainerRequest[]     @relation("MaintainerRequestReviewer")
   chatConversations               ChatConversation[]
   systemSettingsUpdated           SystemSetting[]         @relation("SystemSettingUpdatedBy")
+  providerCredentialsUpdated      ProviderCredential[]    @relation("ProviderCredentialUpdatedBy")
   orgMemberships                  UserOrgMembership[]
   createdProjects                 Project[]               @relation("ProjectCreator")
   projectMemberships              ProjectMember[]         @relation("ProjectMemberUser")

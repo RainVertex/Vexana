@@ -18,8 +18,23 @@ model LlmProvider {
   kind         String
   enabled      Boolean    @default(true)
   models       LlmModel[]
+  credential   ProviderCredential?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
+}
+
+// Admin-entered provider API key, encrypted at rest (AES-256-GCM with the
+// APP_SECRET_MASTER_KEY env key). One row per provider. resolveProviderApiKey
+// prefers this over the provider's apiKeyEnvVar. The plaintext key is never
+// returned to clients; only its presence (hasStoredKey) is exposed.
+model ProviderCredential {
+  id              String      @id @default(cuid())
+  providerId      String      @unique
+  encryptedValue  Bytes
+  updatedAt       DateTime    @updatedAt
+  updatedByUserId String?
+  provider        LlmProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  updatedBy       User?       @relation("ProviderCredentialUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
 }
 
 // A registered model an Agent can be pointed at. `modelName` is the wire

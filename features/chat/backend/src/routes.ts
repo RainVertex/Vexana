@@ -10,7 +10,7 @@ import type {
   ChatRole,
   ChatSseEvent,
 } from "@internal/shared-types";
-import { getSetting, isProviderReady } from "@internal/llm-core";
+import { getSetting, isProviderReady, providerHasStoredKey } from "@internal/llm-core";
 import { streamAgent } from "./streamExecutor";
 
 // /api/chat router, conversation CRUD plus the SSE message endpoint and a
@@ -99,7 +99,11 @@ async function resolveChatReadiness(): Promise<{ ready: boolean; reason: string 
     where: { id: activeModelId },
     include: { provider: true },
   });
-  if (!model || !model.enabled || !model.provider.enabled || !isProviderReady(model.provider)) {
+  if (!model || !model.enabled || !model.provider.enabled) {
+    return { ready: false, reason: "model_unavailable" };
+  }
+  const hasStoredKey = await providerHasStoredKey(model.provider.id);
+  if (!isProviderReady(model.provider, hasStoredKey)) {
     return { ready: false, reason: "model_unavailable" };
   }
   return { ready: true, reason: null };

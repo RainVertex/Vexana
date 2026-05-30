@@ -293,6 +293,15 @@ export function createApiClient(options: ApiClientOptions = {}) {
           method: "PUT",
           body: JSON.stringify({ modelId }),
         }),
+      setProviderKey: (slug: string, apiKey: string) =>
+        request<void>(`/api/admin/ai/providers/${encodeURIComponent(slug)}/key`, {
+          method: "PUT",
+          body: JSON.stringify({ apiKey }),
+        }),
+      clearProviderKey: (slug: string) =>
+        request<void>(`/api/admin/ai/providers/${encodeURIComponent(slug)}/key`, {
+          method: "DELETE",
+        }),
     },
 
     catalog: {

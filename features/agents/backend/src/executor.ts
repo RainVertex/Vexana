@@ -79,6 +79,7 @@ export async function runAgent(
   // row. Local providers (Ollama) resolve to null. The adapter receives the
   // pre-resolved key via AdapterRequest.apiKey.
   const apiKey = await resolveProviderApiKey({
+    providerId: agent.llmModel.provider.id,
     providerSlug: agent.llmModel.provider.slug,
     apiKeyEnvVar: agent.llmModel.provider.apiKeyEnvVar,
   });

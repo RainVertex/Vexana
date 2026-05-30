@@ -193,6 +193,7 @@ export async function streamAgent(args: StreamAgentArgs): Promise<StreamAgentRes
   // Resolve the provider API key once per turn from the env var on the
   // provider row. Local providers (Ollama) resolve to null.
   const apiKey = await resolveProviderApiKey({
+    providerId: model.provider.id,
     providerSlug: model.provider.slug,
     apiKeyEnvVar: model.provider.apiKeyEnvVar,
   });

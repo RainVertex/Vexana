@@ -18,3 +18,9 @@ export { resolveProviderApiKey } from "./secrets";
 export { getSetting, setSetting, clearSetting } from "./settings";
 export { isProviderReady } from "./readiness";
 export { recommendationsForKind, type KindRecommendation } from "./recommendations";
+export {
+  getProviderIdsWithStoredKey,
+  providerHasStoredKey,
+  setProviderKey,
+  clearProviderKey,
+} from "./providerCredentials";
