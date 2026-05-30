@@ -46,13 +46,13 @@ function summary(n: NotificationDto): string {
       return "Added to team";
     case "team.member.removed":
       return "Removed from team";
-    case "vikunja.task.assigned": {
+    case "projects.task.assigned": {
       const p = n.payload as Record<string, unknown>;
       const title = typeof p.taskTitle === "string" ? p.taskTitle : "a task";
       const project = typeof p.projectTitle === "string" ? ` in ${p.projectTitle}` : "";
       return `Assigned to: ${title}${project}`;
     }
-    case "vikunja.comment.posted": {
+    case "projects.task.commentAdded": {
       const p = n.payload as Record<string, unknown>;
       const title = typeof p.taskTitle === "string" ? p.taskTitle : "a task";
       const author = typeof p.authorName === "string" ? p.authorName : "Someone";

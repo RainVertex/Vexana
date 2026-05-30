@@ -49,48 +49,49 @@ enum CatalogAgentTaskStatus {
 }
 
 model CatalogEntity {
-  id               String                @id @default(cuid())
-  name             String
-  description      String?
-  kind             CatalogEntityKind
-  lifecycle        Lifecycle             @default(production)
-  repoUrl          String?
-  tags             String[]              @default([])
-  source           CatalogEntitySource   @default(manual)
-  sourceRef        String?
+  id                  String                     @id @default(cuid())
+  name                String
+  description         String?
+  kind                CatalogEntityKind
+  lifecycle           Lifecycle                  @default(production)
+  repoUrl             String?
+  tags                String[]                   @default([])
+  source              CatalogEntitySource        @default(manual)
+  sourceRef           String?
   // Authoritative GitHub org pointer. Every entity belongs to exactly one
   // org, denormalized from the kind=github Integration.config.accountLogin.
   // Used for catalog visibility filtering against UserOrgMembership.
-  accountLogin     String
-  lastSeenAt       DateTime              @default(now())
-  staleSince       DateTime?
-  yamlSpec         Json?
-  autoApply        Boolean               @default(false)
+  accountLogin        String
+  lastSeenAt          DateTime                   @default(now())
+  staleSince          DateTime?
+  yamlSpec            Json?
+  autoApply           Boolean                    @default(false)
   // GitHub App auto-import bookkeeping. installationId links the entity to
   // the App installation that discovered it (used for cascade-stale on
   // uninstall). githubRepoId is GitHub's stable numeric repo id, preferred
   // over (name, kind) for upserts when present so renames don't fork the row.
   // needsOnboarding flips false the moment a valid catalog-info.yaml is seen;
   // unowned flips false when the agent (or a manual edit) attaches owners.
-  needsOnboarding  Boolean               @default(false)
-  unowned          Boolean               @default(false)
-  installationId   Int?
-  githubRepoId     Int?                  @unique
-  createdAt        DateTime              @default(now())
-  updatedAt        DateTime              @updatedAt
-  owners             CatalogEntityOwner[]
-  healthSamples      ServiceHealthSample[]
-  doraSnapshots      DoraMetricsSnapshot[]
-  drifts             CatalogDrift[]
-  scorecardResults   ScorecardResult[]
-  docPages           DocPage[]
-  docSync            DocSyncState?
-  starredBy          StarredEntity[]
-  agentTasks         CatalogAgentTask[]
-  workflowRuns       WorkflowRun[]
-  deployments        Deployment[]
-  pipelineSyncCursor PipelineSyncCursor?
+  needsOnboarding     Boolean                    @default(false)
+  unowned             Boolean                    @default(false)
+  installationId      Int?
+  githubRepoId        Int?                       @unique
+  createdAt           DateTime                   @default(now())
+  updatedAt           DateTime                   @updatedAt
+  owners              CatalogEntityOwner[]
+  healthSamples       ServiceHealthSample[]
+  doraSnapshots       DoraMetricsSnapshot[]
+  drifts              CatalogDrift[]
+  scorecardResults    ScorecardResult[]
+  docPages            DocPage[]
+  docSync             DocSyncState?
+  starredBy           StarredEntity[]
+  agentTasks          CatalogAgentTask[]
+  workflowRuns        WorkflowRun[]
+  deployments         Deployment[]
+  pipelineSyncCursor  PipelineSyncCursor?
   observabilityConfig EntityObservabilityConfig?
+  project             Project?
 
   @@unique([name, kind])
   @@index([kind])

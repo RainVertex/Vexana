@@ -1,0 +1,137 @@
+enum ProjectRole {
+  READ
+  WRITE
+  ADMIN
+}
+
+model Project {
+  id              String          @id @default(cuid())
+  title           String
+  description     String?
+  hexColor        String?
+  isArchived      Boolean         @default(false)
+  creatorUserId   String?
+  catalogEntityId String?         @unique
+  installationId  Int?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  creator         User?           @relation("ProjectCreator", fields: [creatorUserId], references: [id], onDelete: SetNull)
+  catalogEntity   CatalogEntity?  @relation(fields: [catalogEntityId], references: [id], onDelete: SetNull)
+  members         ProjectMember[]
+  tasks           Task[]
+  buckets         Bucket[]
+  labels          Label[]
+
+  @@index([creatorUserId])
+  @@index([installationId])
+}
+
+model ProjectMember {
+  projectId     String
+  userId        String
+  role          ProjectRole @default(READ)
+  addedAt       DateTime    @default(now())
+  addedByUserId String?
+  project       Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user          User        @relation("ProjectMemberUser", fields: [userId], references: [id], onDelete: Cascade)
+  addedBy       User?       @relation("ProjectMemberAddedBy", fields: [addedByUserId], references: [id], onDelete: SetNull)
+
+  @@id([projectId, userId])
+  @@index([userId, role])
+}
+
+model Bucket {
+  id        String   @id @default(cuid())
+  projectId String
+  title     String
+  position  Float    @default(0)
+  taskLimit Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks     Task[]
+
+  @@index([projectId, position])
+}
+
+model Label {
+  id        String      @id @default(cuid())
+  projectId String
+  title     String
+  hexColor  String?
+  createdAt DateTime    @default(now())
+  project   Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks     TaskLabel[]
+
+  @@unique([projectId, title])
+  @@index([projectId])
+}
+
+model Task {
+  id              String         @id @default(cuid())
+  projectId       String
+  bucketId        String?
+  title           String
+  description     String?
+  done            Boolean        @default(false)
+  priority        Int            @default(0)
+  dueDate         DateTime?
+  startDate       DateTime?
+  endDate         DateTime?
+  percentDone     Float          @default(0)
+  isFavorite      Boolean        @default(false)
+  position        Float          @default(0)
+  parentTaskId    String?
+  createdByUserId String
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  project         Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  bucket          Bucket?        @relation(fields: [bucketId], references: [id], onDelete: SetNull)
+  parent          Task?          @relation("TaskSubtasks", fields: [parentTaskId], references: [id], onDelete: SetNull)
+  children        Task[]         @relation("TaskSubtasks")
+  creator         User           @relation("TaskCreator", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  assignees       TaskAssignee[]
+  labels          TaskLabel[]
+  comments        TaskComment[]
+
+  @@index([projectId, done])
+  @@index([projectId, bucketId, position])
+  @@index([dueDate])
+}
+
+model TaskAssignee {
+  taskId           String
+  userId           String
+  assignedAt       DateTime @default(now())
+  assignedByUserId String?
+  task             Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user             User     @relation("TaskAssigneeUser", fields: [userId], references: [id], onDelete: Cascade)
+  assignedBy       User?    @relation("TaskAssigneeAddedBy", fields: [assignedByUserId], references: [id], onDelete: SetNull)
+
+  @@id([taskId, userId])
+  @@index([userId])
+}
+
+model TaskLabel {
+  taskId     String
+  labelId    String
+  attachedAt DateTime @default(now())
+  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  label      Label    @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, labelId])
+  @@index([labelId])
+}
+
+model TaskComment {
+  id           String   @id @default(cuid())
+  taskId       String
+  authorUserId String
+  body         String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  task         Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author       User     @relation("TaskCommentAuthor", fields: [authorUserId], references: [id], onDelete: Cascade)
+
+  @@index([taskId, createdAt])
+}

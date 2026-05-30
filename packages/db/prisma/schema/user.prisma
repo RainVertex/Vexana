@@ -64,7 +64,13 @@ model User {
   agentApprovalsRequested         AgentApprovalRequest[]  @relation("AgentApprovalAgent")
   agentApprovalDecisions          AgentApprovalRequest[]  @relation("AgentApprovalDecider")
   orgMemberships                  UserOrgMembership[]
-  vikunjaProjects                 VikunjaProject[]
+  createdProjects                 Project[]               @relation("ProjectCreator")
+  projectMemberships              ProjectMember[]         @relation("ProjectMemberUser")
+  projectMembershipsAdded         ProjectMember[]         @relation("ProjectMemberAddedBy")
+  createdTasks                    Task[]                  @relation("TaskCreator")
+  taskAssignments                 TaskAssignee[]          @relation("TaskAssigneeUser")
+  taskAssignmentsAdded            TaskAssignee[]          @relation("TaskAssigneeAddedBy")
+  taskComments                    TaskComment[]           @relation("TaskCommentAuthor")
 
   @@index([userKind])
 }

@@ -31,7 +31,25 @@ import {
 } from "./bulk-sync";
 import { runReconciliation } from "./team-sync";
 import { upsertWorkflowRun, upsertDeployment } from "../pipelines/upsert";
+import {
+  provisionProjectForEntity,
+  archiveProjectByGithubRepoId,
+  reconcileProjectMembersForInstallation,
+} from "@feature/projects-backend";
 import type { Octokit as OctokitClient } from "octokit";
+
+async function provisionForRepoId(repoId: number, installationId: number): Promise<void> {
+  const entity = await prisma.catalogEntity.findUnique({
+    where: { githubRepoId: repoId },
+    select: { id: true },
+  });
+  if (!entity) return;
+  try {
+    await provisionProjectForEntity(entity.id, installationId);
+  } catch {
+    // Provisioning failure shouldn't block the webhook.
+  }
+}
 
 export const githubAppWebhookRouter: Router = Router();
 
@@ -222,6 +240,7 @@ async function handleInstallationRepositories(
       if (!owner || !name) continue;
       try {
         await syncRepoByName(octo, owner, name, installationId);
+        await provisionForRepoId(r.id, installationId);
       } catch {
         // Per-repo failure shouldn't block the whole webhook batch.
       }
@@ -233,6 +252,7 @@ async function handleInstallationRepositories(
     const removed = readRepoList(payload.repositories_removed);
     for (const r of removed) {
       await staleEntityByGithubRepoId(r.id);
+      await archiveProjectByGithubRepoId(r.id);
     }
     return;
   }
@@ -245,12 +265,18 @@ async function handleRepository(action: string, payload: Record<string, unknown>
   const repoId = typeof repo.id === "number" ? repo.id : null;
 
   if (action === "deleted" || action === "transferred") {
-    if (repoId != null) await staleEntityByGithubRepoId(repoId);
+    if (repoId != null) {
+      await staleEntityByGithubRepoId(repoId);
+      await archiveProjectByGithubRepoId(repoId);
+    }
     return;
   }
 
   if (action === "archived") {
-    if (repoId != null) await staleEntityByGithubRepoId(repoId);
+    if (repoId != null) {
+      await staleEntityByGithubRepoId(repoId);
+      await archiveProjectByGithubRepoId(repoId);
+    }
     return;
   }
 
@@ -273,6 +299,7 @@ async function handleRepository(action: string, payload: Record<string, unknown>
       throw err;
     }
     await syncRepoByName(octo, owner, name, installationId);
+    if (repoId != null) await provisionForRepoId(repoId, installationId);
     return;
   }
 }
@@ -352,6 +379,11 @@ async function handleOrgReconciliation(
   if (installationId == null) return;
 
   await runReconciliation(installationId, "webhook");
+  try {
+    await reconcileProjectMembersForInstallation(installationId);
+  } catch {
+    // Member reconciliation failure shouldn't bubble up; team-sync already succeeded.
+  }
 }
 
 function readInstallationId(payload: Record<string, unknown>): number | null {

@@ -8,7 +8,6 @@ import { requireAuth } from "./middleware/requireAuth";
 import { apiLimiter } from "./middleware/rateLimit";
 import { loadEnv } from "./config/env";
 import { authRouter } from "./auth/routes";
-import { oidcRouter } from "./oidc";
 import { adminUsersRouter } from "./routes/admin/users";
 import { adminAuditRouter } from "./routes/admin/audit";
 import { adminJobsRouter } from "./routes/admin/jobs";
@@ -39,6 +38,7 @@ import { grafanaWebhookRouter, observabilityRouter } from "@feature/observabilit
 import { notificationsRouter } from "@feature/notifications-backend";
 import { onboardingRouter } from "@feature/onboarding-backend";
 import { pagesRouter } from "@feature/pages-backend";
+import { projectsRouter } from "@feature/projects-backend";
 import { createScaffolderMcpRouter, createScaffolderRouter } from "@feature/scaffolder-backend";
 import { searchRouter } from "@feature/search-backend";
 import { requestsRouter } from "@feature/requests-backend";
@@ -48,8 +48,6 @@ import {
   teamRequestsRouter,
   teamsRouter,
 } from "@feature/teams-backend";
-import { vikunjaRouter, configureAuth as configureVikunjaAuth } from "@feature/vikunja-backend";
-import { issueCode as oidcIssueCode } from "./oidc";
 import { webhooksRouter } from "@feature/webhooks-backend";
 
 export function createServer() {
@@ -58,21 +56,6 @@ export function createServer() {
   // resolveTools() can find them when streamAgent loads the seeded
   // Platform Assistant.
   registerChatTools();
-  configureVikunjaAuth({
-    issueCode: async (userId: string) => {
-      const { prisma } = await import("@internal/db");
-      const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
-      return oidcIssueCode({
-        userId: user.id,
-        email: user.email,
-        displayName: user.displayName,
-        avatarUrl: user.avatarUrl,
-        githubLogin: user.githubLogin,
-        clientId: process.env.VIKUNJA_OIDC_CLIENT_ID ?? "platform-vikunja",
-        redirectUri: `${process.env.VIKUNJA_API_URL ?? "http://localhost:3456/api/v1"}/auth/openid/platform`,
-      });
-    },
-  });
   const app = express();
 
   app.set("trust proxy", 1);
@@ -105,7 +88,6 @@ export function createServer() {
   registerHealthRoute(app);
 
   app.use("/auth", authRouter);
-  app.use(oidcRouter);
 
   // /mcp uses bearer-token auth (ScaffolderMcpToken), not the session cookie
   // so it sits outside the /api requireAuth chain. The MCP transport handles
@@ -150,6 +132,7 @@ export function createServer() {
   app.use("/api/notifications", notificationsRouter);
   app.use("/api/onboarding", onboardingRouter);
   app.use("/api/pages", pagesRouter);
+  app.use("/api/projects", projectsRouter);
   app.use("/api/search", searchRouter);
   // Mount more-specific team subrouters before the catch-all `/api/teams` so
   // requests to `/api/teams/requests` and `/api/teams/policies` are not
@@ -159,7 +142,6 @@ export function createServer() {
   app.use("/api/teams/maintainer-requests", maintainerRequestsRouter);
   app.use("/api/teams/policies", teamPoliciesRouter);
   app.use("/api/teams", teamsRouter);
-  app.use("/api/vikunja", vikunjaRouter);
   app.use("/api/webhooks", webhooksRouter);
 
   app.use(errorHandler);

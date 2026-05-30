@@ -21,7 +21,8 @@ export function sectionFromPath(pathname: string): SidebarSection {
   if (path.startsWith("/search")) return "catalog";
   if (path.startsWith("/teams")) return "teams";
   if (path.startsWith("/observability") || path.startsWith("/dora-metrics")) return "observability";
-  if (path.startsWith("/vikunja") || path.startsWith("/workspace")) return "workspace";
+  if (path.startsWith("/projects") || path.startsWith("/tasks") || path.startsWith("/workspace"))
+    return "workspace";
   if (path.startsWith("/admin")) return "admin";
   if (path.startsWith("/integrations")) return "integrations";
   if (path.startsWith("/settings") || path.startsWith("/notifications")) return "account";

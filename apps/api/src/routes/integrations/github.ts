@@ -29,6 +29,7 @@ import {
   staleEntitiesForInstallation,
   syncInstallation,
 } from "@feature/catalog-backend";
+import { provisionProjectsForInstallation } from "@feature/projects-backend";
 import { loadEnv } from "../../config/env";
 import { recordAudit } from "../../audit/audit";
 import { logger } from "../../logger/logger";
@@ -111,6 +112,23 @@ githubIntegrationRouter.get("/callback", async (req, res, next) => {
       }
       throw err;
     }
+
+    // Stamp the installer user id on the integration config so auto-provisioned
+    // projects for unowned repos can fall back to this user as ADMIN.
+    const integrationRow = await prisma.integration.findUnique({
+      where: { id: result.integrationId },
+      select: { config: true },
+    });
+    const existingConfig =
+      integrationRow?.config &&
+      typeof integrationRow.config === "object" &&
+      !Array.isArray(integrationRow.config)
+        ? (integrationRow.config as Record<string, unknown>)
+        : {};
+    await prisma.integration.update({
+      where: { id: result.integrationId },
+      data: { config: { ...existingConfig, installerUserId: req.user.id } },
+    });
 
     await recordAudit(
       req,
@@ -198,6 +216,45 @@ githubIntegrationRouter.post("/:integrationId/resync", async (req, res, next) =>
       { kind: "integration", id: integration.id },
     );
     res.json(run);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Manually re-provision PM Projects for every repo owned by this installation.
+// Idempotent; safe to call repeatedly to backfill or refresh ACL after team
+// membership changes.
+githubIntegrationRouter.post("/:integrationId/provision-projects", async (req, res, next) => {
+  try {
+    if (!req.user || req.user.role !== "admin") {
+      res.status(403).json({ error: "Admin only" });
+      return;
+    }
+    const integration = await prisma.integration.findUnique({
+      where: { id: req.params.integrationId },
+      select: { id: true, kind: true, config: true, enabled: true },
+    });
+    if (!integration || integration.kind !== "github") {
+      res.status(404).json({ error: "GitHub integration not found" });
+      return;
+    }
+    if (!integration.enabled) {
+      res.status(409).json({ error: "Integration is disabled" });
+      return;
+    }
+    const cfg =
+      integration.config &&
+      typeof integration.config === "object" &&
+      !Array.isArray(integration.config)
+        ? (integration.config as Record<string, unknown>)
+        : {};
+    const installationId = Number(cfg.installationId);
+    if (!Number.isFinite(installationId)) {
+      res.status(400).json({ error: "Integration has no installationId in config" });
+      return;
+    }
+    const summary = await provisionProjectsForInstallation(installationId, "manual");
+    res.json(summary);
   } catch (err) {
     next(err);
   }

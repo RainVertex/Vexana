@@ -1,8 +1,5 @@
-// Reset both the platform Postgres DB (via prisma migrate reset) and the
-// Vikunja SQLite DB (by recreating its Docker volumes). Keep these in lockstep:
-// if platform user.id values change, OIDC-provisioned Vikunja users get
-// orphaned and the same platform identity ends up mapped to multiple Vikunja
-// accounts. Always reset both together.
+// Reset the platform Postgres DB via prisma migrate reset --force. Disposable
+// dev DB convention, no backfill or migration preservation.
 
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -27,34 +24,10 @@ function run(cmd, args, opts = {}) {
   });
 }
 
-async function runAllowFail(cmd, args) {
-  try {
-    await run(cmd, args);
-  } catch {
-    // Volume may not exist yet. ignore.
-  }
-}
-
 async function main() {
   console.log("[db-reset] Resetting platform Postgres DB...");
   await run("yarn", ["workspace", "@internal/db", "prisma", "migrate", "reset", "--force"]);
-
-  console.log("[db-reset] Stopping Vikunja container...");
-  await runAllowFail("docker", ["compose", "stop", "vikunja"]);
-  await runAllowFail("docker", ["compose", "rm", "-f", "vikunja"]);
-
-  console.log("[db-reset] Removing Vikunja volumes...");
-  await runAllowFail("docker", [
-    "volume",
-    "rm",
-    "modular-engineering-platform_platform-vikunja-db",
-    "modular-engineering-platform_platform-vikunja-files",
-  ]);
-
-  console.log("[db-reset] Starting Vikunja with fresh volumes...");
-  await run("docker", ["compose", "up", "-d", "vikunja"]);
-
-  console.log("[db-reset] Done. Both DBs reset.");
+  console.log("[db-reset] Done.");
 }
 
 main().catch((err) => {

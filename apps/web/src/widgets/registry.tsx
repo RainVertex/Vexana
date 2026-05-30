@@ -7,7 +7,7 @@ import { ToolkitWidget } from "./toolkit";
 import { RecentlyVisitedWidget } from "./recently-visited";
 import { TopVisitedWidget } from "./top-visited";
 import { ChatAssistantWidget } from "./chat";
-import { MyTasksWidget } from "./vikunja";
+import { MyTasksWidget } from "./projects";
 import { ServiceHealthWidget } from "./grafana/ServiceHealthWidget";
 import { GrafanaAlertsWidget } from "./grafana/GrafanaAlertsWidget";
 export type HomeWidgetDefinition = WidgetDefinition<WidgetId>;
@@ -81,7 +81,7 @@ export const WIDGETS: WidgetRegistry<WidgetId> = {
   "my-tasks": {
     id: "my-tasks",
     title: "My Tasks",
-    description: "Open tasks assigned to you from Vikunja.",
+    description: "Open tasks assigned to you.",
     component: MyTasksWidget,
     defaultSize: { w: 6, h: 5 },
     minSize: { w: 3, h: 3 },

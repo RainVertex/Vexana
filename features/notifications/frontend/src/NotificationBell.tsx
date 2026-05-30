@@ -19,8 +19,8 @@ function notificationHref(n: NotificationDto): string | null {
     return "/requests/team";
   }
   if (typeof p.teamSlug === "string") return `/teams/${p.teamSlug}`;
-  if (n.kind.startsWith("vikunja.")) {
-    return typeof p.taskId === "string" ? `/vikunja/tasks/${p.taskId}` : "/vikunja";
+  if (n.kind.startsWith("projects.")) {
+    return typeof p.taskId === "string" ? `/tasks/${p.taskId}` : "/projects";
   }
   return null;
 }
@@ -68,12 +68,12 @@ function notificationSummary(n: NotificationDto): string {
       return "You were added to a team.";
     case "team.member.removed":
       return "You were removed from a team.";
-    case "vikunja.task.assigned": {
+    case "projects.task.assigned": {
       const p = n.payload as Record<string, unknown>;
       const title = typeof p.taskTitle === "string" ? p.taskTitle : "a task";
       return `Assigned to: ${title}`;
     }
-    case "vikunja.comment.posted": {
+    case "projects.task.commentAdded": {
       const p = n.payload as Record<string, unknown>;
       const title = typeof p.taskTitle === "string" ? p.taskTitle : "a task";
       const author = typeof p.authorName === "string" ? p.authorName : "Someone";

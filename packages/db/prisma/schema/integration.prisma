@@ -3,23 +3,20 @@ enum IntegrationKind {
   jira
   slack
   grafana
-  vikunja
 }
 
 model Integration {
-  id              String           @id @default(cuid())
-  name            String
-  description     String?
-  kind            IntegrationKind
-  enabled         Boolean          @default(true)
-  config          Json
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  teamRequests    TeamRequest[]
+  id                   String                      @id @default(cuid())
+  name                 String
+  description          String?
+  kind                 IntegrationKind
+  enabled              Boolean                     @default(true)
+  config               Json
+  createdAt            DateTime                    @default(now())
+  updatedAt            DateTime                    @updatedAt
+  teamRequests         TeamRequest[]
   observabilityConfigs EntityObservabilityConfig[]
   alertDeliveryStates  AlertDeliveryState[]
-  vikunjaProjects      VikunjaProject[]
-  vikunjaSyncCursor    VikunjaSyncCursor?
 
   @@index([kind])
 }
@@ -28,21 +25,21 @@ model Integration {
 // every layer (webhook, manual /resync, weekly cron). Source identifies
 // which layer triggered the run; the delta counters power the drift dashboard.
 model GithubReconciliationRun {
-  id              String    @id @default(cuid())
-  source          String
-  installationId  Int
-  startedAt       DateTime  @default(now())
-  finishedAt      DateTime?
-  teamsCreated    Int       @default(0)
-  teamsUpdated    Int       @default(0)
-  teamsDeleted    Int       @default(0)
-  membersAdded    Int       @default(0)
-  membersRemoved  Int       @default(0)
-  pendingQueued   Int       @default(0)
-  pendingResolved Int       @default(0)
-  orgMembershipsAdded   Int @default(0)
-  orgMembershipsRemoved Int @default(0)
-  errors          Json?
+  id                    String    @id @default(cuid())
+  source                String
+  installationId        Int
+  startedAt             DateTime  @default(now())
+  finishedAt            DateTime?
+  teamsCreated          Int       @default(0)
+  teamsUpdated          Int       @default(0)
+  teamsDeleted          Int       @default(0)
+  membersAdded          Int       @default(0)
+  membersRemoved        Int       @default(0)
+  pendingQueued         Int       @default(0)
+  pendingResolved       Int       @default(0)
+  orgMembershipsAdded   Int       @default(0)
+  orgMembershipsRemoved Int       @default(0)
+  errors                Json?
 
   @@index([installationId, startedAt])
 }

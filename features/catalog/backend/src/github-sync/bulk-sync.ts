@@ -17,6 +17,7 @@ import type { Octokit as OctokitClient } from "octokit";
 import { CATALOG_INFO_FILE_NAMES, parseCatalogInfo } from "../discovery/parse";
 import { registerCatalogEntity, type RegisterCatalogEntityInput } from "../service";
 import { runReconciliation, type ReconciliationResult } from "./team-sync";
+import { provisionProjectsForInstallation } from "@feature/projects-backend";
 
 export interface SyncRepoResult {
   fullName: string;
@@ -38,6 +39,8 @@ export interface SyncInstallationResult {
   errors: Array<{ fullName: string; reason: string }>;
   // Team reconciliation summary (null if the installation isn't on an org).
   teamSync: ReconciliationResult | null;
+  // PM project auto-provisioning summary (null if the step failed).
+  projectsProvisioned: { created: number; updated: number; archived: number } | null;
   startedAt: Date;
   finishedAt: Date;
 }
@@ -66,6 +69,7 @@ export async function syncInstallation(installationId: number): Promise<SyncInst
     needsOnboarding: 0,
     errors: [],
     teamSync: null,
+    projectsProvisioned: null,
     startedAt,
     finishedAt: startedAt,
   };
@@ -113,6 +117,16 @@ export async function syncInstallation(installationId: number): Promise<SyncInst
   } catch (err) {
     result.errors.push({
       fullName: "<team-sync>",
+      reason: err instanceof Error ? err.message : String(err),
+    });
+  }
+
+  try {
+    const provisioning = await provisionProjectsForInstallation(installationId, "bulk");
+    result.projectsProvisioned = provisioning;
+  } catch (err) {
+    result.errors.push({
+      fullName: "<projects-provision>",
       reason: err instanceof Error ? err.message : String(err),
     });
   }
