@@ -11,6 +11,8 @@ interface Props {
   stream: ChatStreamState;
   userName?: string;
   userAvatarUrl?: string | null;
+  assistantName?: string;
+  assistantAvatarUrl?: string | null;
 }
 
 export function MessageList({
@@ -19,6 +21,8 @@ export function MessageList({
   stream,
   userName,
   userAvatarUrl,
+  assistantName,
+  assistantAvatarUrl,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const didInitialScroll = useRef(false);
@@ -43,7 +47,14 @@ export function MessageList({
         </div>
       )}
       {messages.map((m) => (
-        <MessageBubble key={m.id} message={m} userName={userName} userAvatarUrl={userAvatarUrl} />
+        <MessageBubble
+          key={m.id}
+          message={m}
+          userName={userName}
+          userAvatarUrl={userAvatarUrl}
+          assistantName={assistantName}
+          assistantAvatarUrl={assistantAvatarUrl}
+        />
       ))}
       {pendingUserMessage && (
         <MessageBubble
@@ -51,6 +62,8 @@ export function MessageList({
           message={pendingUserMessage}
           userName={userName}
           userAvatarUrl={userAvatarUrl}
+          assistantName={assistantName}
+          assistantAvatarUrl={assistantAvatarUrl}
         />
       )}
       {(stream.status === "streaming" ||
@@ -69,6 +82,8 @@ export function MessageList({
           liveCalls={stream.toolCalls}
           userName={userName}
           userAvatarUrl={userAvatarUrl}
+          assistantName={assistantName}
+          assistantAvatarUrl={assistantAvatarUrl}
         />
       )}
       {stream.status === "error" && stream.error && (

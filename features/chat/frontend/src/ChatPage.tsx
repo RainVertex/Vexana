@@ -193,6 +193,8 @@ export function ChatPage({ userName, userAvatarUrl }: ChatPageProps = {}) {
           stream={stream}
           userName={userName}
           userAvatarUrl={userAvatarUrl}
+          assistantName={active?.assistantName ?? undefined}
+          assistantAvatarUrl={active?.assistantAvatarUrl}
         />
       )}
       <Composer

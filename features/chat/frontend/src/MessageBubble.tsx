@@ -1,9 +1,8 @@
 // Renders one chat message (user or assistant), wiring up reasoning, tool calls, and avatars.
 import type { ChatMessageDto } from "@internal/shared-types";
-import { ProfileAvatar } from "@internal/shared-ui";
+import { ProfileAvatar, AgentAvatar } from "@internal/shared-ui";
 import { ToolCallChip } from "./ToolCallChip";
 import { ReasoningSection } from "./ReasoningSection";
-import { AssistantAvatar } from "./AssistantAvatar";
 import type { ChatToolCallView } from "./chatStream";
 
 interface Props {
@@ -11,6 +10,8 @@ interface Props {
   liveCalls?: ChatToolCallView[];
   userName?: string;
   userAvatarUrl?: string | null;
+  assistantName?: string;
+  assistantAvatarUrl?: string | null;
 }
 
 export interface LiveAssistantMessage {
@@ -29,7 +30,14 @@ function isLive(m: Props["message"]): m is LiveAssistantMessage {
   return m.id === "live";
 }
 
-export function MessageBubble({ message, liveCalls = [], userName, userAvatarUrl }: Props) {
+export function MessageBubble({
+  message,
+  liveCalls = [],
+  userName,
+  userAvatarUrl,
+  assistantName,
+  assistantAvatarUrl,
+}: Props) {
   const isUser = message.role === "user";
 
   // Assistant reasoning comes from the live shape when present, else the persisted DTO.
@@ -53,7 +61,11 @@ export function MessageBubble({ message, liveCalls = [], userName, userAvatarUrl
         {isUser ? (
           <ProfileAvatar name={userName ?? "You"} avatarUrl={userAvatarUrl} size="sm" />
         ) : (
-          <AssistantAvatar size="sm" />
+          <AgentAvatar
+            name={assistantName ?? "Assistant"}
+            avatarUrl={assistantAvatarUrl}
+            size={28}
+          />
         )}
       </div>
       <div

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { PageLayout, ConfirmDialog } from "@internal/shared-ui";
+import { PageLayout, ConfirmDialog, AgentAvatar } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
 import type { Agent, AgentRun } from "@internal/shared-types";
 
@@ -107,6 +107,11 @@ export function AgentDetailPage() {
       }
     >
       {error && <p className="mb-4 text-sm text-app-danger">{error}</p>}
+
+      <div className="mb-4 flex items-center gap-3">
+        <AgentAvatar name={agent.name} avatarUrl={agent.avatarUrl} size={56} />
+        <div className="text-sm text-app-text-muted">{agent.category ?? "Uncategorized"}</div>
+      </div>
 
       <section className="mb-6 grid gap-3 rounded-lg border border-app-border bg-app-surface p-4 text-sm sm:grid-cols-2">
         <Field label="Kind" value={agent.kind} />

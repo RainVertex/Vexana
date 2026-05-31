@@ -161,9 +161,22 @@ agentsRouter.get("/:id/runs/:runId", async (req, res) => {
   res.json(run);
 });
 
+// Either an uploaded image (data URL, downscaled client-side) or a root-relative path to a seeded asset.
+const avatarUrlSchema = z
+  .string()
+  .max(1_500_000)
+  .refine(
+    (v) => v.startsWith("data:image/") || v.startsWith("/"),
+    "avatarUrl must be an uploaded image or a root-relative path",
+  )
+  .nullable()
+  .optional();
+
 const createAgentSchema = z.object({
   name: z.string().min(1).max(120),
   description: z.string().max(500).optional(),
+  avatarUrl: avatarUrlSchema,
+  category: z.string().max(60).nullable().optional(),
   kind: z.string().min(1).max(60).default("custom"),
   modelId: z.string().min(1),
   instructions: z.string().min(1).max(20000),
@@ -199,6 +212,8 @@ agentsRouter.post("/", async (req, res) => {
     data: {
       name: data.name,
       description: data.description,
+      avatarUrl: data.avatarUrl ?? null,
+      category: data.category ?? null,
       kind: data.kind,
       modelId: data.modelId,
       instructions: data.instructions,
@@ -247,6 +262,8 @@ agentsRouter.patch("/:id", async (req, res) => {
     data: {
       name: data.name,
       description: data.description,
+      avatarUrl: data.avatarUrl,
+      category: data.category,
       kind: data.kind,
       modelId: data.modelId,
       instructions: data.instructions,

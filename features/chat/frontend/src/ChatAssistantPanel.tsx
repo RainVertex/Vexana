@@ -118,6 +118,8 @@ export function ChatAssistantPanel({ userId, userName, userAvatarUrl }: Props) {
           stream={stream}
           userName={userName}
           userAvatarUrl={userAvatarUrl}
+          assistantName={active?.assistantName ?? undefined}
+          assistantAvatarUrl={active?.assistantAvatarUrl}
         />
         <Composer
           onSend={handleSend}

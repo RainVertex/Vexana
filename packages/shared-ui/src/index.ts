@@ -2,4 +2,5 @@ export * from "./PageLayout";
 export * from "./ConfirmDialog";
 export * from "./DriftBadge";
 export * from "./ProfileAvatar";
+export * from "./AgentAvatar";
 export * from "./widgets";

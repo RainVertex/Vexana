@@ -1,7 +1,7 @@
 // Admin form to create or edit an agent (model, prompt, tools, approval mode, limits).
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { PageLayout } from "@internal/shared-ui";
+import { PageLayout, AgentAvatar } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
 import type {
   Agent,
@@ -9,6 +9,7 @@ import type {
   ApprovalMode,
   LlmModelSummary,
 } from "@internal/shared-types";
+import { fileToAvatarDataUrl } from "./avatarImage";
 
 const KIND_OPTIONS = ["custom", "catalog-enrichment", "platform-assistant"];
 
@@ -25,6 +26,9 @@ export function AgentFormPage() {
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [category, setCategory] = useState("");
   const [kind, setKind] = useState("custom");
   const [instructions, setInstructions] = useState("");
   const [modelId, setModelId] = useState("");
@@ -56,6 +60,8 @@ export function AgentFormPage() {
       .then((a: Agent) => {
         setName(a.name);
         setDescription(a.description ?? "");
+        setAvatarUrl(a.avatarUrl ?? "");
+        setCategory(a.category ?? "");
         setKind(a.kind);
         setInstructions(a.instructions);
         setModelId(a.modelId);
@@ -108,6 +114,16 @@ export function AgentFormPage() {
     setToolIds((prev) => (prev.includes(tid) ? prev.filter((t) => t !== tid) : [...prev, tid]));
   }
 
+  async function onPickAvatar(file: File | undefined) {
+    if (!file) return;
+    setAvatarError(null);
+    try {
+      setAvatarUrl(await fileToAvatarDataUrl(file));
+    } catch {
+      setAvatarError("Could not read that image. Try a different file.");
+    }
+  }
+
   async function save() {
     setError(null);
     if (!name.trim()) return setError("Name is required.");
@@ -120,6 +136,8 @@ export function AgentFormPage() {
     const body = {
       name: name.trim(),
       description: description.trim() || undefined,
+      avatarUrl: avatarUrl.trim() || null,
+      category: category.trim() || null,
       kind,
       modelId,
       instructions: instructions.trim(),
@@ -174,6 +192,52 @@ export function AgentFormPage() {
             onChange={(e) => setDescription(e.target.value)}
             className={inputCls}
           />
+        </Labeled>
+
+        <Labeled label="Category">
+          <input
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            placeholder="e.g. Plan & Coordinate"
+            className={inputCls}
+          />
+        </Labeled>
+
+        <Labeled label="Avatar">
+          <div className="flex items-center gap-3">
+            <AgentAvatar name={name || "?"} avatarUrl={avatarUrl || null} size={56} />
+            <div className="flex flex-col gap-1.5">
+              <div className="flex gap-2">
+                <label className="cursor-pointer rounded-md border border-app-border bg-app-surface px-3 py-1.5 text-sm text-app-text hover:bg-app-surface-hover">
+                  {avatarUrl ? "Change image" : "Upload image"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      e.target.value = "";
+                      void onPickAvatar(file);
+                    }}
+                  />
+                </label>
+                {avatarUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setAvatarUrl("")}
+                    className="rounded-md border border-app-border bg-app-surface px-3 py-1.5 text-sm text-app-text hover:bg-app-surface-hover"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+              <p className="text-xs text-app-text-muted">
+                PNG, JPG, WebP, or SVG. Square images look best, large ones are scaled down. Leave
+                blank to show initials.
+              </p>
+              {avatarError && <p className="text-xs text-app-danger">{avatarError}</p>}
+            </div>
+          </div>
         </Labeled>
 
         <Labeled label="Kind">

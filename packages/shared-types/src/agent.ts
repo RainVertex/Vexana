@@ -40,6 +40,8 @@ export interface AgentToolDescriptor {
 }
 
 export interface Agent extends NamedEntity {
+  avatarUrl?: string | null;
+  category?: string | null;
   kind: string;
   status: AgentStatus;
   modelId: ID;
@@ -73,6 +75,8 @@ export interface AgentRun extends Timestamped {
 export interface CreateAgentInput {
   name: string;
   description?: string;
+  avatarUrl?: string | null;
+  category?: string | null;
   kind?: string;
   modelId: ID;
   instructions: string;

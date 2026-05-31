@@ -69,6 +69,10 @@ model Agent {
   id           String      @id @default(cuid())
   name         String
   description  String?
+  // Agent avatar: a client-uploaded image as a downscaled data URL, or a root-relative path to a seeded asset (e.g. "/agents/triage.svg"). Null falls back to initials.
+  avatarUrl    String?
+  // Display grouping for the agent gallery (e.g. "Plan & Coordinate"). Purely presentational.
+  category     String?
   // Task category. Documented values: "platform-assistant" |
   // "catalog-enrichment" | "custom". Drives the recommended-model map in
   // @internal/llm-core (recommendationsForKind).

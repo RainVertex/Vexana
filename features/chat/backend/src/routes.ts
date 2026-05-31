@@ -170,6 +170,10 @@ chatRouter.get("/conversations/:id", async (req, res) => {
     },
   });
   const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
+  const agent = await prisma.agent.findUnique({
+    where: { id: conv.agentId },
+    select: { name: true, avatarUrl: true },
+  });
   const dto: ChatConversationDetailDto = {
     id: conv.id,
     title: conv.title,
@@ -177,6 +181,8 @@ chatRouter.get("/conversations/:id", async (req, res) => {
     updatedAt: conv.updatedAt.toISOString(),
     lastAssistantAt: lastAssistant?.createdAt.toISOString() ?? null,
     messages: messages.map(toMessageDto),
+    assistantName: agent?.name ?? null,
+    assistantAvatarUrl: agent?.avatarUrl ?? null,
   };
   res.json(dto);
 });

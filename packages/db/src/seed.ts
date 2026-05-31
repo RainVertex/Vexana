@@ -49,6 +49,8 @@ Rules:
       modelId: "llmmodel_claude_sonnet_4_6",
       toolIds: ["catalog_lookup", "catalog_discover", "catalog_propose_drift"],
       approvalMode: "auto",
+      category: "Catalog & Quality",
+      avatarUrl: "/agents/catalog-enricher.svg",
     },
     create: {
       id: "seed-agent-catalog-enricher",
@@ -61,6 +63,8 @@ Rules:
       toolIds: ["catalog_lookup", "catalog_discover", "catalog_propose_drift"],
       approvalMode: "auto",
       maxToolCalls: 6,
+      category: "Catalog & Quality",
+      avatarUrl: "/agents/catalog-enricher.svg",
     },
   });
 
@@ -137,6 +141,8 @@ Integrations.`;
       instructions,
       toolIds,
       approvalMode: "ask",
+      category: "Plan & Coordinate",
+      avatarUrl: "/agents/platform-assistant.svg",
     },
     create: {
       id: "seed-agent-assistant",
@@ -149,6 +155,8 @@ Integrations.`;
       toolIds,
       approvalMode: "ask",
       maxToolCalls: 12,
+      category: "Plan & Coordinate",
+      avatarUrl: "/agents/platform-assistant.svg",
     },
   });
 }
