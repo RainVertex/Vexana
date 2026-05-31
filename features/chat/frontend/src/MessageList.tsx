@@ -20,15 +20,19 @@ export function MessageList({
   userName,
   userAvatarUrl,
 }: Props) {
-  const endRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const didInitialScroll = useRef(false);
 
-  // Autoscroll on new tokens / new messages.
+  // Autoscroll the log's own container only, so mounting the widget never scrolls the page.
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    const el = containerRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: didInitialScroll.current ? "smooth" : "auto" });
+    didInitialScroll.current = true;
   }, [messages, stream.text, stream.reasoning, stream.toolCalls.length]);
 
   return (
-    <div className="flex-1 space-y-3 overflow-y-auto p-3 sm:p-4">
+    <div ref={containerRef} className="flex-1 space-y-3 overflow-y-auto p-3 sm:p-4">
       {messages.length === 0 && stream.status === "idle" && (
         <div className="mx-auto max-w-md rounded-app-lg border border-app-border bg-app-surface p-4 text-center text-sm text-app-text-muted">
           <p className="mb-1 font-medium text-app-text">Welcome to the Assistant</p>
@@ -72,7 +76,6 @@ export function MessageList({
           {stream.error}
         </div>
       )}
-      <div ref={endRef} />
     </div>
   );
 }

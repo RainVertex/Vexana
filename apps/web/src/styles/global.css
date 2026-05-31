@@ -353,4 +353,32 @@
   a {
     @apply text-inherit no-underline;
   }
+
+  /* Slim themed scrollbars that replace the chunky native ones (Firefox). */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--c-border-strong) transparent;
+  }
+
+  /* WebKit/Blink: transparent track, rounded thumb floating via a padding border. */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track,
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    background-color: var(--c-border-strong);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--c-text-subtle);
+  }
 }
