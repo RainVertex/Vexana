@@ -5,6 +5,8 @@ import type { DocSearchHit, SearchHit } from "@internal/shared-types";
 export interface DevDocsSearchOpts {
   entityId?: string;
   limit?: number;
+  // When provided, restrict hits to entities in these org logins. An empty list yields zero rows.
+  accountLogins?: string[];
 }
 
 interface RawHit {
@@ -23,14 +25,18 @@ export async function getDevDocsHits(
 ): Promise<DocSearchHit[]> {
   const trimmed = query.trim();
   if (!trimmed) return [];
+  if (opts.accountLogins && opts.accountLogins.length === 0) return [];
 
   const limit = Math.min(Math.max(opts.limit ?? 10, 1), 50);
 
   // Strip ts_headline markers so the API stays tag-free; UI highlights client-side.
   const tsQuery = Prisma.sql`plainto_tsquery('english', ${trimmed})`;
-  const where = opts.entityId
-    ? Prisma.sql`p."searchVector" @@ ${tsQuery} AND p."entityId" = ${opts.entityId}`
-    : Prisma.sql`p."searchVector" @@ ${tsQuery}`;
+  const conditions: Prisma.Sql[] = [Prisma.sql`p."searchVector" @@ ${tsQuery}`];
+  if (opts.entityId) conditions.push(Prisma.sql`p."entityId" = ${opts.entityId}`);
+  if (opts.accountLogins && opts.accountLogins.length > 0) {
+    conditions.push(Prisma.sql`e."accountLogin" IN (${Prisma.join(opts.accountLogins)})`);
+  }
+  const where = Prisma.join(conditions, " AND ");
 
   const rows = await prisma.$queryRaw<RawHit[]>(Prisma.sql`
     SELECT p."id"        AS "pageId",
@@ -65,8 +71,12 @@ function stripHeadlineMarkers(s: string | null): string {
 }
 
 /** Adapter for the global search router: maps DocSearchHit to SearchHit. */
-export async function getDevDocsSearchHits(query: string, limit = 10): Promise<SearchHit[]> {
-  const hits = await getDevDocsHits(query, { limit });
+export async function getDevDocsSearchHits(
+  query: string,
+  limit = 10,
+  opts: { accountLogins?: string[] } = {},
+): Promise<SearchHit[]> {
+  const hits = await getDevDocsHits(query, { limit, accountLogins: opts.accountLogins });
   return hits.map((h) => ({
     id: h.pageId,
     kind: "devdoc" as const,

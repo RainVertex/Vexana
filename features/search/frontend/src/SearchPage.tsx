@@ -1,35 +1,85 @@
-// Global search page: runs queries against the search API and renders linked hits by kind.
-import { useEffect, useState, type FormEvent } from "react";
+// Global search page: runs queries against the search API and renders linked hits grouped by kind.
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { PageLayout } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
 import type { SearchHit, SearchResults } from "@internal/shared-types";
 
-function kindLabel(kind: SearchHit["kind"]): string {
-  switch (kind) {
-    case "catalog":
-      return "catalog entity";
-    case "devdoc":
-      return "devdoc";
-    default:
-      return kind;
-  }
-}
+type Kind = SearchHit["kind"];
+
+// Order groups are listed in; the user's own work surfaces before broader catalog content.
+const KIND_ORDER: Kind[] = [
+  "project",
+  "task",
+  "catalog",
+  "team",
+  "page",
+  "chat",
+  "agent",
+  "devdoc",
+];
+
+const SECTION_TITLE: Record<Kind, string> = {
+  project: "Projects",
+  task: "Tasks",
+  catalog: "Catalog",
+  team: "Teams",
+  page: "Pages",
+  chat: "Conversations",
+  agent: "Agents",
+  devdoc: "DevDocs",
+};
+
+const KIND_LABEL: Record<Kind, string> = {
+  catalog: "catalog entity",
+  team: "team",
+  agent: "agent",
+  devdoc: "devdoc",
+  project: "project",
+  task: "task",
+  chat: "conversation",
+  page: "page",
+};
 
 function hrefFor(hit: SearchHit): string | null {
   if (hit.href) return hit.href;
   switch (hit.kind) {
     case "catalog":
       return `/catalog/${hit.id}`;
+    case "project":
+      return `/projects/${hit.id}`;
+    case "task":
+      return `/tasks/${hit.id}`;
+    case "chat":
+      return `/chat/${hit.id}`;
+    case "page":
+      return `/p/${hit.id}`;
+    case "agent":
+      return `/agents/${hit.id}`;
     case "team":
       return `/teams`;
-    case "agent":
-      return `/agents`;
     case "devdoc":
       return `/devdocs`;
     default:
       return null;
   }
+}
+
+function isExternal(href: string): boolean {
+  return /^https?:\/\//i.test(href);
+}
+
+function groupByKind(hits: SearchHit[]): Array<{ kind: Kind; hits: SearchHit[] }> {
+  const buckets = new Map<Kind, SearchHit[]>();
+  for (const hit of hits) {
+    const list = buckets.get(hit.kind) ?? [];
+    list.push(hit);
+    buckets.set(hit.kind, list);
+  }
+  return KIND_ORDER.filter((kind) => buckets.has(kind)).map((kind) => ({
+    kind,
+    hits: buckets.get(kind)!,
+  }));
 }
 
 export function SearchPage() {
@@ -67,50 +117,81 @@ export function SearchPage() {
     await execute(q);
   }
 
+  const groups = results ? groupByKind(results.hits) : [];
+
   return (
     <PageLayout
       title="Search"
-      description="Find catalog entities, projects, teams, agents, and DevDocs pages."
+      description="Find catalog entities, projects, tasks, teams, agents, pages, conversations, and DevDocs pages."
     >
       <form onSubmit={run} className="flex gap-2 mb-4">
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search…"
-          className="flex-1 border border-gray-300 rounded-md px-3 py-1.5 text-sm"
+          className="flex-1 rounded-lg border border-app-border bg-app-bg px-3 py-1.5 text-sm text-app-text placeholder:text-app-text-muted focus:outline-none focus:ring-2 focus:ring-app-primary focus:border-transparent"
         />
         <button
           type="submit"
-          className="px-3 py-1.5 text-sm rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+          className="rounded-lg bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-foreground hover:bg-app-primary-hover disabled:opacity-50"
           disabled={loading}
         >
           {loading ? "Searching…" : "Search"}
         </button>
       </form>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+
+      {error && <p className="text-sm text-app-danger">{error}</p>}
+
       {results && results.hits.length === 0 && (
-        <p className="text-sm text-gray-600">No results for &ldquo;{results.query}&rdquo;.</p>
+        <p className="text-sm text-app-text-muted">No results for &ldquo;{results.query}&rdquo;.</p>
       )}
-      {results && results.hits.length > 0 && (
-        <ul className="divide-y divide-gray-200">
-          {results.hits.map((hit) => {
-            const href = hrefFor(hit);
-            const titleNode = href ? (
-              <Link to={href} className="font-medium text-gray-900 hover:underline">
-                {hit.title}
-              </Link>
-            ) : (
-              <span className="font-medium text-gray-900">{hit.title}</span>
-            );
-            return (
-              <li key={`${hit.kind}:${hit.id}`} className="py-3">
-                <div>{titleNode}</div>
-                <div className="text-xs text-gray-500">{kindLabel(hit.kind)}</div>
-                {hit.snippet && <p className="mt-1 text-sm text-gray-700">{hit.snippet}</p>}
-              </li>
-            );
-          })}
-        </ul>
+
+      {groups.length > 0 && (
+        <div className="space-y-6">
+          {groups.map((group) => (
+            <section key={group.kind}>
+              <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-app-text-muted">
+                {SECTION_TITLE[group.kind]}
+              </h2>
+              <ul className="divide-y divide-app-border border-t border-app-border">
+                {group.hits.map((hit) => {
+                  const href = hrefFor(hit);
+                  let titleNode: ReactNode = (
+                    <span className="font-medium text-app-text">{hit.title}</span>
+                  );
+                  if (href && isExternal(href)) {
+                    titleNode = (
+                      <a
+                        href={href}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-medium text-app-text hover:text-app-primary hover:underline"
+                      >
+                        {hit.title}
+                      </a>
+                    );
+                  } else if (href) {
+                    titleNode = (
+                      <Link
+                        to={href}
+                        className="font-medium text-app-text hover:text-app-primary hover:underline"
+                      >
+                        {hit.title}
+                      </Link>
+                    );
+                  }
+                  return (
+                    <li key={`${hit.kind}:${hit.id}`} className="py-3">
+                      <div>{titleNode}</div>
+                      <div className="text-xs text-app-text-muted">{KIND_LABEL[hit.kind]}</div>
+                      {hit.snippet && <p className="mt-1 text-sm text-app-text">{hit.snippet}</p>}
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ))}
+        </div>
       )}
     </PageLayout>
   );

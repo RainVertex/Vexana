@@ -1,51 +1,36 @@
 import { Router } from "express";
-import { prisma } from "@internal/db";
-import { getDevDocsSearchHits } from "@feature/catalog-backend";
 import type { SearchHit, SearchResults } from "@internal/shared-types";
+import { rankHits } from "./ranking";
+import type { SearchSource, SourceContext } from "./sources/types";
+import { catalog } from "./sources/catalog";
+import { teams } from "./sources/teams";
+import { agents } from "./sources/agents";
+import { devdocs } from "./sources/devdocs";
+import { projects } from "./sources/projects";
+import { tasks } from "./sources/tasks";
+import { chat } from "./sources/chat";
+import { pages } from "./sources/pages";
 
 export const searchRouter: Router = Router();
+
+const SOURCES: SearchSource[] = [catalog, teams, agents, devdocs, projects, tasks, chat, pages];
+
+const PER_SOURCE_LIMIT = 10;
 
 searchRouter.get("/", async (req, res) => {
   const query = String(req.query.q ?? "").trim();
   if (!query) return res.json({ query, hits: [] } satisfies SearchResults);
 
-  const [entities, teams, agents, devdocs] = await Promise.all([
-    prisma.catalogEntity.findMany({
-      where: { name: { contains: query, mode: "insensitive" } },
-      take: 10,
-    }),
-    prisma.team.findMany({
-      where: { name: { contains: query, mode: "insensitive" } },
-      take: 10,
-    }),
-    prisma.agent.findMany({
-      where: { name: { contains: query, mode: "insensitive" } },
-      take: 10,
-    }),
-    getDevDocsSearchHits(query, 10).catch(() => [] as SearchHit[]),
-  ]);
+  const ctx: SourceContext = {
+    userId: req.user!.id,
+    isAdmin: req.user!.role === "admin",
+  };
 
-  const hits: SearchHit[] = [
-    ...entities.map((e) => ({
-      id: e.id,
-      kind: "catalog" as const,
-      title: e.name,
-      snippet: e.description ?? undefined,
-    })),
-    ...teams.map((t) => ({
-      id: t.id,
-      kind: "team" as const,
-      title: t.name,
-      snippet: t.description ?? undefined,
-    })),
-    ...agents.map((a) => ({
-      id: a.id,
-      kind: "agent" as const,
-      title: a.name,
-      snippet: a.description ?? undefined,
-    })),
-    ...devdocs,
-  ];
+  // Each source isolates its own failure so one bad provider never sinks the whole search.
+  const perSource = await Promise.all(
+    SOURCES.map((source) => source(query, ctx, PER_SOURCE_LIMIT).catch(() => [] as SearchHit[])),
+  );
 
+  const hits = rankHits(query, perSource.flat());
   res.json({ query, hits } satisfies SearchResults);
 });
