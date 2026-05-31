@@ -30,6 +30,7 @@ export function AgentFormPage() {
   const [instructions, setInstructions] = useState("");
   const [modelId, setModelId] = useState("");
   const [toolIds, setToolIds] = useState<string[]>([]);
+  const [toolsManaged, setToolsManaged] = useState(false);
   const [approvalMode, setApprovalMode] = useState<ApprovalMode>("ask");
   const [maxToolCalls, setMaxToolCalls] = useState(10);
   const [tokenBudget, setTokenBudget] = useState<string>("");
@@ -74,6 +75,7 @@ export function AgentFormPage() {
         setInstructions(a.instructions);
         setModelId(a.modelId);
         setToolIds(Array.isArray(a.toolIds) ? a.toolIds : []);
+        setToolsManaged(Boolean(a.toolsManaged));
         setApprovalMode(a.approvalMode);
         setMaxToolCalls(a.maxToolCalls);
         setTokenBudget(a.tokenBudget != null ? String(a.tokenBudget) : "");
@@ -165,7 +167,7 @@ export function AgentFormPage() {
       kind,
       modelId,
       instructions: instructions.trim(),
-      toolIds,
+      ...(toolsManaged ? {} : { toolIds }),
       approvalMode,
       maxToolCalls,
       tokenBudget: tokenBudget.trim() ? Number(tokenBudget) : null,
@@ -284,7 +286,28 @@ export function AgentFormPage() {
         </Labeled>
 
         <Labeled label="Tools">
-          {toolGroups.length === 0 ? (
+          {toolsManaged ? (
+            <div className="rounded-md border border-app-border bg-app-surface px-3 py-2">
+              <p className="mb-2 text-xs text-app-text-muted">
+                Tools for this built-in assistant are managed by the platform and cannot be edited
+                here.
+              </p>
+              {toolIds.length === 0 ? (
+                <p className="text-xs text-app-text-muted">No tools.</p>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {toolIds.map((t) => (
+                    <span
+                      key={t}
+                      className="rounded-full border border-app-border bg-app-surface px-2 py-0.5 font-mono text-xs text-app-text-muted"
+                    >
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : toolGroups.length === 0 ? (
             <p className="text-xs text-app-text-muted">No tools registered.</p>
           ) : (
             <div className="grid gap-2">

@@ -40,6 +40,9 @@ export const llmRouter: Router = Router();
 // Seeded agents are referenced by FK and the enrichment cron, so they cannot be deleted.
 const PROTECTED_AGENT_IDS = new Set(["seed-agent-assistant", "seed-agent-catalog-enricher"]);
 
+// The Platform Assistant's tool set is computed live in streamAgent (read groups + env-gated chat writes), so its persisted toolIds are display-only. Edits to them are ignored and the form renders them read-only.
+const PLATFORM_ASSISTANT_AGENT_ID = "seed-agent-assistant";
+
 async function getCallerTeamIds(userId: string): Promise<string[]> {
   const memberships = await prisma.teamMembership.findMany({
     where: { userId, team: { deletedAt: null } },
@@ -163,7 +166,7 @@ agentsRouter.get("/:id", async (req, res) => {
     },
   });
   if (!agent) return res.status(404).json({ error: "Agent not found" });
-  res.json(agent);
+  res.json({ ...agent, toolsManaged: agent.id === PLATFORM_ASSISTANT_AGENT_ID });
 });
 
 agentsRouter.get("/:id/runs/:runId", async (req, res) => {
@@ -172,7 +175,6 @@ agentsRouter.get("/:id/runs/:runId", async (req, res) => {
   if (!run || run.agentId !== req.params.id) {
     return res.status(404).json({ error: "Run not found" });
   }
-  // A run belongs to its invoker; system (null-owner) runs are admin-only. 404 (not 403) so existence is not disclosed.
   const isAdmin = req.user.role === "admin";
   if (!isAdmin && run.userId !== req.user.id) {
     return res.status(404).json({ error: "Run not found" });
@@ -180,7 +182,6 @@ agentsRouter.get("/:id/runs/:runId", async (req, res) => {
   res.json(run);
 });
 
-// Either an uploaded image (data URL, downscaled client-side) or a root-relative path to a seeded asset.
 const avatarUrlSchema = z
   .string()
   .max(1_500_000)
@@ -260,6 +261,11 @@ agentsRouter.patch("/:id", async (req, res) => {
     return res.status(400).json({ error: "Invalid body", issues: parsed.error.issues });
   }
   const data = parsed.data;
+
+  // The assistant's tools are code-owned; drop any toolIds edit so the DB never holds a set that does not match what streamAgent runs.
+  if (req.params.id === PLATFORM_ASSISTANT_AGENT_ID) {
+    data.toolIds = undefined;
+  }
 
   const effectiveModelId = data.modelId ?? existing.modelId;
   const effectiveToolIds =

@@ -63,6 +63,8 @@ export interface Agent extends NamedEntity {
   maxToolCalls: number;
   tokenBudget: number | null;
   temperature: number | null;
+  // True when the tool set is code-owned (the Platform Assistant) and persisted toolIds are display-only. The form shows tools read-only.
+  toolsManaged?: boolean;
   llmModel?: {
     slug: string;
     displayName: string;
