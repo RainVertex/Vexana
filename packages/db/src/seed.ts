@@ -394,7 +394,7 @@ async function seedDefaultPages() {
       id: "__page_workspace__",
       section: "workspace",
       title: "Projects",
-      url: "/vikunja",
+      url: "/projects",
       order: 1024,
     },
     { id: "__page_agents__", section: "workspace", title: "Agents", url: "/agents", order: 2048 },
