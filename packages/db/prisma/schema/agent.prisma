@@ -3,6 +3,7 @@ enum AgentStatus {
   running
   succeeded
   failed
+  cancelled
 }
 
 // Configured upstream the platform can reach (Ollama, OpenAI, Anthropic via

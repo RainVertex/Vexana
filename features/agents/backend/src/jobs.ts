@@ -121,6 +121,13 @@ async function drainCatalogTasks(ctx: AgentJobContext, maxTasks: number): Promis
           where: { id: task.id },
           data: { status: "done", finishedAt: new Date(), lastError: null },
         });
+      } else if (result.status === "cancelled") {
+        // Stopped by a user or shutdown: leave it terminal rather than re-queueing a run they killed.
+        skipped++;
+        await prisma.catalogAgentTask.update({
+          where: { id: task.id },
+          data: { status: "skipped", finishedAt: new Date(), lastError: "Cancelled" },
+        });
       } else {
         failed++;
         await failTask(task.id, attempts, result.error ?? String(prOut?.error ?? "no PR opened"));
