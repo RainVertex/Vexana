@@ -160,7 +160,6 @@ export function AgentRunPage() {
       <section className="mb-6 grid gap-3 rounded-lg border border-app-border bg-app-surface p-4 text-sm sm:grid-cols-3">
         <Field label="Status" value={run.status} />
         <Field label="Trigger" value={run.trigger ?? "-"} />
-        <Field label="Writes" value={run.containsWrites ? "Modified data" : "Read-only"} />
         <Field label="Started" value={new Date(run.startedAt).toLocaleString()} />
         <Field
           label="Finished"

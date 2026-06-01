@@ -125,8 +125,6 @@ export async function runAgent(
   let tokensInput = 0;
   let tokensOutput = 0;
   let finalText: string | null = null;
-  // Coarse write signal: an "auto" agent is the platform's designated autonomous-write mode.
-  let containsWrites = false;
 
   const model = agent.llmModel as ResolvedModel;
 
@@ -212,7 +210,6 @@ export async function runAgent(
         };
         toolCalls.push(recorded);
         stepToolCalls.push(recorded);
-        if (!isError && agent.approvalMode === "auto") containsWrites = true;
         messages.push({
           role: "tool",
           tool_call_id: tc.id,
@@ -235,7 +232,6 @@ export async function runAgent(
           tokensInput,
           tokensOutput,
           costUsd,
-          containsWrites,
           finishedAt: new Date(),
         },
       });
@@ -258,7 +254,6 @@ export async function runAgent(
         tokensInput,
         tokensOutput,
         costUsd,
-        containsWrites,
         finishedAt: new Date(),
       },
     });
@@ -286,7 +281,6 @@ export async function runAgent(
         status: aborted ? "cancelled" : "failed",
         error: message.slice(0, 2000),
         output: { steps, toolCalls, finalText } as unknown as Prisma.InputJsonValue,
-        containsWrites,
         tokensInput,
         tokensOutput,
         costUsd,
