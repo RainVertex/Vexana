@@ -243,52 +243,6 @@ catalogRouter.delete("/:id/star", async (req, res) => {
   res.status(204).end();
 });
 
-catalogRouter.post("/drifts/:id/apply", async (req, res) => {
-  const drift = await prisma.catalogDrift.findUnique({
-    where: { id: req.params.id },
-    include: { entity: { include: { owners: true } } },
-  });
-  if (!drift) return res.status(404).json({ error: "Drift not found" });
-  if (drift.status !== "open")
-    return res.status(409).json({ error: `drift already ${drift.status}` });
-
-  const diff = drift.diff as { after?: Record<string, unknown> } | null;
-  const after = diff?.after ?? {};
-  const existingOwnerIds = drift.entity.owners.map((o) => o.teamId);
-  const proposedOwnerIds = Array.isArray(after.ownerTeamIds)
-    ? (after.ownerTeamIds as unknown[]).filter((v): v is string => typeof v === "string")
-    : existingOwnerIds;
-  const result = await registerCatalogEntity(
-    {
-      kind: drift.entity.kind,
-      name: drift.entity.name,
-      description:
-        typeof after.description === "string" ? after.description : drift.entity.description,
-      ownerTeamIds: proposedOwnerIds,
-      repoUrl: typeof after.repoUrl === "string" ? after.repoUrl : drift.entity.repoUrl,
-      tags: Array.isArray(after.tags) ? (after.tags as string[]) : drift.entity.tags,
-    },
-    { source: drift.entity.source, sourceRef: `drift/${drift.id}` },
-  );
-  await prisma.catalogDrift.update({
-    where: { id: drift.id },
-    data: { status: "applied", resolvedAt: new Date() },
-  });
-  res.json({ id: drift.id, status: "applied", entityId: result.entityId, action: result.action });
-});
-
-catalogRouter.post("/drifts/:id/ignore", async (req, res) => {
-  const drift = await prisma.catalogDrift.findUnique({ where: { id: req.params.id } });
-  if (!drift) return res.status(404).json({ error: "Drift not found" });
-  if (drift.status !== "open")
-    return res.status(409).json({ error: `drift already ${drift.status}` });
-  const updated = await prisma.catalogDrift.update({
-    where: { id: drift.id },
-    data: { status: "ignored", resolvedAt: new Date() },
-  });
-  res.json({ id: updated.id, status: updated.status });
-});
-
 catalogRouter.get("/:id/overview", async (req, res) => {
   const entity = await prisma.catalogEntity.findUnique({
     where: { id: req.params.id },
@@ -298,13 +252,7 @@ catalogRouter.get("/:id/overview", async (req, res) => {
   const ownerTeamIds = (entity as EntityWithOwners).owners.map((o) => o.team.id);
   const canViewRestricted = req.user ? await isOwningTeamMember(req.user, ownerTeamIds) : false;
 
-  const [drifts, openDriftCount, dora, health, scorecards] = await Promise.all([
-    prisma.catalogDrift.findMany({
-      where: { entityId: entity.id },
-      orderBy: { detectedAt: "desc" },
-      take: 20,
-    }),
-    prisma.catalogDrift.count({ where: { entityId: entity.id, status: "open" } }),
+  const [dora, health, scorecards] = await Promise.all([
     prisma.doraMetricsSnapshot.findMany({
       where: { entityId: entity.id },
       orderBy: { periodEnd: "desc" },
@@ -320,8 +268,6 @@ catalogRouter.get("/:id/overview", async (req, res) => {
 
   res.json({
     entity: shapeEntity(entity as EntityWithOwners, canViewRestricted),
-    drifts,
-    openDriftCount,
     dora,
     health,
     scorecards,

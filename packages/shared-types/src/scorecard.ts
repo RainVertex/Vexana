@@ -20,8 +20,7 @@ export type ScorecardRuleKind =
   | "has_owner"
   | "lifecycle_in"
   | "tag_present"
-  | "dora_threshold"
-  | "drift_count_max";
+  | "dora_threshold";
 
 export interface Scorecard extends Timestamped {
   id: ID;

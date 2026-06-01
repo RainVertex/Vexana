@@ -67,6 +67,11 @@ export {
   octokitAsApp,
   GitHubAppNotConfiguredError,
 } from "./github-app/octokit";
+export {
+  openOrUpdateFilePr,
+  type OpenFilePrInput,
+  type OpenFilePrResult,
+} from "./github-app/pull-request";
 export { verifyGitHubSignature } from "./github-app/webhook-verify";
 
 export const integrationsRouter: Router = Router();

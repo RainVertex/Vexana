@@ -1,5 +1,5 @@
-// Shared types for catalog entities, drift records, relations, and entity overviews.
-import type { ID, ISODateString, NamedEntity } from "./common";
+// Shared types for catalog entities, relations, and entity overviews.
+import type { ISODateString, NamedEntity } from "./common";
 import type { Team } from "./team";
 import type { DoraMetricsSnapshot, ServiceHealthSample } from "./observability";
 import type { ScorecardSummary } from "./scorecard";
@@ -41,21 +41,6 @@ export interface CatalogEntityWithOwners extends CatalogEntity {
   ownerTeams: Team[];
 }
 
-export type CatalogDriftStatus = "open" | "ignored" | "applied" | "superseded";
-
-export interface CatalogDriftRow {
-  id: ID;
-  entityId: ID;
-  kind: string;
-  diff: unknown;
-  status: CatalogDriftStatus;
-  proposedBy: string;
-  agentRunId: string | null;
-  detectedAt: ISODateString;
-  resolvedAt: ISODateString | null;
-  entity?: CatalogEntityWithOwners;
-}
-
 export type CatalogRelationType =
   | "dependsOn"
   | "dependencyOf"
@@ -91,9 +76,6 @@ export interface CatalogEntityLink {
 
 export interface CatalogEntityOverview {
   entity: CatalogEntityWithOwners;
-  drifts: CatalogDriftRow[];
-  /** Total open drifts for this entity. may exceed drifts.length (capped at 20). */
-  openDriftCount: number;
   dora: DoraMetricsSnapshot[];
   health: ServiceHealthSample[];
   scorecards: ScorecardSummary[];

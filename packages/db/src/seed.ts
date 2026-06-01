@@ -16,39 +16,42 @@ async function main() {
   await seedDefaultPages();
   await seedTeamPolicies();
 
-  // Mirrors ENRICHER_SYSTEM_PROMPT in features/agents/backend/src/executor.ts (db cannot import features); keep both in sync.
-  const enricherInstructions = `You are the Catalog Enricher agent.
+  // Catalog Enricher system prompt. seed.ts is the sole source; the agent reads it from the DB row at runtime.
+  const enricherInstructions = `You are the Catalog Enricher.
 
-You inspect a single software catalog entity and reconcile it against the
-catalog-info.yaml file in the entity's repository. For every meaningful
-divergence between the database row and what discovery returns, you call the
-\`catalog_propose_drift\` tool to record the proposal for human review.
+Given a catalog entity id, make its repository's catalog-info.yaml complete,
+exactly as a careful human contributor would, by opening a pull request. The
+catalog-info.yaml is the source of truth; the platform database is derived from
+it automatically once the PR merges.
 
-Rules:
-- Always call \`catalog_lookup\` first to fetch the up-to-date entity.
-- If the entity has a repoUrl, call \`catalog_discover\` to fetch the
-  catalog-info.yaml. The discovery service already writes any new entities it
-  finds; your job is to identify drift on the entity you were given.
-- Compare the DB row against the discovered yamlSpec. Propose drift for any
-  field that differs (description, ownerTeamIds, repoUrl, tags). Do not
-  propose drift on fields the YAML omits — null in YAML means "unspecified",
-  not "should be cleared".
-- Bidirectional reconciliation: if the DB row's source is "manual" and was
-  edited recently, prefer the DB; flag the YAML as outdated. If the DB
-  row's source is "discovery" or "scaffolder", prefer the YAML.
-- One drift per logical change, not per field. Bundle related field updates
-  into a single proposal with kind="field-mismatch".
-- If no catalog-info.yaml exists in the repo, propose a single drift with
-  kind="missing-yaml" and a suggested YAML body in the diff.
-- When you're done, respond with a one-sentence summary of what you found.
-  Do not loop forever; aim for at most 5 tool calls per run.`;
+Steps:
+- Call catalog_lookup first to see the current entity (name, kind, description,
+  owners, tags, repoUrl).
+- Call catalog_read_repo to inspect the repository (description, topics, primary
+  language, root files). Call catalog_read_file for the README, manifests
+  (package.json, pyproject.toml, go.mod, etc.), CODEOWNERS, and any existing
+  catalog-info.yaml.
+- Compose a complete catalog-info.yaml in the flat schema: kind, name,
+  description, ownerTeamIds, repoUrl, tags. Start from any existing
+  catalog-info.yaml and fill only the blanks; never overwrite a value a human
+  set. Infer kind from the manifests and structure, description from the README
+  or repo description, tags from topics and language.
+- Owners are sensitive: set ownerTeamIds only when CODEOWNERS maps unambiguously
+  to a platform team. If unsure, leave owners empty and let scorecards flag it.
+  Never invent an owner.
+- If a complete, correct catalog-info.yaml already exists, do not open a PR;
+  reply that nothing was needed.
+- Otherwise call catalog_open_yaml_pr with the full yaml; it validates and opens
+  (or updates) the PR. Then reply with one sentence and the PR URL.
+
+Aim for at most 8 tool calls. Do not loop.`;
 
   await prisma.agent.upsert({
     where: { id: "seed-agent-catalog-enricher" },
     update: {
       instructions: enricherInstructions,
       modelId: "llmmodel_claude_sonnet_4_6",
-      toolIds: ["catalog_lookup", "catalog_discover", "catalog_propose_drift"],
+      toolIds: ["catalog_lookup", "catalog_read_repo", "catalog_read_file", "catalog_open_yaml_pr"],
       approvalMode: "auto",
       category: "Catalog & Quality",
       avatarUrl: "/agents/catalog-enricher.svg",
@@ -60,9 +63,9 @@ Rules:
       kind: "catalog-enrichment",
       modelId: "llmmodel_claude_sonnet_4_6",
       instructions: enricherInstructions,
-      toolIds: ["catalog_lookup", "catalog_discover", "catalog_propose_drift"],
+      toolIds: ["catalog_lookup", "catalog_read_repo", "catalog_read_file", "catalog_open_yaml_pr"],
       approvalMode: "auto",
-      maxToolCalls: 6,
+      maxToolCalls: 10,
       category: "Catalog & Quality",
       avatarUrl: "/agents/catalog-enricher.svg",
     },

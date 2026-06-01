@@ -50,11 +50,16 @@ export async function recordInstallation(
 
   const existing = await findExistingByInstallationId(installationId);
   if (existing) {
+    const existingConfig =
+      existing.config && typeof existing.config === "object" && !Array.isArray(existing.config)
+        ? (existing.config as Record<string, unknown>)
+        : {};
     const updated = await prisma.integration.update({
       where: { id: existing.id },
       data: {
         enabled: true,
-        config,
+        // Merge so a stamped installerUserId (and other keys) survive a webhook or reconnect re-record.
+        config: { ...existingConfig, ...config },
       },
     });
     return { integrationId: updated.id, created: false, meta };

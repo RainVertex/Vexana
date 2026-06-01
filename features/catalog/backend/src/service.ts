@@ -289,25 +289,3 @@ export async function markStaleEntities(since: Date): Promise<number> {
   });
   return result.count;
 }
-
-export type RecordDriftInput = {
-  entityId: string;
-  kind: string;
-  diff: Prisma.InputJsonValue;
-  proposedBy: "agent" | "discovery";
-  agentRunId?: string | null;
-};
-
-export async function recordDrift(input: RecordDriftInput): Promise<{ driftId: string }> {
-  const created = await prisma.catalogDrift.create({
-    data: {
-      entityId: input.entityId,
-      kind: input.kind,
-      diff: input.diff,
-      proposedBy: input.proposedBy,
-      agentRunId: input.agentRunId ?? null,
-    },
-    select: { id: true },
-  });
-  return { driftId: created.id };
-}

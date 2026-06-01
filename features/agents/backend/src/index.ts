@@ -12,14 +12,10 @@ import { runAgent, startAgentRun } from "./executor";
 
 export {
   runAgent,
-  runEnricherForEntity,
   startAgentRun,
   type RunAgentInput,
   type RunAgentResult,
   type RunAgentToolCall,
-  type EnricherInput,
-  type EnricherRunResult,
-  type RunEnricherOptions,
 } from "./executor";
 export {
   catalogEnricherJob,

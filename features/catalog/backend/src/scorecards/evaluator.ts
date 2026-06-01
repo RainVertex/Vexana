@@ -53,19 +53,15 @@ export async function evaluateScorecardsForEntity(entityId: string): Promise<voi
   });
   if (scorecards.length === 0) return;
 
-  const [dora, drifts] = await Promise.all([
-    prisma.doraMetricsSnapshot.findMany({
-      where: { entityId },
-      orderBy: { periodEnd: "desc" },
-      take: 50,
-    }),
-    prisma.catalogDrift.findMany({ where: { entityId } }),
-  ]);
+  const dora = await prisma.doraMetricsSnapshot.findMany({
+    where: { entityId },
+    orderBy: { periodEnd: "desc" },
+    take: 50,
+  });
   const ctx: RuleContext = {
     entity,
     ownerTeamIds: entity.owners.map((o) => o.teamId),
     dora,
-    drifts,
   };
 
   for (const sc of scorecards) {

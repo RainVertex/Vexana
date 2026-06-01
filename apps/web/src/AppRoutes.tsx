@@ -10,7 +10,7 @@ import { AdminAiModelsPage } from "./admin/AdminAiModelsPage";
 import { AuditPage } from "./admin/AuditPage";
 import { JobsPage } from "./admin/JobsPage";
 import { McpTokensPage } from "./admin/McpTokensPage";
-import { AgentDetailPage, AgentFormPage, AgentsPage } from "@feature/agents-frontend";
+import { AgentDetailPage, AgentFormPage, AgentRunPage, AgentsPage } from "@feature/agents-frontend";
 import { ChatRoute } from "./widgets/chat/ChatRoute";
 import {
   CatalogEntityPage,
@@ -73,6 +73,7 @@ export function AppRoutes() {
       <Route path="/agents/new" element={<AgentFormPage />} />
       <Route path="/agents/:id" element={<AgentDetailPage />} />
       <Route path="/agents/:id/edit" element={<AgentFormPage />} />
+      <Route path="/agents/:id/runs/:runId" element={<AgentRunPage />} />
       <Route path="/catalog" element={<CatalogPage />} />
       <Route path="/catalog/:id" element={<CatalogEntityPage />}>
         <Route index element={<EntityOverviewTab />} />

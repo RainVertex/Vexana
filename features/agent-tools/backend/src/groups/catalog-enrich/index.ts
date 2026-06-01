@@ -1,13 +1,39 @@
-import { prisma, Prisma, type CatalogEntity } from "@internal/db";
+import { prisma, type CatalogEntity } from "@internal/db";
 import {
   discoverAndPersist,
   parseGithubUrl,
   type DiscoverAndPersistResult,
 } from "@feature/scaffolder-backend";
+import { parseCatalogInfo } from "@feature/catalog-backend";
+import { octokitForInstallation, openOrUpdateFilePr } from "@feature/integrations-backend";
 import type { RegisteredTool } from "@internal/llm-core";
 import type { ToolGroup } from "../../types";
 
-// Catalog enrichment tools for the Catalog Enricher agent (lookup, discover, propose drift).
+// Resolves an entity to its GitHub repo coordinates and installation, or a structured error the model/worker can act on.
+type EntityRepo = { owner: string; repo: string; installationId: number };
+async function loadEntityRepo(
+  entityId: unknown,
+): Promise<EntityRepo | { error: string; code: string }> {
+  if (typeof entityId !== "string" || !entityId)
+    return { error: "entityId required", code: "bad_args" };
+  const entity = await prisma.catalogEntity.findUnique({
+    where: { id: entityId },
+    select: { repoUrl: true, installationId: true },
+  });
+  if (!entity) return { error: `Entity not found: ${entityId}`, code: "not_found" };
+  if (!entity.repoUrl) return { error: "Entity has no repoUrl", code: "no_repo" };
+  const gh = parseGithubUrl(entity.repoUrl);
+  if (!gh) return { error: `repoUrl is not a github URL: ${entity.repoUrl}`, code: "not_github" };
+  if (entity.installationId == null) {
+    return {
+      error: "Entity has no GitHub App installation; cannot read or write the repo",
+      code: "no_installation",
+    };
+  }
+  return { owner: gh.owner, repo: gh.repo, installationId: entity.installationId };
+}
+
+// Catalog enrichment tools for the Catalog Enricher agent (lookup, discover, repo reads, open catalog-info.yaml PR).
 
 const lookup: RegisteredTool = {
   id: "catalog_lookup",
@@ -76,51 +102,140 @@ const discover: RegisteredTool = {
   },
 };
 
-const proposeDrift: RegisteredTool = {
-  id: "catalog_propose_drift",
+const readRepo: RegisteredTool = {
+  id: "catalog_read_repo",
   openaiDef: {
     type: "function",
     function: {
-      name: "catalog_propose_drift",
+      name: "catalog_read_repo",
       description:
-        "Record a proposed change to a CatalogEntity for human review. Writes a CatalogDrift row with status=open. The diff should describe what fields differ and what the new values would be.",
+        "Inspect the entity's GitHub repository to infer catalog metadata: returns the repo description, topics, primary language, default branch, archived flag, and the root file listing. Call this to decide what catalog-info.yaml should contain.",
       parameters: {
         type: "object",
-        properties: {
-          entityId: { type: "string" },
-          kind: {
-            type: "string",
-            enum: ["field-mismatch", "missing-yaml", "yaml-only", "owner-stale"],
-          },
-          diff: {
-            type: "object",
-            description:
-              "{fields: string[], before: object, after: object, reason?: string}. before is the current DB row (subset); after is the proposed values.",
-          },
-        },
-        required: ["entityId", "kind", "diff"],
+        properties: { entityId: { type: "string", description: "CatalogEntity.id" } },
+        required: ["entityId"],
       },
     },
   },
-  handler: async (args): Promise<{ driftId: string }> => {
-    const { entityId, kind, diff } = args as {
-      entityId: string;
-      kind: string;
-      diff: Record<string, unknown>;
+  handler: async (args) => {
+    const repo = await loadEntityRepo((args as { entityId?: unknown }).entityId);
+    if ("error" in repo) return repo;
+    const octo = await octokitForInstallation(repo.installationId);
+    const meta = await octo.rest.repos.get({ owner: repo.owner, repo: repo.repo });
+    let rootFiles: string[] = [];
+    try {
+      const root = await octo.rest.repos.getContent({
+        owner: repo.owner,
+        repo: repo.repo,
+        path: "",
+      });
+      if (Array.isArray(root.data)) {
+        rootFiles = root.data.map((f) => (f as { name: string }).name);
+      }
+    } catch {
+      // Root listing is best-effort; an empty repo or permission gap just yields no files.
+    }
+    return {
+      name: meta.data.name,
+      description: meta.data.description,
+      topics: (meta.data as { topics?: string[] }).topics ?? [],
+      primaryLanguage: meta.data.language ?? null,
+      defaultBranch: meta.data.default_branch,
+      archived: meta.data.archived,
+      rootFiles,
     };
-    if (typeof entityId !== "string" || !entityId) throw new Error("entityId required");
-    if (typeof kind !== "string" || !kind) throw new Error("kind required");
-    if (!diff || typeof diff !== "object") throw new Error("diff required");
-    const created = await prisma.catalogDrift.create({
-      data: {
-        entityId,
-        kind,
-        diff: diff as Prisma.InputJsonValue,
-        proposedBy: "agent",
+  },
+};
+
+const readFile: RegisteredTool = {
+  id: "catalog_read_file",
+  openaiDef: {
+    type: "function",
+    function: {
+      name: "catalog_read_file",
+      description:
+        "Read a single text file from the entity's repo (e.g. README.md, package.json, pyproject.toml, go.mod, CODEOWNERS, catalog-info.yaml). Returns the file content (truncated if large) or { missing: true } if absent.",
+      parameters: {
+        type: "object",
+        properties: {
+          entityId: { type: "string", description: "CatalogEntity.id" },
+          path: { type: "string", description: "Repo-relative file path, e.g. README.md" },
+        },
+        required: ["entityId", "path"],
       },
-      select: { id: true },
-    });
-    return { driftId: created.id };
+    },
+  },
+  handler: async (args) => {
+    const { entityId, path } = args as { entityId?: unknown; path?: unknown };
+    if (typeof path !== "string" || !path) return { error: "path required", code: "bad_args" };
+    const repo = await loadEntityRepo(entityId);
+    if ("error" in repo) return repo;
+    const octo = await octokitForInstallation(repo.installationId);
+    try {
+      const res = await octo.rest.repos.getContent({ owner: repo.owner, repo: repo.repo, path });
+      if (Array.isArray(res.data)) return { error: "path is a directory", code: "is_dir" };
+      const data = res.data as { type?: string; encoding?: string; content?: string };
+      if (data.type !== "file" || data.encoding !== "base64" || !data.content) {
+        return { error: "not a readable text file", code: "unreadable" };
+      }
+      let content = Buffer.from(data.content, "base64").toString("utf8");
+      const MAX = 60_000;
+      const truncated = content.length > MAX;
+      if (truncated) content = content.slice(0, MAX);
+      return { path, content, truncated };
+    } catch (err) {
+      if ((err as { status?: number }).status === 404) return { path, missing: true };
+      return { error: (err as Error).message, code: "read_failed" };
+    }
+  },
+};
+
+const openYamlPr: RegisteredTool = {
+  id: "catalog_open_yaml_pr",
+  openaiDef: {
+    type: "function",
+    function: {
+      name: "catalog_open_yaml_pr",
+      description:
+        "Open (or update) a pull request that writes catalog-info.yaml to the entity's repo. The yaml is validated first; pass the COMPLETE file content. Re-runs update the same branch/PR. Returns { prUrl, prNumber, branchName, action }.",
+      parameters: {
+        type: "object",
+        properties: {
+          entityId: { type: "string", description: "CatalogEntity.id" },
+          yaml: {
+            type: "string",
+            description:
+              "Full catalog-info.yaml content (flat schema: kind, name, description, ownerTeamIds, repoUrl, tags).",
+          },
+        },
+        required: ["entityId", "yaml"],
+      },
+    },
+  },
+  handler: async (args) => {
+    const { entityId, yaml } = args as { entityId?: unknown; yaml?: unknown };
+    if (typeof yaml !== "string" || !yaml.trim())
+      return { error: "yaml required", code: "bad_args" };
+    const validated = parseCatalogInfo("catalog-info.yaml", yaml);
+    if (validated.kind === "error") {
+      return { error: `Invalid catalog-info.yaml: ${validated.reason}`, code: "invalid_yaml" };
+    }
+    const repo = await loadEntityRepo(entityId);
+    if ("error" in repo) return repo;
+    try {
+      return await openOrUpdateFilePr({
+        installationId: repo.installationId,
+        owner: repo.owner,
+        repo: repo.repo,
+        filePath: "catalog-info.yaml",
+        content: yaml.endsWith("\n") ? yaml : `${yaml}\n`,
+        branchName: "catalog-info/enricher",
+        title: "chore(catalog): add or update catalog-info.yaml",
+        body: "Automated by the Catalog Enricher: fills catalog metadata for the developer portal. Review and merge to update the catalog.",
+      });
+    } catch (err) {
+      return { error: (err as Error).message, code: "pr_failed" };
+    }
   },
 };
 
@@ -128,8 +243,8 @@ export const catalogEnrichGroup: ToolGroup = {
   meta: {
     id: "catalog-enrich",
     label: "Katalog zenginleştirme",
-    description: "Katalog varlıklarını GitHub ile karşılaştırıp güncelleme önerme.",
+    description: "Repoyu inceleyip catalog-info.yaml'ı doldurmak için PR açma.",
     order: 90,
   },
-  tools: [lookup, discover, proposeDrift],
+  tools: [lookup, discover, readRepo, readFile, openYamlPr],
 };

@@ -11,6 +11,8 @@
     }
   },
   "dependencies": {
+    "@feature/catalog-backend": "0.1.0",
+    "@feature/integrations-backend": "0.1.0",
     "@feature/scaffolder-backend": "0.1.0",
     "@internal/db": "0.1.0",
     "@internal/llm-core": "0.1.0",

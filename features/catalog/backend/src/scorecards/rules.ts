@@ -1,5 +1,4 @@
 import type {
-  CatalogDrift,
   CatalogEntity,
   CatalogEntityKind,
   DoraMetricsSnapshot,
@@ -11,7 +10,6 @@ export interface RuleContext {
   entity: CatalogEntity;
   ownerTeamIds: string[];
   dora: DoraMetricsSnapshot[];
-  drifts: CatalogDrift[];
 }
 
 export interface RuleOutcome {
@@ -40,8 +38,6 @@ export function evaluateRule(rule: Rule, ctx: RuleContext): RuleOutcome {
       return tagPresent(rule.config, ctx.entity);
     case "dora_threshold":
       return doraThreshold(rule.config, ctx.dora);
-    case "drift_count_max":
-      return driftCountMax(rule.config, ctx.drifts);
     default: {
       const exhaustive: never = rule.kind;
       return { passed: false, reason: `Unknown rule kind: ${exhaustive}`, evidence: null };
@@ -118,21 +114,6 @@ function doraThreshold(config: Record<string, unknown>, dora: DoraMetricsSnapsho
     passed,
     reason: `${metric} ${window === "30d" ? "(30d avg) " : ""}${measured.toFixed(2)} ${op} ${value}: ${passed ? "pass" : "fail"}`,
     evidence: { metric, op, threshold: value, measured, window },
-  };
-}
-
-function driftCountMax(config: Record<string, unknown>, drifts: CatalogDrift[]): RuleOutcome {
-  const status = String(config.status ?? "open");
-  const max = Number(config.max);
-  if (Number.isNaN(max)) {
-    return { passed: false, reason: "Invalid drift_count_max config", evidence: { config } };
-  }
-  const count = drifts.filter((d) => d.status === status).length;
-  const ok = count <= max;
-  return {
-    passed: ok,
-    reason: `${count} ${status} drift(s); max ${max}: ${ok ? "pass" : "fail"}`,
-    evidence: { count, status, max },
   };
 }
 

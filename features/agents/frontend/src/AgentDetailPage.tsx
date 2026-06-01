@@ -213,8 +213,13 @@ export function AgentDetailPage() {
             <tbody>
               {agent.runs.map((r) => (
                 <tr key={r.id} className="border-t border-app-border">
-                  <td className="py-1.5 text-app-text-muted">
-                    {new Date(r.startedAt).toLocaleString()}
+                  <td className="py-1.5">
+                    <Link
+                      to={`/agents/${agent.id}/runs/${r.id}`}
+                      className="text-app-primary hover:underline"
+                    >
+                      {new Date(r.startedAt).toLocaleString()}
+                    </Link>
                   </td>
                   <td className="py-1.5 text-app-text-muted">
                     {r.trigger ? (

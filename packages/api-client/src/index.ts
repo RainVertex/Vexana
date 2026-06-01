@@ -339,16 +339,6 @@ export function createApiClient(options: ApiClientOptions = {}) {
         ),
       delete: (id: string) =>
         request<void>(`/api/catalog/${encodeURIComponent(id)}`, { method: "DELETE" }),
-      applyDrift: (id: string) =>
-        request<{ id: string; status: "applied"; entityId: string; action: string }>(
-          `/api/catalog/drifts/${encodeURIComponent(id)}/apply`,
-          { method: "POST" },
-        ),
-      ignoreDrift: (id: string) =>
-        request<{ id: string; status: "ignored" }>(
-          `/api/catalog/drifts/${encodeURIComponent(id)}/ignore`,
-          { method: "POST" },
-        ),
       listStars: () => request<ListResponse<string>>(`/api/catalog/stars`),
       star: (id: string) =>
         request<void>(`/api/catalog/${encodeURIComponent(id)}/star`, { method: "PUT" }),

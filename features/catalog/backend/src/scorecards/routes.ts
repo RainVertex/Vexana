@@ -11,14 +11,7 @@ const KIND = z.enum(["service", "api", "library", "website", "database", "infras
 const ruleInput = z.object({
   key: z.string().min(1),
   label: z.string().min(1),
-  kind: z.enum([
-    "field_present",
-    "has_owner",
-    "lifecycle_in",
-    "tag_present",
-    "dora_threshold",
-    "drift_count_max",
-  ]),
+  kind: z.enum(["field_present", "has_owner", "lifecycle_in", "tag_present", "dora_threshold"]),
   config: z.record(z.string(), z.unknown()),
   weight: z.number().int().min(1).max(10).optional(),
   tier: z.enum(["bronze", "silver", "gold", "red", "orange", "yellow", "green"]),
