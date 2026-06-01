@@ -1,5 +1,6 @@
 // GitHub OAuth helpers: authorize URL, token exchange, user/org lookups, and org-denial IP throttling.
 import { prisma } from "@internal/db";
+import { octokitForInstallation, GitHubAppNotConfiguredError } from "@feature/integrations-backend";
 import { loadEnv } from "../config/env";
 import { logger } from "../logger/logger";
 
@@ -106,22 +107,70 @@ async function fetchActiveMembership(token: string, org: string): Promise<boolea
   return body.state === "active";
 }
 
-export async function verifyAnyOrgMembership(token: string): Promise<string[]> {
+interface OrgTarget {
+  accountLogin: string;
+  installationId: number | null;
+}
+
+// Membership via the GitHub App installation token, which (unlike the user's OAuth
+// token) is never hidden by org OAuth-app access restrictions or SAML SSO.
+async function fetchMembershipViaApp(
+  installationId: number,
+  org: string,
+  username: string,
+): Promise<boolean> {
+  const octo = await octokitForInstallation(installationId);
+  try {
+    const res = await octo.rest.orgs.getMembershipForUser({ org, username });
+    return res.data.state === "active";
+  } catch (err) {
+    if ((err as { status?: number }).status === 404) return false;
+    throw err;
+  }
+}
+
+async function orgMembershipActive(
+  target: OrgTarget,
+  token: string,
+  username: string,
+): Promise<boolean> {
+  if (target.installationId != null) {
+    try {
+      return await fetchMembershipViaApp(target.installationId, target.accountLogin, username);
+    } catch (err) {
+      // App credentials absent at runtime; fall back to the user's own OAuth token.
+      if (!(err instanceof GitHubAppNotConfiguredError)) throw err;
+    }
+  }
+  return fetchActiveMembership(token, target.accountLogin);
+}
+
+export async function verifyAnyOrgMembership(token: string, username: string): Promise<string[]> {
   const integrations = await prisma.integration.findMany({
     where: { kind: "github", enabled: true },
     select: { config: true },
   });
-  const orgLogins = integrations
-    .map((i) => {
-      const cfg = i.config as { accountLogin?: unknown } | null;
-      return cfg && typeof cfg.accountLogin === "string" ? cfg.accountLogin : null;
+  const targets = integrations
+    .map((i): OrgTarget | null => {
+      const cfg = i.config as { accountLogin?: unknown; installationId?: unknown } | null;
+      if (!cfg || typeof cfg.accountLogin !== "string" || cfg.accountLogin.length === 0)
+        return null;
+      const installationId = Number(cfg.installationId);
+      return {
+        accountLogin: cfg.accountLogin,
+        installationId:
+          Number.isFinite(installationId) && installationId > 0 ? installationId : null,
+      };
     })
-    .filter((s): s is string => s !== null && s.length > 0);
+    .filter((t): t is OrgTarget => t !== null);
 
-  if (orgLogins.length === 0) return [];
+  if (targets.length === 0) return [];
 
   const results = await Promise.allSettled(
-    orgLogins.map(async (org) => ({ org, active: await fetchActiveMembership(token, org) })),
+    targets.map(async (t) => ({
+      org: t.accountLogin,
+      active: await orgMembershipActive(t, token, username),
+    })),
   );
 
   const activeLogins: string[] = [];

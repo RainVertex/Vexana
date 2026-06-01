@@ -107,7 +107,7 @@ authRouter.get("/github/callback", authCallbackLimiter, async (req, res, next) =
 
     let activeLogins: string[] = [];
     if (!skipOrgCheck) {
-      activeLogins = await verifyAnyOrgMembership(token);
+      activeLogins = await verifyAnyOrgMembership(token, gh.login);
       if (activeLogins.length === 0) {
         recordOrgDenial(ip);
         res.redirect(`${env.webOrigin}/?error=not_in_org`);
