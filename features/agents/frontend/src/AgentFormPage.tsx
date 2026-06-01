@@ -5,6 +5,7 @@ import { PageLayout, AgentAvatar } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
 import type { Agent, AgentToolGroup, ApprovalMode, LlmModelSummary } from "@internal/shared-types";
 import { fileToAvatarDataUrl } from "./avatarImage";
+import { AvatarPickerDialog } from "./AvatarPickerDialog";
 
 const KIND_OPTIONS = ["custom", "catalog-enrichment", "platform-assistant"];
 
@@ -25,6 +26,7 @@ export function AgentFormPage() {
   const [description, setDescription] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [category, setCategory] = useState("");
   const [kind, setKind] = useState("custom");
   const [instructions, setInstructions] = useState("");
@@ -247,6 +249,13 @@ export function AgentFormPage() {
                     }}
                   />
                 </label>
+                <button
+                  type="button"
+                  onClick={() => setPickerOpen(true)}
+                  className="rounded-md border border-app-border bg-app-surface px-3 py-1.5 text-sm text-app-text hover:bg-app-surface-hover"
+                >
+                  Choose preset
+                </button>
                 {avatarUrl && (
                   <button
                     type="button"
@@ -264,6 +273,16 @@ export function AgentFormPage() {
               {avatarError && <p className="text-xs text-app-danger">{avatarError}</p>}
             </div>
           </div>
+          <AvatarPickerDialog
+            open={pickerOpen}
+            value={avatarUrl}
+            onSelect={(src) => {
+              setAvatarUrl(src);
+              setAvatarError(null);
+              setPickerOpen(false);
+            }}
+            onClose={() => setPickerOpen(false)}
+          />
         </Labeled>
 
         <Labeled label="Kind">
