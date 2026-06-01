@@ -40,6 +40,20 @@ async function provisionForRepoId(repoId: number, installationId: number): Promi
   }
 }
 
+// A newly imported repo needs a grants pass so a pre-existing GitHub team-repo
+// grant resolves to project access now, not at the next org event or weekly cron.
+async function syncGrantsForNewlyImportedRepos(installationId: number): Promise<void> {
+  try {
+    await runReconciliation(installationId, "webhook");
+    await reconcileProjectMembersForInstallation(installationId);
+  } catch (err) {
+    console.error("[github-app webhook] grant reconcile after repo import failed", {
+      installationId,
+      err: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
+
 export const githubAppWebhookRouter: Router = Router();
 
 githubAppWebhookRouter.post(
@@ -223,6 +237,8 @@ async function handleInstallationRepositories(
         // Per-repo failure shouldn't block the whole batch.
       }
     }
+    // Entities now exist; one grants pass lets pre-existing team grants reach ProjectMember.
+    await syncGrantsForNewlyImportedRepos(installationId);
     return;
   }
 
@@ -278,6 +294,10 @@ async function handleRepository(action: string, payload: Record<string, unknown>
     }
     await syncRepoByName(octo, owner, name, installationId);
     if (repoId != null) await provisionForRepoId(repoId, installationId);
+    // Only a freshly imported or restored entity can be missing its team grants.
+    if (action === "created" || action === "unarchived") {
+      await syncGrantsForNewlyImportedRepos(installationId);
+    }
     return;
   }
 }
@@ -332,8 +352,14 @@ async function handlePush(payload: Record<string, unknown>): Promise<void> {
   await syncRepoByName(octo, owner, name, installationId);
 }
 
-// Actions that change membership/structure; others (e.g. team.added_to_repository) are skipped.
-const RELEVANT_TEAM_ACTIONS = new Set(["created", "deleted", "edited"]);
+// Actions that change team structure, membership, or repo grants; others are skipped.
+const RELEVANT_TEAM_ACTIONS = new Set([
+  "created",
+  "deleted",
+  "edited",
+  "added_to_repository",
+  "removed_from_repository",
+]);
 const RELEVANT_MEMBERSHIP_ACTIONS = new Set(["added", "removed"]);
 const RELEVANT_ORG_ACTIONS = new Set(["member_added", "member_removed", "member_invited"]);
 

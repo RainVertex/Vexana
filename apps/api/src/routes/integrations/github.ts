@@ -16,7 +16,10 @@ import {
   staleEntitiesForInstallation,
   syncInstallation,
 } from "@feature/catalog-backend";
-import { provisionProjectsForInstallation } from "@feature/projects-backend";
+import {
+  provisionProjectsForInstallation,
+  reconcileProjectMembersForInstallation,
+} from "@feature/projects-backend";
 import { loadEnv } from "../../config/env";
 import { recordAudit } from "../../audit/audit";
 import { logger } from "../../logger/logger";
@@ -189,6 +192,15 @@ githubIntegrationRouter.post("/:integrationId/resync", async (req, res, next) =>
     }
 
     const run = await runReconciliation(installationId, "manual");
+    // Propagate any team-repo grant changes into project membership before responding.
+    try {
+      await reconcileProjectMembersForInstallation(installationId);
+    } catch (err) {
+      logger.error(
+        { err, installationId },
+        "github-app: project member reconcile after resync failed",
+      );
+    }
     await recordAudit(
       req,
       "integration.resynced",

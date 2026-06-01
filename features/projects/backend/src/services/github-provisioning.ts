@@ -11,6 +11,14 @@ function rolePower(role: ProjectRole): number {
   return role === "ADMIN" ? 2 : role === "WRITE" ? 1 : 0;
 }
 
+// GitHub repo permission to project role: admin/maintain administer the repo,
+// push can write, triage/pull are read-only.
+function permissionToRole(permission: string): ProjectRole {
+  if (permission === "admin" || permission === "maintain") return "ADMIN";
+  if (permission === "push") return "WRITE";
+  return "READ";
+}
+
 async function getInstallerUserId(installationId: number): Promise<string | null> {
   const integration = await prisma.integration.findFirst({
     where: {
@@ -41,14 +49,29 @@ export async function reconcileMembers(
   });
 
   const target = new Map<string, ProjectRole>();
+  const bump = (userId: string, role: ProjectRole) => {
+    const existing = target.get(userId);
+    if (!existing || rolePower(role) > rolePower(existing)) target.set(userId, role);
+  };
+
+  // Curated owners (catalog-info.yaml / manual): team membership role drives access.
   for (const o of owners) {
     for (const m of o.team.memberships) {
-      const role: ProjectRole = m.role === "lead" ? "ADMIN" : "WRITE";
-      const existing = target.get(m.userId);
-      if (!existing || rolePower(role) > rolePower(existing)) {
-        target.set(m.userId, role);
-      }
+      bump(m.userId, m.role === "lead" ? "ADMIN" : "WRITE");
     }
+  }
+
+  // GitHub team-repo grants: the granted repo permission drives access for the whole team.
+  const grants = await prisma.catalogEntityTeamGrant.findMany({
+    where: { entityId },
+    select: {
+      permission: true,
+      team: { select: { memberships: { select: { userId: true } } } },
+    },
+  });
+  for (const g of grants) {
+    const role = permissionToRole(g.permission);
+    for (const m of g.team.memberships) bump(m.userId, role);
   }
 
   if (target.size === 0) {

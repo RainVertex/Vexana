@@ -84,6 +84,7 @@ model CatalogEntity {
   pipelineSyncCursor  PipelineSyncCursor?
   observabilityConfig EntityObservabilityConfig?
   project             Project?
+  teamGrants          CatalogEntityTeamGrant[]
 
   @@unique([name, kind])
   @@index([kind])
@@ -111,6 +112,24 @@ model CatalogEntityOwner {
   createdAt DateTime      @default(now())
   entity    CatalogEntity @relation(fields: [entityId], references: [id], onDelete: Cascade)
   team      Team          @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@id([entityId, teamId])
+  @@index([teamId])
+}
+
+// GitHub team to repository access grants, synced from the org's team
+// permissions during reconciliation. Unlike curated CatalogEntityOwner rows,
+// these are derived from GitHub and drive project access at a level matching
+// the granted repo permission (admin/maintain -> ADMIN, push -> WRITE,
+// triage/pull -> READ).
+model CatalogEntityTeamGrant {
+  entityId   String
+  teamId     String
+  permission String
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  entity     CatalogEntity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  team       Team          @relation(fields: [teamId], references: [id], onDelete: Cascade)
 
   @@id([entityId, teamId])
   @@index([teamId])

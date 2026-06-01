@@ -63,6 +63,7 @@ model Team {
   memberships          TeamMembership[]
   pendingMemberships   PendingTeamMembership[]
   catalogOwnerships    CatalogEntityOwner[]
+  catalogTeamGrants    CatalogEntityTeamGrant[]
   webhookSubscriptions WebhookSubscription[]
   createdRequests      TeamRequest[]
   maintainerRequests   MaintainerRequest[]

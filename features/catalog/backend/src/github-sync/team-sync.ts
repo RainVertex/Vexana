@@ -22,6 +22,9 @@ export interface ReconciliationResult {
   // UserOrgMembership rows for this org, distinct from per-team membersAdded/membersRemoved.
   orgMembershipsAdded: number;
   orgMembershipsRemoved: number;
+  // CatalogEntityTeamGrant rows synced from GitHub team-repo permissions.
+  grantsUpserted: number;
+  grantsRemoved: number;
   errors: Array<{ scope: string; reason: string }>;
   startedAt: Date;
   finishedAt: Date;
@@ -37,10 +40,41 @@ interface GithubTeamRecord {
   members: Array<{ githubId: string; login: string; role: "lead" | "member" }>;
 }
 
+export type GrantPermission = "admin" | "maintain" | "push" | "triage" | "pull";
+
+interface RepoGrant {
+  teamNodeId: string;
+  repoGithubId: number;
+  permission: GrantPermission;
+}
+
 interface GithubState {
   teams: GithubTeamRecord[];
   orgMemberIds: Set<string>; // githubIds, used to filter outside collaborators
   orgLogin: string;
+  // Team to repo access grants, the source for CatalogEntityTeamGrant.
+  repoGrants: RepoGrant[];
+  // Team node_ids whose repo list was fetched cleanly this run. A team missing
+  // here (transient 404 mid-pass) is left untouched rather than pruned to empty.
+  reposFetchedTeamNodeIds: Set<string>;
+}
+
+const PERMISSION_RANK: Record<GrantPermission, number> = {
+  pull: 0,
+  triage: 1,
+  push: 2,
+  maintain: 3,
+  admin: 4,
+};
+
+function derivePermission(perms: Record<string, boolean> | undefined): GrantPermission | null {
+  if (!perms) return null;
+  if (perms.admin) return "admin";
+  if (perms.maintain) return "maintain";
+  if (perms.push) return "push";
+  if (perms.triage) return "triage";
+  if (perms.pull) return "pull";
+  return null;
 }
 
 interface DbTeamRecord {
@@ -111,6 +145,8 @@ export async function runReconciliation(
     pendingResolved: 0,
     orgMembershipsAdded: 0,
     orgMembershipsRemoved: 0,
+    grantsUpserted: 0,
+    grantsRemoved: 0,
     errors: [],
     startedAt,
     finishedAt: startedAt,
@@ -161,6 +197,15 @@ export async function runReconciliation(
   result.orgMembershipsAdded = applied.orgMembershipsAdded;
   result.orgMembershipsRemoved = applied.orgMembershipsRemoved;
   result.errors.push(...applied.errors);
+
+  // Sync GitHub team-repo grants after teams land so externalId resolves to a Team row.
+  try {
+    const grants = await reconcileRepoGrants(installationId, github);
+    result.grantsUpserted = grants.grantsUpserted;
+    result.grantsRemoved = grants.grantsRemoved;
+  } catch (err) {
+    result.errors.push({ scope: "repo-grants", reason: errMessage(err) });
+  }
 
   // Revoke sessions for users who lost their last org coverage in this run, mirroring the admin-disconnect flow.
   if (applied.removedOrgMembershipUserIds.length > 0) {
@@ -219,6 +264,7 @@ export async function fetchGithubState(
     parent: { node_id: string } | null;
   };
   type MemberApi = { id: number; login: string };
+  type RepoApi = { id: number; permissions?: Record<string, boolean> };
 
   const teamsRaw = (await octo.paginate(octo.rest.teams.list, {
     org: orgLogin,
@@ -232,6 +278,8 @@ export async function fetchGithubState(
   const orgMemberIds = new Set(orgMembersRaw.map((m) => String(m.id)));
 
   const teams: GithubTeamRecord[] = [];
+  const repoGrants: RepoGrant[] = [];
+  const reposFetchedTeamNodeIds = new Set<string>();
   for (const t of teamsRaw) {
     let members: GithubTeamRecord["members"] = [];
     try {
@@ -257,6 +305,24 @@ export async function fetchGithubState(
       // 404: team vanished between list and members fetch; treat as empty, diff handles it.
       if ((err as { status?: number }).status !== 404) throw err;
     }
+    try {
+      const reposRaw = (await octo.paginate(octo.rest.teams.listReposInOrg, {
+        org: orgLogin,
+        team_slug: t.slug,
+        per_page: 100,
+      })) as RepoApi[];
+      for (const r of reposRaw) {
+        const permission = derivePermission(r.permissions);
+        if (permission) {
+          repoGrants.push({ teamNodeId: t.node_id, repoGithubId: r.id, permission });
+        }
+      }
+      // Mark success only after a clean pass so a transient 404 leaves grants intact.
+      reposFetchedTeamNodeIds.add(t.node_id);
+    } catch (err) {
+      // 404: team vanished mid-pass; skip its repo grants, the reconcile diff handles removals.
+      if ((err as { status?: number }).status !== 404) throw err;
+    }
     teams.push({
       nodeId: t.node_id,
       databaseId: t.id,
@@ -268,7 +334,7 @@ export async function fetchGithubState(
     });
   }
 
-  return { teams, orgMemberIds, orgLogin };
+  return { teams, orgMemberIds, orgLogin, repoGrants, reposFetchedTeamNodeIds };
 }
 
 async function loadDbState(installationId: number, orgLogin: string): Promise<DbState> {
@@ -619,6 +685,93 @@ async function applyDiff(
   });
 
   return out;
+}
+
+// Mirror GitHub team-repo permissions into CatalogEntityTeamGrant. Runs after
+// applyDiff so every snapshot team has a Team row to resolve its node_id against.
+async function reconcileRepoGrants(
+  installationId: number,
+  github: GithubState,
+): Promise<{ grantsUpserted: number; grantsRemoved: number }> {
+  const repoGrants = github.repoGrants;
+  const teams = await prisma.team.findMany({
+    where: { installationId, source: "github", deletedAt: null, externalId: { not: null } },
+    select: { id: true, externalId: true },
+  });
+  const teamIdByExternalId = new Map<string, string>();
+  for (const t of teams) if (t.externalId) teamIdByExternalId.set(t.externalId, t.id);
+
+  // Teams present in the snapshot but whose repo list didn't fetch cleanly this
+  // run: their existing grants are left as-is rather than pruned to empty.
+  const uncertainTeamIds = new Set<string>();
+  for (const gh of github.teams) {
+    if (github.reposFetchedTeamNodeIds.has(gh.nodeId)) continue;
+    const teamId = teamIdByExternalId.get(gh.nodeId);
+    if (teamId) uncertainTeamIds.add(teamId);
+  }
+
+  const repoIds = Array.from(new Set(repoGrants.map((g) => g.repoGithubId)));
+  const entities = await prisma.catalogEntity.findMany({
+    where: { installationId, githubRepoId: { in: repoIds.length > 0 ? repoIds : [-1] } },
+    select: { id: true, githubRepoId: true },
+  });
+  const entityIdByRepoId = new Map<number, string>();
+  for (const e of entities) if (e.githubRepoId != null) entityIdByRepoId.set(e.githubRepoId, e.id);
+
+  // Strongest grant wins if a team somehow lands twice for one repo.
+  const desired = new Map<
+    string,
+    { entityId: string; teamId: string; permission: GrantPermission }
+  >();
+  for (const g of repoGrants) {
+    const teamId = teamIdByExternalId.get(g.teamNodeId);
+    const entityId = entityIdByRepoId.get(g.repoGithubId);
+    if (!teamId || !entityId) continue;
+    const key = `${entityId}:${teamId}`;
+    const prev = desired.get(key);
+    if (!prev || PERMISSION_RANK[g.permission] > PERMISSION_RANK[prev.permission]) {
+      desired.set(key, { entityId, teamId, permission: g.permission });
+    }
+  }
+
+  // Scope existing rows by the installation's entities so dropped grants get pruned.
+  const existing = await prisma.catalogEntityTeamGrant.findMany({
+    where: { entity: { installationId } },
+    select: { entityId: true, teamId: true, permission: true },
+  });
+  const existingMap = new Map(existing.map((e) => [`${e.entityId}:${e.teamId}`, e.permission]));
+
+  let grantsUpserted = 0;
+  let grantsRemoved = 0;
+  await prisma.$transaction(async (tx) => {
+    for (const [key, d] of desired) {
+      if (existingMap.get(key) !== d.permission) {
+        await tx.catalogEntityTeamGrant.upsert({
+          where: { entityId_teamId: { entityId: d.entityId, teamId: d.teamId } },
+          create: { entityId: d.entityId, teamId: d.teamId, permission: d.permission },
+          update: { permission: d.permission },
+        });
+        grantsUpserted++;
+      }
+    }
+    for (const e of existing) {
+      // Keep grants for teams whose repos didn't fetch cleanly; only prune confirmed removals.
+      if (uncertainTeamIds.has(e.teamId)) continue;
+      if (!desired.has(`${e.entityId}:${e.teamId}`)) {
+        try {
+          await tx.catalogEntityTeamGrant.delete({
+            where: { entityId_teamId: { entityId: e.entityId, teamId: e.teamId } },
+          });
+          grantsRemoved++;
+        } catch (err) {
+          // P2025: already removed by a concurrent reconciliation run.
+          if ((err as { code?: string }).code !== "P2025") throw err;
+        }
+      }
+    }
+  });
+
+  return { grantsUpserted, grantsRemoved };
 }
 
 function pickSlug(gh: GithubTeamRecord, db: DbState, orgLogin: string): string {
