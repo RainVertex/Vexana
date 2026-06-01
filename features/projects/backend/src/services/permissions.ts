@@ -28,13 +28,17 @@ export async function resolveAccess(
   userId: string,
   projectId: string,
 ): Promise<AccessContext | null> {
-  const project = await prisma.project.findUnique({
-    where: { id: projectId },
-    select: { id: true, creatorUserId: true },
-  });
+  const [project, user] = await Promise.all([
+    prisma.project.findUnique({
+      where: { id: projectId },
+      select: { id: true, creatorUserId: true },
+    }),
+    prisma.user.findUnique({ where: { id: userId }, select: { role: true } }),
+  ]);
   if (!project) return null;
 
-  if (project.creatorUserId === userId) {
+  // Platform admins and the project creator always have full (ADMIN) access.
+  if (user?.role === "admin" || project.creatorUserId === userId) {
     return { project, maxPermission: 2 };
   }
 

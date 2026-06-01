@@ -6,6 +6,7 @@ loadDotenv({ path: resolve(__dirname, "../../../.env") });
 
 import { runBootDriftCheck, seedTemplateAcls } from "@feature/scaffolder-backend";
 import { provisionProjectsForInstallation } from "@feature/projects-backend";
+import { runReconciliation } from "@feature/catalog-backend";
 import { prisma } from "@internal/db";
 import { createServer } from "./createServer";
 import { logger } from "./logger/logger";
@@ -64,8 +65,20 @@ async function bootstrap() {
         const installationId = Number(cfg.installationId);
         if (!Number.isFinite(installationId)) continue;
         try {
+          // Re-sync teams and team-repo grants first so any team-role change missed while
+          // offline (or undeliverable to localhost in dev) lands before projects re-provision.
+          const run = await runReconciliation(installationId, "boot");
+          if (!run.ok) {
+            logger.warn(
+              { installationId, skippedReason: run.skippedReason, errors: run.errors },
+              "Boot reconciliation did not complete cleanly",
+            );
+          }
           const summary = await provisionProjectsForInstallation(installationId, "boot");
-          logger.info({ installationId, ...summary }, "PM auto-provision (boot) complete");
+          logger.info(
+            { installationId, grantsUpserted: run.grantsUpserted, ...summary },
+            "PM auto-provision (boot) complete",
+          );
         } catch (err) {
           logger.error({ err, installationId }, "PM auto-provision (boot) failed");
         }

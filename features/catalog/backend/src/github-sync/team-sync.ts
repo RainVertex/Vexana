@@ -4,7 +4,7 @@ import { Prisma, prisma, type UserKind, type UserRole } from "@internal/db";
 import { GitHubAppNotConfiguredError, octokitForInstallation } from "@feature/integrations-backend";
 import type { Octokit as OctokitClient } from "octokit";
 
-export type ReconciliationSource = "webhook" | "cron" | "manual";
+export type ReconciliationSource = "webhook" | "cron" | "manual" | "boot";
 
 export interface ReconciliationResult {
   runId: string;
@@ -85,6 +85,7 @@ interface DbTeamRecord {
   externalId: string;
   externalSlug: string | null;
   parentTeamId: string | null;
+  installationId: number | null;
   memberUserIds: Set<string>;
   pendingGithubIds: Set<string>;
 }
@@ -185,7 +186,7 @@ export async function runReconciliation(
   }
 
   const db = await loadDbState(installationId, orgLogin);
-  const diff = computeDiff(github, db);
+  const diff = computeDiff(github, db, installationId);
   const applied = await applyDiff(diff, db, github, installationId);
 
   result.teamsCreated = applied.teamsCreated;
@@ -338,8 +339,10 @@ export async function fetchGithubState(
 }
 
 async function loadDbState(installationId: number, orgLogin: string): Promise<DbState> {
+  // Scope by org, not installationId: an App reinstall changes the installationId but
+  // teams keep their (source, externalId), so this still finds them and applyDiff re-keys them.
   const teams = await prisma.team.findMany({
-    where: { source: "github", installationId },
+    where: { source: "github", accountLogin: orgLogin },
     select: {
       id: true,
       slug: true,
@@ -348,6 +351,7 @@ async function loadDbState(installationId: number, orgLogin: string): Promise<Db
       externalId: true,
       externalSlug: true,
       parentTeamId: true,
+      installationId: true,
       memberships: { select: { userId: true } },
       pendingMemberships: { select: { githubId: true } },
     },
@@ -364,6 +368,7 @@ async function loadDbState(installationId: number, orgLogin: string): Promise<Db
       externalId: t.externalId,
       externalSlug: t.externalSlug,
       parentTeamId: t.parentTeamId,
+      installationId: t.installationId,
       memberUserIds: new Set(t.memberships.map((m) => m.userId)),
       pendingGithubIds: new Set(t.pendingMemberships.map((p) => p.githubId)),
     });
@@ -399,7 +404,11 @@ async function loadDbState(installationId: number, orgLogin: string): Promise<Db
   };
 }
 
-export function computeDiff(github: GithubState, db: DbState): ReconciliationDiff {
+export function computeDiff(
+  github: GithubState,
+  db: DbState,
+  installationId: number,
+): ReconciliationDiff {
   const diff: ReconciliationDiff = {
     teamsToCreate: [],
     teamsToUpdate: [],
@@ -421,7 +430,8 @@ export function computeDiff(github: GithubState, db: DbState): ReconciliationDif
     } else if (
       existing.name !== gh.name ||
       existing.description !== gh.description ||
-      existing.externalSlug !== gh.slug
+      existing.externalSlug !== gh.slug ||
+      existing.installationId !== installationId // re-key after an App reinstall
       // parent reconciled in second pass after creates land
     ) {
       diff.teamsToUpdate.push({ existing, gh });
@@ -569,6 +579,7 @@ async function applyDiff(
           name: gh.name,
           description: gh.description,
           externalSlug: gh.slug,
+          installationId, // re-key onto the current installation after a reinstall
           lastSyncedAt: new Date(),
         },
       });

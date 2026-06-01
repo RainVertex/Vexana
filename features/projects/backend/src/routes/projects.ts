@@ -15,6 +15,17 @@ export const projectsRoutes: Router = Router();
 projectsRoutes.get("/projects", async (req, res, next) => {
   try {
     const userId = req.user!.id;
+
+    // Platform admins see every project at ADMIN, mirroring resolveAccess.
+    if (req.user!.role === "admin") {
+      const projects = await prisma.project.findMany({
+        orderBy: { title: "asc" },
+        include: { creator: true, _count: { select: { tasks: true } } },
+      });
+      res.json(projects.map((p) => projectDto(p, 2)));
+      return;
+    }
+
     const memberships = await prisma.projectMember.findMany({
       where: { userId },
       select: { projectId: true, role: true },
