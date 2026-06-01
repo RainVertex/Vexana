@@ -1,4 +1,4 @@
-// GitHub App install/callback/resync/disconnect lifecycle endpoints (admin only).
+// GitHub App install/callback/resync/disconnect endpoints (admin only).
 // Webhook receiver lives separately in createServer.ts (must mount before express.json()).
 import { randomBytes } from "node:crypto";
 import { Router } from "express";
@@ -20,6 +20,7 @@ import { provisionProjectsForInstallation } from "@feature/projects-backend";
 import { loadEnv } from "../../config/env";
 import { recordAudit } from "../../audit/audit";
 import { logger } from "../../logger/logger";
+import { runJob } from "../../jobs";
 
 const INITIATOR_COOKIE = "mep_github_install_initiator";
 const COOKIE_PATH = "/api/integrations/github";
@@ -136,6 +137,10 @@ githubIntegrationRouter.get("/callback", async (req, res, next) => {
           },
           "github-app: bulk sync completed",
         );
+        // Drain the enrichment queue now so a freshly connected org is enriched on connect, not at the next 10-minute tick.
+        void runJob("agents.catalogEnricher", "manual").catch((err) => {
+          logger.error({ err, installationId }, "github-app: enricher kick after sync failed");
+        });
       },
       (err) => {
         logger.error(
