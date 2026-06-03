@@ -410,6 +410,46 @@
     "@eslint/core" "^1.2.1"
     levn "^0.4.1"
 
+"@fallow-cli/darwin-arm64@2.88.0":
+  version "2.88.0"
+  resolved "https://registry.yarnpkg.com/@fallow-cli/darwin-arm64/-/darwin-arm64-2.88.0.tgz#af351f811b04828c716819018554bf60abe0220e"
+  integrity sha512-uvksDhyBGBMY7Hc3U1gKlrUM4uT9tzvYLRS8jyZDm1ZHQQVF/0VewXoHtRvw6wXYgWjZ5TsnbbsH9bernBO9wQ==
+
+"@fallow-cli/darwin-x64@2.88.0":
+  version "2.88.0"
+  resolved "https://registry.yarnpkg.com/@fallow-cli/darwin-x64/-/darwin-x64-2.88.0.tgz#1846bb653b95ee33d9c36581d9ed036f9bc2fae5"
+  integrity sha512-xyG710Rwq9b0hb7JgEey5pZASxJHw8S/RLzELCFzvbYb8+qrXsipY33FsKB0UK28slCXt8sBt2KUDQJkVdhxog==
+
+"@fallow-cli/linux-arm64-gnu@2.88.0":
+  version "2.88.0"
+  resolved "https://registry.yarnpkg.com/@fallow-cli/linux-arm64-gnu/-/linux-arm64-gnu-2.88.0.tgz#568c98e3966b7d618c16f8682825cf1e879f5acc"
+  integrity sha512-uFVXX6VnDA/xFdQOd0PC/GUO/IE9MoDYMOPAe+dwM7feukIWLK+xcxJUJeWQd+pzM6hjJQSGFLADZsY7PKuHWg==
+
+"@fallow-cli/linux-arm64-musl@2.88.0":
+  version "2.88.0"
+  resolved "https://registry.yarnpkg.com/@fallow-cli/linux-arm64-musl/-/linux-arm64-musl-2.88.0.tgz#5834dc0eec76d84e072bfba1b39743d82455366b"
+  integrity sha512-8o9olk5ICjQXscxLAVIbHJguJs8mOx+5xhRukl8M7VOstB8qRkGG8WKGh2pZbNvx1R5pEbGQHdUbEpQJeIoSVg==
+
+"@fallow-cli/linux-x64-gnu@2.88.0":
+  version "2.88.0"
+  resolved "https://registry.yarnpkg.com/@fallow-cli/linux-x64-gnu/-/linux-x64-gnu-2.88.0.tgz#dbb17ecf15f4540260bf0f6ecea5590ca3eb82d2"
+  integrity sha512-Hxt++CKhqEshGElhii14KYw8qdmhDEG9BSpCHb5gxPtYfNc76ytzbrvogNehFPlHysBCzDFqBAaOgB7rlmijfQ==
+
+"@fallow-cli/linux-x64-musl@2.88.0":
+  version "2.88.0"
+  resolved "https://registry.yarnpkg.com/@fallow-cli/linux-x64-musl/-/linux-x64-musl-2.88.0.tgz#664fb40969d5e9e89c74ce258f6de959c33a6f58"
+  integrity sha512-5lsN7uglpqoci8M9PA/7GFSq/bY1aOb0eJUdJ46JoAKedsywYYEuwjeMQm2tPcMk+++Ch5BJJ7hlImDQgnfA3w==
+
+"@fallow-cli/win32-arm64-msvc@2.88.0":
+  version "2.88.0"
+  resolved "https://registry.yarnpkg.com/@fallow-cli/win32-arm64-msvc/-/win32-arm64-msvc-2.88.0.tgz#56740f15998fc70dd1012783a55602b9b3ba3683"
+  integrity sha512-hVj8FuFqK5UgvMSOH/Mdru1keTwzt/JDgWTk9AyD/jDQ1TptGLG2hVcwlfRdn6Vk12EhjknMLCJIkegBQV9wWA==
+
+"@fallow-cli/win32-x64-msvc@2.88.0":
+  version "2.88.0"
+  resolved "https://registry.yarnpkg.com/@fallow-cli/win32-x64-msvc/-/win32-x64-msvc-2.88.0.tgz#5a98c63e8648c8740cf1258c76f19f6962336350"
+  integrity sha512-elptgSbw1rVRgwjNhX31bdhQx8kNH1q3n0g23X/doK8dnsM9UAO8AoRIWvyNKn/NLuABO61MLg0NZ5jghFA+SA==
+
 "@google/genai@^2.0.1":
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/@google/genai/-/genai-2.0.1.tgz#c98c6eaaf173b1b1f280a6d618d73e2ac28480dc"
@@ -2510,7 +2550,7 @@ destr@^2.0.5:
   resolved "https://registry.yarnpkg.com/destr/-/destr-2.0.5.tgz#7d112ff1b925fb8d2079fac5bdb4a90973b51fdb"
   integrity sha512-ugFTXCtDZunbzasqBxrK93Ik/DRYsO6S/fedkWEMKqt04xZ4csmnmwGDBAb07QWNaGMAmnTIemsYZCksjATwsA==
 
-detect-libc@^2.0.3:
+detect-libc@2.1.2, detect-libc@^2.0.3:
   version "2.1.2"
   resolved "https://registry.yarnpkg.com/detect-libc/-/detect-libc-2.1.2.tgz#689c5dcdc1900ef5583a4cb9f6d7b473742074ad"
   integrity sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==
@@ -3015,6 +3055,22 @@ extend@^3.0.0, extend@^3.0.2:
   version "3.0.2"
   resolved "https://registry.yarnpkg.com/extend/-/extend-3.0.2.tgz#f8b1136b4071fbd8eb140aff858b1019ec2915fa"
   integrity sha512-fjquC59cD7CyW6urNXK0FBufkZcoiGG80wTuPujX590cB5Ttln20E2UB4S/WARVqhXffZl2LNgS+gQdPIIim/g==
+
+fallow@^2.88.0:
+  version "2.88.0"
+  resolved "https://registry.yarnpkg.com/fallow/-/fallow-2.88.0.tgz#d14a02c23328da0a0e2302225ef32c10b612f9e3"
+  integrity sha512-A25Ak3Qc6maXjFLtB46MAlcTodOOYFq/E0xW1xKH7zLsCRycpnVSixf3sgcdiDYaW3BNVUJq+8xkqcFdaEQlTA==
+  dependencies:
+    detect-libc "2.1.2"
+  optionalDependencies:
+    "@fallow-cli/darwin-arm64" "2.88.0"
+    "@fallow-cli/darwin-x64" "2.88.0"
+    "@fallow-cli/linux-arm64-gnu" "2.88.0"
+    "@fallow-cli/linux-arm64-musl" "2.88.0"
+    "@fallow-cli/linux-x64-gnu" "2.88.0"
+    "@fallow-cli/linux-x64-musl" "2.88.0"
+    "@fallow-cli/win32-arm64-msvc" "2.88.0"
+    "@fallow-cli/win32-x64-msvc" "2.88.0"
 
 fast-check@^3.23.1:
   version "3.23.2"
