@@ -20,10 +20,6 @@ export function listJobs(): JobDefinition[] {
   return [...definitions.values()];
 }
 
-export function isRunning(name: string): boolean {
-  return inFlight.has(name);
-}
-
 export interface RunOptions {
   triggeredByUserId?: string | null;
   requestId?: string | null;
@@ -126,10 +122,6 @@ export async function cancelOrphanedRuns(): Promise<number> {
     data: { status: "cancelled", finishedAt: new Date(), error: "Orphaned by restart" },
   });
   return result.count;
-}
-
-export function getInFlightCount(): number {
-  return inFlight.size;
 }
 
 export function abortAll(): void {

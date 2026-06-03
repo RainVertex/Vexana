@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import { resolve } from "node:path";
 import { registerHealthRoute } from "./routes/health";
 import { errorHandler } from "./middleware/errorHandler";
+import { requestId } from "./middleware/requestId";
 import { requireAuth } from "./middleware/requireAuth";
 import { apiLimiter } from "./middleware/rateLimit";
 import { loadEnv } from "./config/env";
@@ -56,6 +57,9 @@ export function createServer() {
   const app = express();
 
   app.set("trust proxy", 1);
+
+  // Assigns req.id (honoring an inbound x-request-id) so audit events can correlate to a request.
+  app.use(requestId);
 
   app.use(
     cors({

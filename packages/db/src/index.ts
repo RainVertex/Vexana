@@ -1,32 +1,7 @@
-import { config as loadEnv } from "dotenv";
-import { resolve } from "node:path";
+import type { PrismaClient } from "@prisma/client";
+import { prisma } from "./client";
 
-loadEnv({ path: resolve(__dirname, "../../../.env") });
-
-import { PrismaClient } from "@prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
-
-declare global {
-  var __prisma: PrismaClient | undefined;
-}
-
-function createPrismaClient(): PrismaClient {
-  const connectionString = process.env.DATABASE_URL;
-  if (!connectionString) {
-    throw new Error("DATABASE_URL is not set. Check your .env file.");
-  }
-  const adapter = new PrismaPg({ connectionString });
-  return new PrismaClient({
-    adapter,
-    log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
-  });
-}
-
-export const prisma: PrismaClient = globalThis.__prisma ?? createPrismaClient();
-
-if (process.env.NODE_ENV !== "production") {
-  globalThis.__prisma = prisma;
-}
+export { prisma };
 
 // Compile-time scoped views over the shared client: platform-core reads are allowed everywhere, feature-private models stay hidden behind each facade. Zero runtime cost (all alias the same singleton).
 type Ops =

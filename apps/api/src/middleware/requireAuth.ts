@@ -2,17 +2,6 @@ import type { NextFunction, Request, RequestHandler, Response } from "express";
 import type { UserRole } from "@internal/db";
 import { readSessionCookie, validateSession } from "../auth/session";
 
-export const optionalAuth: RequestHandler = async (req, _res, next) => {
-  try {
-    const raw = readSessionCookie(req);
-    const user = await validateSession(raw);
-    if (user) req.user = user;
-    next();
-  } catch (err) {
-    next(err);
-  }
-};
-
 export const requireAuth: RequestHandler = async (req, res, next) => {
   try {
     const raw = readSessionCookie(req);

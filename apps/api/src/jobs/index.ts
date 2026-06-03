@@ -45,5 +45,4 @@ export {
   cancelOrphanedRuns,
   abortAll,
   waitForInFlight,
-  getInFlightCount,
 } from "./registry";

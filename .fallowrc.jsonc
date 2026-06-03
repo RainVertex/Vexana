@@ -1,0 +1,11 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+  // pino-pretty is a pino transport target referenced by string in apps/api/src/logger, not imported
+  "ignoreDependencies": ["pino-pretty"],
+  // Type-level test files are validated by tsc and intentionally never imported
+  "ignorePatterns": ["**/*.test-d.ts"],
+  // Treat exports consumed only inside their own file as used (organizational exports, not dead)
+  "ignoreExportsUsedInFile": true,
+  // scaffolder-core is a library whose registry API is called cross-package via factory return types fallow cannot trace statically
+  "publicPackages": ["@internal/scaffolder-core"],
+}

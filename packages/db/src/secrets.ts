@@ -74,6 +74,6 @@ export function decryptSecret(encoded: string): string {
 }
 
 // Test seam to swap INTEGRATION_SECRET_KEY mid-process; production never calls this.
-export function _resetSecretsCache(): void {
+function _resetSecretsCache(): void {
   cachedKey = null;
 }

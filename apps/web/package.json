@@ -7,7 +7,6 @@
     "@feature/agents-frontend": "0.1.0",
     "@feature/catalog-frontend": "0.1.0",
     "@feature/chat-frontend": "0.1.0",
-    "@feature/devdocs-frontend": "0.1.0",
     "@feature/dora-metrics-frontend": "0.1.0",
     "@feature/integrations-frontend": "0.1.0",
     "@feature/notifications-frontend": "0.1.0",
@@ -26,11 +25,9 @@
     "@internal/shared-ui": "0.1.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "react-is": "^19.2.5",
     "react-markdown": "^10.1.0",
     "react-resizable-panels": "^4.11.1",
     "react-router-dom": "^7.14.0",
-    "recharts": "^3.8.1",
     "remark-gfm": "^4.0.1"
   },
   "devDependencies": {

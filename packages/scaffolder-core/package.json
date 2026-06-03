@@ -8,7 +8,6 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@internal/shared-types": "0.1.0",
     "nunjucks": "^3.2.4",
     "zod": "^4.3.6"
   },

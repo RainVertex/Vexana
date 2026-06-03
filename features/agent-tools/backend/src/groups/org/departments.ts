@@ -1,6 +1,6 @@
 import type { RegisteredTool } from "@internal/llm-core";
 import { requireUserId } from "../core";
-import { listDepartments as listDepartmentsQuery, getDepartmentBySlug } from "./queries";
+import { listDepartmentsQuery, getDepartmentBySlug } from "./queries";
 
 export const listDepartments: RegisteredTool = {
   id: "org_list_departments",

@@ -1,4 +1,4 @@
-import { prisma } from "./index";
+import { prisma } from "./client";
 
 // Every Agent acts through a backing User (userKind='agent') so it can be assigned to tasks and granted team/project access like a teammate. Synthetic identity fields are derived from the agent id so they stay unique and stable.
 

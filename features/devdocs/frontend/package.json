@@ -13,7 +13,6 @@
   "dependencies": {
     "@internal/api-client": "0.1.0",
     "@internal/shared-types": "0.1.0",
-    "@internal/shared-ui": "0.1.0",
     "react": "^19.2.4",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.14.0",

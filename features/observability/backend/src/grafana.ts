@@ -77,18 +77,6 @@ export async function loadGrafanaIntegrations(): Promise<GrafanaIntegrationRecor
   return rows.map(hydrate);
 }
 
-// Loads a Grafana integration by id regardless of enabled; callers must check record.enabled.
-export async function loadGrafanaIntegrationById(
-  id: string,
-): Promise<GrafanaIntegrationRecord | null> {
-  const row = await prisma.integration.findUnique({
-    where: { id },
-    select: { id: true, name: true, enabled: true, kind: true, config: true },
-  });
-  if (!row || row.kind !== "grafana") return null;
-  return hydrate(row);
-}
-
 // Loads the canonical (most-recently-updated, enabled) integration for id-less routes.
 export async function loadDefaultGrafanaIntegration(): Promise<GrafanaIntegrationRecord | null> {
   const row = await prisma.integration.findFirst({

@@ -75,7 +75,3 @@ export function loadEnv(): AppEnv {
 
   return cached;
 }
-
-export function resetEnvCache() {
-  cached = null;
-}

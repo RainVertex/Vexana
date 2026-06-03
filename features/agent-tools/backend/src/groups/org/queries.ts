@@ -1,6 +1,6 @@
 import { prisma } from "@internal/db";
 
-export async function listDepartments() {
+export async function listDepartmentsQuery() {
   const rows = await prisma.department.findMany({
     orderBy: { name: "asc" },
     include: { _count: { select: { teams: true, memberships: true } } },
