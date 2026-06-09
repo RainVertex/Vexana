@@ -77,7 +77,10 @@ export function MyTasksPanel({ userId }: Props) {
         </Link>
       ))}
       {tasks.length >= 10 && (
-        <Link to="/projects" className="block px-2 py-1 text-xs text-app-primary-on hover:underline">
+        <Link
+          to="/projects"
+          className="block px-2 py-1 text-xs text-app-primary-on hover:underline"
+        >
           View all
         </Link>
       )}

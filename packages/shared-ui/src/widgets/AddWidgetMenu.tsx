@@ -180,9 +180,7 @@ interface WidgetGroup<TId extends string> {
   items: WidgetDefinition<TId>[];
 }
 
-function groupByCategory<TId extends string>(
-  widgets: WidgetDefinition<TId>[],
-): WidgetGroup<TId>[] {
+function groupByCategory<TId extends string>(widgets: WidgetDefinition<TId>[]): WidgetGroup<TId>[] {
   const order: string[] = [];
   const map = new Map<string, WidgetDefinition<TId>[]>();
   for (const w of widgets) {

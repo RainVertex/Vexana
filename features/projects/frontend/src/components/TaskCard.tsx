@@ -35,10 +35,7 @@ interface TaskCardProps {
 export function TaskCard({ task }: TaskCardProps) {
   return (
     <div className="rounded-md border border-app-border bg-app-surface p-3 shadow-sm">
-      <Link
-        to={`/tasks/${task.id}`}
-        className="text-sm font-medium text-app-text hover:underline"
-      >
+      <Link to={`/tasks/${task.id}`} className="text-sm font-medium text-app-text hover:underline">
         {task.title}
       </Link>
       <div className="mt-2 flex items-center gap-2">

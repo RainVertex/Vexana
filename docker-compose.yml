@@ -12,14 +12,6 @@ services:
     volumes:
       - platform-pg:/var/lib/postgresql/data
 
-  # All-in-one Grafana + Prometheus + Loki + Tempo for local Grafana-integration
-  # development. Image bundles the four services behind a single Grafana
-  # frontend at :3000 with the three datasources pre-provisioned. Use the
-  # admin/admin credentials, create a service account token, then point the
-  # platform's Grafana connect dialog at http://localhost:3000.
-  # Includes grafana-image-renderer in some tags but not all — verify on first
-  # boot via `curl http://localhost:3000/api/plugins | jq '.[].id'` if the
-  # connect dialog reports the renderer as unavailable.
   lgtm:
     image: grafana/otel-lgtm:latest
     container_name: platform-lgtm
