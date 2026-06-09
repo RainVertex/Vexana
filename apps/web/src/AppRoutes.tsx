@@ -24,7 +24,11 @@ import {
   EntityRunsTab,
   EntityScorecardsTab,
 } from "@feature/catalog-frontend";
-import { ScorecardEditPage, ScorecardsPage } from "@feature/scorecards-frontend";
+import {
+  ScorecardEditPage,
+  ScorecardReportPage,
+  ScorecardsPage,
+} from "@feature/scorecards-frontend";
 import { DoraMetricsPage } from "@feature/dora-metrics-frontend";
 import { IntegrationManagePage, IntegrationsPage } from "@feature/integrations-frontend";
 import { ObservabilityConfigPage, ObservabilityPage } from "@feature/observability-frontend";
@@ -87,6 +91,7 @@ export function AppRoutes() {
       </Route>
       <Route path="/scorecards" element={<ScorecardsPage />} />
       <Route path="/scorecards/:id" element={<ScorecardEditPage />} />
+      <Route path="/scorecards/:id/report" element={<ScorecardReportPage />} />
       <Route path="/dora-metrics" element={<DoraMetricsPage />} />
       <Route
         path="/integrations"

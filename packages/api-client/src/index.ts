@@ -42,6 +42,8 @@ import type {
   ScaffolderTemplateSummary,
   Scorecard,
   ScorecardSummary,
+  ScorecardReport,
+  ScorecardHistoryPoint,
   SearchResults,
   EntityObservabilityConfigDto,
   LokiLogLine,
@@ -375,6 +377,10 @@ export function createApiClient(options: ApiClientOptions = {}) {
           deploymentsUpserted: number;
           error: string | null;
         }>(`/api/catalog/${encodeURIComponent(id)}/pipelines/refresh`, { method: "POST" }),
+      recomputeDora: (id: string) =>
+        request<DoraMetricsSnapshot>(`/api/catalog/${encodeURIComponent(id)}/dora/recompute`, {
+          method: "POST",
+        }),
     },
 
     scorecards: {
@@ -396,6 +402,19 @@ export function createApiClient(options: ApiClientOptions = {}) {
         request<{ entities: number; results: number }>(
           `/api/scorecards/${encodeURIComponent(id)}/evaluate`,
           { method: "POST" },
+        ),
+      report: (id: string, opts?: { kind?: string; ownerTeamId?: string }) => {
+        const params = new URLSearchParams();
+        if (opts?.kind) params.set("kind", opts.kind);
+        if (opts?.ownerTeamId) params.set("ownerTeamId", opts.ownerTeamId);
+        const qs = params.toString();
+        return request<ScorecardReport>(
+          `/api/scorecards/${encodeURIComponent(id)}/report${qs ? `?${qs}` : ""}`,
+        );
+      },
+      history: (id: string, entityId: string) =>
+        request<ListResponse<ScorecardHistoryPoint>>(
+          `/api/scorecards/${encodeURIComponent(id)}/history?entityId=${encodeURIComponent(entityId)}`,
         ),
     },
 

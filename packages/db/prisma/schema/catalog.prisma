@@ -75,6 +75,7 @@ model CatalogEntity {
   healthSamples       ServiceHealthSample[]
   doraSnapshots       DoraMetricsSnapshot[]
   scorecardResults    ScorecardResult[]
+  scorecardSnapshots  ScorecardEntitySnapshot[]
   docPages            DocPage[]
   docSync             DocSyncState?
   starredBy           StarredEntity[]

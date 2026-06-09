@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 
 loadEnv({ path: resolve(__dirname, "../../../.env") });
 
-import { prisma } from "./index";
+import { Prisma, prisma, type CatalogEntityKind, type ScorecardTierStyle } from "./index";
 import { ensureAgentBackingUser } from "./agentUser";
 
 async function main() {
@@ -15,6 +15,7 @@ async function main() {
 
   await seedDefaultPages();
   await seedTeamPolicies();
+  await seedDefaultScorecards();
 
   // Catalog Enricher system prompt. seed.ts is the sole source; the agent reads it from the DB row at runtime.
   const enricherInstructions = `You are the Catalog Enricher.
@@ -486,6 +487,137 @@ async function seedDefaultPages() {
         isFolder: false,
         type: "LINK",
         scope: "SHARED",
+      },
+    });
+  }
+}
+
+// Starter scorecards. Idempotent by slug; rules are only seeded on first create so re-seeding keeps edits.
+async function seedDefaultScorecards() {
+  const scorecards: Array<{
+    slug: string;
+    name: string;
+    description: string;
+    appliesTo: CatalogEntityKind[];
+    tierStyle: ScorecardTierStyle;
+    rules: Array<{
+      key: string;
+      label: string;
+      kind: string;
+      config: Prisma.InputJsonValue;
+      weight: number;
+      tier: string;
+    }>;
+  }> = [
+    {
+      slug: "production-readiness",
+      name: "Production Readiness",
+      description:
+        "Baseline ownership, metadata, and delivery signals every production service should meet.",
+      appliesTo: ["service", "api"],
+      tierStyle: "stage",
+      rules: [
+        {
+          key: "has-owner",
+          label: "Has an owning team",
+          kind: "has_owner",
+          config: {},
+          weight: 3,
+          tier: "bronze",
+        },
+        {
+          key: "has-description",
+          label: "Has a description",
+          kind: "field_present",
+          config: { field: "description" },
+          weight: 1,
+          tier: "bronze",
+        },
+        {
+          key: "in-production",
+          label: "Lifecycle is production",
+          kind: "lifecycle_in",
+          config: { values: ["production"] },
+          weight: 2,
+          tier: "silver",
+        },
+        {
+          key: "tier-1-tag",
+          label: "Tagged tier-1",
+          kind: "tag_present",
+          config: { tag: "tier-1" },
+          weight: 1,
+          tier: "silver",
+        },
+        {
+          key: "deploy-frequency",
+          label: "Deploys at least every 10 days",
+          kind: "dora_threshold",
+          config: { metric: "deployFrequencyPerDay", op: "gte", value: 0.1, window: "latest" },
+          weight: 2,
+          tier: "gold",
+        },
+      ],
+    },
+    {
+      slug: "operational-health",
+      name: "Operational Health",
+      description: "DORA based delivery and reliability thresholds, from baseline to elite.",
+      appliesTo: [],
+      tierStyle: "threshold",
+      rules: [
+        {
+          key: "cfr-baseline",
+          label: "Change failure rate under 50%",
+          kind: "dora_threshold",
+          config: { metric: "changeFailureRate", op: "lte", value: 0.5, window: "30d" },
+          weight: 1,
+          tier: "red",
+        },
+        {
+          key: "mttr-48h",
+          label: "MTTR under 48 hours",
+          kind: "dora_threshold",
+          config: { metric: "mttrHours", op: "lte", value: 48, window: "30d" },
+          weight: 1,
+          tier: "orange",
+        },
+        {
+          key: "cfr-good",
+          label: "Change failure rate under 20%",
+          kind: "dora_threshold",
+          config: { metric: "changeFailureRate", op: "lte", value: 0.2, window: "30d" },
+          weight: 2,
+          tier: "yellow",
+        },
+        {
+          key: "deploy-daily",
+          label: "Deploys at least daily",
+          kind: "dora_threshold",
+          config: { metric: "deployFrequencyPerDay", op: "gte", value: 1, window: "latest" },
+          weight: 2,
+          tier: "green",
+        },
+      ],
+    },
+  ];
+
+  for (const sc of scorecards) {
+    await prisma.scorecard.upsert({
+      where: { slug: sc.slug },
+      update: {
+        name: sc.name,
+        description: sc.description,
+        appliesTo: sc.appliesTo,
+        tierStyle: sc.tierStyle,
+      },
+      create: {
+        slug: sc.slug,
+        name: sc.name,
+        description: sc.description,
+        appliesTo: sc.appliesTo,
+        tierStyle: sc.tierStyle,
+        rules: { create: sc.rules },
       },
     });
   }

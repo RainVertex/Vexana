@@ -1,4 +1,5 @@
 import { evaluateAllScorecards } from "./scorecards/evaluator";
+import { computeAllDora } from "./dora/rollup";
 import { syncAllDevDocs } from "./devdocs/sync";
 import { pipelinesSyncJob } from "./pipelines/jobs";
 
@@ -31,6 +32,18 @@ export function scorecardEvaluatorJob(): CatalogJobDefinition {
   };
 }
 
+export function doraRollupJob(): CatalogJobDefinition {
+  return {
+    name: "catalog.doraRollup",
+    schedule: "0 1 * * *",
+    timeoutMs: 10 * 60 * 1000,
+    handler: async ({ log }) => {
+      const result = await computeAllDora();
+      log.info(result, "DORA rollup sweep complete");
+    },
+  };
+}
+
 export function devdocsSyncJob(): CatalogJobDefinition {
   return {
     name: "catalog.devdocsSync",
@@ -44,5 +57,5 @@ export function devdocsSyncJob(): CatalogJobDefinition {
 }
 
 export function getCatalogJobs(): CatalogJobDefinition[] {
-  return [scorecardEvaluatorJob(), devdocsSyncJob(), pipelinesSyncJob()];
+  return [scorecardEvaluatorJob(), doraRollupJob(), devdocsSyncJob(), pipelinesSyncJob()];
 }

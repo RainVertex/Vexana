@@ -78,8 +78,16 @@ export function ScorecardsPage() {
                   {s.appliesTo.length === 0 ? "all kinds" : s.appliesTo.join(", ")}
                 </div>
               </div>
-              <span className="text-xs text-app-text-muted">
-                {s.enabled ? "enabled" : "disabled"}
+              <span className="flex items-center gap-3">
+                <Link
+                  to={`/scorecards/${s.id}/report`}
+                  className="text-xs text-app-primary-on hover:underline"
+                >
+                  Report
+                </Link>
+                <span className="text-xs text-app-text-muted">
+                  {s.enabled ? "enabled" : "disabled"}
+                </span>
               </span>
             </li>
           ))}

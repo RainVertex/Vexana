@@ -3,6 +3,7 @@ import { useApi } from "@internal/api-client/react";
 import type { ScorecardSummary } from "@internal/shared-types";
 import { useEntityContext } from "../outletContext";
 import { TierPill } from "../TierPill";
+import { TierTrend } from "../TierTrend";
 
 export function ScorecardsTab() {
   const { data, reload } = useEntityContext();
@@ -62,7 +63,7 @@ export function ScorecardsTab() {
             <h2 className="text-sm font-semibold text-app-text">{s.scorecard.name}</h2>
             <span className="flex items-center gap-3">
               <span className="text-xs text-app-text-muted">
-                {s.rulesPassed}/{s.rulesTotal} passing
+                {s.scorePercent}% · {s.rulesPassed}/{s.rulesTotal} passing
               </span>
               <TierPill tier={s.tier} tierStyle={s.scorecard.tierStyle} />
             </span>
@@ -92,6 +93,7 @@ export function ScorecardsTab() {
               </li>
             ))}
           </ul>
+          <TierTrend scorecardId={s.scorecard.id} entityId={data.entity.id} />
         </section>
       ))}
     </div>

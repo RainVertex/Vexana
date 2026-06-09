@@ -15,6 +15,7 @@ model Scorecard {
   updatedAt   DateTime            @updatedAt
   rules       ScorecardRule[]
   results     ScorecardResult[]
+  snapshots   ScorecardEntitySnapshot[]
 }
 
 model ScorecardRule {
@@ -50,4 +51,21 @@ model ScorecardResult {
   @@index([scorecardId, entityId])
   @@index([entityId])
   @@index([ruleId])
+}
+
+// Time series of an entity's achieved tier and weighted score per evaluation run, powering trend charts.
+model ScorecardEntitySnapshot {
+  id           String        @id @default(cuid())
+  scorecardId  String
+  entityId     String
+  tier         String
+  scorePercent Float
+  rulesPassed  Int
+  rulesTotal   Int
+  capturedAt   DateTime      @default(now())
+  scorecard    Scorecard     @relation(fields: [scorecardId], references: [id], onDelete: Cascade)
+  entity       CatalogEntity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+
+  @@index([scorecardId, entityId, capturedAt])
+  @@index([entityId])
 }

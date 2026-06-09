@@ -9,6 +9,7 @@ import {
   evaluateScorecardsForEntity,
   getScorecardSummariesForEntity,
 } from "./scorecards/evaluator";
+import { computeDoraSnapshotForEntity } from "./dora/rollup";
 import { devdocsEntityRouter } from "./devdocs/routes";
 import { pipelinesRouter } from "./pipelines/routes";
 import type { CatalogEntityLink } from "@internal/shared-types";
@@ -49,12 +50,16 @@ export {
   evaluateScorecardsForEntity,
   evaluateAllScorecards,
   getScorecardSummariesForEntity,
+  computeScorePercent,
   rollupTier,
 } from "./scorecards/evaluator";
+export { getScorecardReport, getScorecardHistory } from "./scorecards/report";
+export type { ScorecardReportFilters } from "./scorecards/report";
 export { evaluateRule } from "./scorecards/rules";
 export type { RuleContext, RuleOutcome } from "./scorecards/rules";
 export { scorecardsRouter } from "./scorecards/routes";
-export { getCatalogJobs, scorecardEvaluatorJob, devdocsSyncJob } from "./jobs";
+export { computeDoraSnapshotForEntity, computeAllDora } from "./dora/rollup";
+export { getCatalogJobs, scorecardEvaluatorJob, doraRollupJob, devdocsSyncJob } from "./jobs";
 export { pipelinesSyncJob } from "./pipelines/jobs";
 export {
   syncEntityPipelines,
@@ -304,6 +309,17 @@ catalogRouter.post("/:id/scorecards/recompute", async (req, res) => {
   await evaluateScorecardsForEntity(req.params.id);
   const summaries = await getScorecardSummariesForEntity(req.params.id);
   res.json({ items: summaries });
+});
+
+// Recompute a fresh DORA snapshot from this entity's ingested deployments and CI runs.
+catalogRouter.post("/:id/dora/recompute", async (req, res) => {
+  const exists = await prisma.catalogEntity.findUnique({
+    where: { id: req.params.id },
+    select: { id: true },
+  });
+  if (!exists) return res.status(404).json({ error: "Catalog entity not found" });
+  const snapshot = await computeDoraSnapshotForEntity(req.params.id);
+  res.status(201).json(snapshot);
 });
 
 // Standalone devdocs routes are mounted separately at /api/devdocs by createServer.ts.

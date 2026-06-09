@@ -40,6 +40,42 @@ export function rollupTier(
   return achieved;
 }
 
+/** Weighted pass ratio (0 to 100): sum of passed rule weights over total weight. */
+export function computeScorePercent(
+  ruleResults: Array<{ weight: number; passed: boolean }>,
+): number {
+  const totalWeight = ruleResults.reduce((sum, r) => sum + r.weight, 0);
+  if (totalWeight === 0) return 0;
+  const passedWeight = ruleResults.reduce((sum, r) => sum + (r.passed ? r.weight : 0), 0);
+  return Math.round((passedWeight / totalWeight) * 100);
+}
+
+// Appends a history point only when the tier or weighted score moved, keeping the series meaningful.
+async function recordSnapshot(
+  scorecardId: string,
+  tierStyle: ScorecardTierStyle,
+  entityId: string,
+  ruleResults: Array<{ tier: string; passed: boolean; weight: number }>,
+): Promise<void> {
+  const tier = rollupTier(tierStyle, ruleResults);
+  const scorePercent = computeScorePercent(ruleResults);
+  const last = await prisma.scorecardEntitySnapshot.findFirst({
+    where: { scorecardId, entityId },
+    orderBy: { capturedAt: "desc" },
+  });
+  if (last && last.tier === tier && last.scorePercent === scorePercent) return;
+  await prisma.scorecardEntitySnapshot.create({
+    data: {
+      scorecardId,
+      entityId,
+      tier,
+      scorePercent,
+      rulesPassed: ruleResults.filter((r) => r.passed).length,
+      rulesTotal: ruleResults.length,
+    },
+  });
+}
+
 export async function evaluateScorecardsForEntity(entityId: string): Promise<void> {
   const entity = await prisma.catalogEntity.findUnique({
     where: { id: entityId },
@@ -66,6 +102,7 @@ export async function evaluateScorecardsForEntity(entityId: string): Promise<voi
 
   for (const sc of scorecards) {
     if (!appliesToKind(sc.appliesTo, entity.kind)) continue;
+    const ruleResults: Array<{ tier: string; passed: boolean; weight: number }> = [];
     for (const rule of sc.rules) {
       const outcome = evaluateRule(
         { kind: rule.kind as ScorecardRuleKind, config: rule.config as Record<string, unknown> },
@@ -89,7 +126,9 @@ export async function evaluateScorecardsForEntity(entityId: string): Promise<voi
           evaluatedAt: new Date(),
         },
       });
+      ruleResults.push({ tier: rule.tier, passed: outcome.passed, weight: rule.weight });
     }
+    await recordSnapshot(sc.id, sc.tierStyle, entityId, ruleResults);
   }
 }
 
@@ -135,13 +174,15 @@ export async function getScorecardSummariesForEntity(
       },
       result: (resultsByRule.get(rule.id) ?? null) as ScorecardSummary["rules"][number]["result"],
     }));
-    const ruleResults = ruleRows.map((r) => ({
-      tier: r.rule.tier,
-      passed: r.result?.passed ?? false,
+    const ruleResults = sc.rules.map((rule) => ({
+      tier: rule.tier,
+      passed: resultsByRule.get(rule.id)?.passed ?? false,
+      weight: rule.weight,
     }));
     summaries.push({
       scorecard: { id: sc.id, slug: sc.slug, name: sc.name, tierStyle: sc.tierStyle },
       tier: rollupTier(sc.tierStyle, ruleResults),
+      scorePercent: computeScorePercent(ruleResults),
       rulesPassed: ruleResults.filter((r) => r.passed).length,
       rulesTotal: ruleResults.length,
       rules: ruleRows,
