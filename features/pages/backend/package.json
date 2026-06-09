@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@internal/db": "0.1.0",
+    "@internal/feature-host": "0.1.0",
     "@internal/shared-types": "0.1.0",
     "express": "^5.2.1",
     "zod": "^4.3.6"

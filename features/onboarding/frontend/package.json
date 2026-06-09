@@ -13,12 +13,12 @@
   "dependencies": {
     "@internal/api-client": "0.1.0",
     "@internal/shared-types": "0.1.0",
-    "react": "^19.2.6",
-    "react-router-dom": "^7.15.1"
+    "react": "^19.2.4",
+    "react-router-dom": "^7.14.0"
   },
   "devDependencies": {
     "@types/react": "^19.2.14",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.2"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit"

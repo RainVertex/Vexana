@@ -5,3 +5,5 @@ export { TraceDrawer } from "./TraceDrawer";
 export { GrafanaDashboardEmbed } from "./GrafanaDashboardEmbed";
 export { ServiceHealthPanel } from "./ServiceHealthPanel";
 export { GrafanaAlertsPanel } from "./GrafanaAlertsPanel";
+
+export { featureRoutes } from "./routes";

@@ -330,3 +330,18 @@ function clampNumber(value: unknown, fallback: number, min: number, max: number)
   if (!Number.isFinite(n)) return fallback;
   return Math.max(min, Math.min(max, Math.floor(n)));
 }
+
+import type { FeatureManifest } from "@internal/feature-host";
+import { grafanaWebhookRouter as grafanaWebhookRouterForManifest } from "./grafanaWebhook";
+
+export const featureManifest: FeatureManifest = {
+  mounts: [
+    {
+      path: "/integrations/grafana/webhook",
+      router: grafanaWebhookRouterForManifest,
+      phase: "raw",
+      order: 30,
+    },
+    { path: "/api/observability", router: observabilityRouter },
+  ],
+};

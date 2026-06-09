@@ -27,6 +27,8 @@
     "arch:graph": "depcruise apps features packages --config .dependency-cruiser.cjs",
     "arch:deps": "node scripts/check-workspace-deps.mjs",
     "arch:check": "yarn arch:graph && yarn arch:deps",
+    "manypkg:check": "manypkg check",
+    "manypkg:fix": "manypkg fix",
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
     "db:generate": "yarn workspace @internal/db prisma:generate",
@@ -38,10 +40,12 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@manypkg/cli": "^0.25.1",
     "@ngrok/ngrok": "^1.7.0",
     "@types/node": "^25.6.0",
     "concurrently": "^9.2.1",
     "dependency-cruiser": "^17.4.3",
+    "dotenv": "^17.4.2",
     "eslint": "^10.2.1",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react": "^7.37.5",
@@ -52,7 +56,12 @@
     "prettier": "^3.8.3",
     "turbo": "^2.9.14",
     "typescript": "^6.0.2",
-    "typescript-eslint": "^8.59.0",
-    "dotenv": "^17.4.2"
+    "typescript-eslint": "^8.59.0"
+  },
+  "resolutions": {
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "react-router": "7.17.0",
+    "react-router-dom": "7.17.0"
   }
 }

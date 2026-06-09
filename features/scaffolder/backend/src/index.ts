@@ -46,3 +46,21 @@ export {
   type DiscoveryResult,
   type DiscoverAndPersistResult,
 } from "./services/catalog-discovery";
+
+import type { FeatureManifestSource } from "@internal/feature-host";
+import { createScaffolderRouter as createScaffolderRouterForManifest } from "./routes";
+import { createScaffolderMcpRouter as createScaffolderMcpRouterForManifest } from "./mcp";
+
+export const featureManifest: FeatureManifestSource = (ctx) => ({
+  mounts: [
+    {
+      path: "/mcp/scaffolder",
+      router: createScaffolderMcpRouterForManifest({ liveRepoRoot: ctx.liveRepoRoot }),
+      phase: "preApi",
+    },
+    {
+      path: "/api/scaffolder",
+      router: createScaffolderRouterForManifest({ liveRepoRoot: ctx.liveRepoRoot }),
+    },
+  ],
+});

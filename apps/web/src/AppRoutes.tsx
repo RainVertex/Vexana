@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { useRoutes, type RouteObject } from "react-router-dom";
 import { useCurrentUser } from "./auth";
 import { HomePage } from "./pages/HomePage";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -10,48 +10,9 @@ import { AdminAiModelsPage } from "./admin/AdminAiModelsPage";
 import { AuditPage } from "./admin/AuditPage";
 import { JobsPage } from "./admin/JobsPage";
 import { McpTokensPage } from "./admin/McpTokensPage";
-import { AgentDetailPage, AgentFormPage, AgentRunPage, AgentsPage } from "@feature/agents-frontend";
-import avatarPresets from "virtual:agent-avatar-presets";
 import { ChatRoute } from "./widgets/chat/ChatRoute";
-import {
-  CatalogEntityPage,
-  CatalogPage,
-  EntityApisTab,
-  EntityAuditTab,
-  EntityDocsTab,
-  EntityOverviewTab,
-  EntityRelatedTab,
-  EntityRunsTab,
-  EntityScorecardsTab,
-} from "@feature/catalog-frontend";
-import {
-  ScorecardEditPage,
-  ScorecardReportPage,
-  ScorecardsPage,
-} from "@feature/scorecards-frontend";
-import { DoraMetricsPage } from "@feature/dora-metrics-frontend";
-import { IntegrationManagePage, IntegrationsPage } from "@feature/integrations-frontend";
-import { ObservabilityConfigPage, ObservabilityPage } from "@feature/observability-frontend";
-import {
-  ScaffolderBindingsPage,
-  ScaffolderPage,
-  ScaffolderPlanPage,
-  ScaffolderTaskPage,
-  ScaffolderTemplatePage,
-} from "@feature/scaffolder-frontend";
-import { SearchPage } from "@feature/search-frontend";
-import {
-  AdminTeamPoliciesPage,
-  AdminTeamRequestsPage,
-  RequestMaintainerPickerPage,
-  RequestTeamPage,
-  TeamDetailPage,
-  TeamsPage,
-} from "@feature/teams-frontend";
-import { MyApprovalsTeamPage, MyRequestsTeamPage } from "@feature/requests-frontend";
-import { NotificationsPage } from "@feature/notifications-frontend";
-import { ProjectsPage, ProjectDetailPage, TaskDetailPage } from "@feature/projects-frontend";
-import { WebhookSettingsPage } from "@feature/webhooks-frontend";
+import avatarPresets from "virtual:agent-avatar-presets";
+import { buildFeatureRoutes } from "./featureRoutes";
 
 function AdminRoute({ children }: { children: ReactNode }) {
   const me = useCurrentUser();
@@ -69,81 +30,19 @@ function AdminRoute({ children }: { children: ReactNode }) {
 }
 
 export function AppRoutes() {
-  return (
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/chat/:conversationId?" element={<ChatRoute />} />
-      <Route path="/p/:pageId" element={<DashboardPage />} />
-      <Route path="/agents" element={<AgentsPage />} />
-      <Route path="/agents/new" element={<AgentFormPage avatarPresets={avatarPresets} />} />
-      <Route path="/agents/:id" element={<AgentDetailPage />} />
-      <Route path="/agents/:id/edit" element={<AgentFormPage avatarPresets={avatarPresets} />} />
-      <Route path="/agents/:id/runs/:runId" element={<AgentRunPage />} />
-      <Route path="/catalog" element={<CatalogPage />} />
-      <Route path="/catalog/:id" element={<CatalogEntityPage />}>
-        <Route index element={<EntityOverviewTab />} />
-        <Route path="related" element={<EntityRelatedTab />} />
-        <Route path="scorecards" element={<EntityScorecardsTab />} />
-        <Route path="docs" element={<EntityDocsTab />} />
-        <Route path="apis" element={<EntityApisTab />} />
-        <Route path="runs" element={<EntityRunsTab />} />
-        <Route path="audit" element={<EntityAuditTab />} />
-      </Route>
-      <Route path="/scorecards" element={<ScorecardsPage />} />
-      <Route path="/scorecards/:id" element={<ScorecardEditPage />} />
-      <Route path="/scorecards/:id/report" element={<ScorecardReportPage />} />
-      <Route path="/dora-metrics" element={<DoraMetricsPage />} />
-      <Route
-        path="/integrations"
-        element={
-          <AdminRoute>
-            <IntegrationsPage />
-          </AdminRoute>
-        }
-      />
-      <Route
-        path="/integrations/:id"
-        element={
-          <AdminRoute>
-            <IntegrationManagePage />
-          </AdminRoute>
-        }
-      />
-      <Route path="/observability" element={<ObservabilityPage />} />
-      <Route path="/observability/config" element={<ObservabilityConfigPage />} />
-      <Route path="/scaffolder" element={<ScaffolderPage />} />
-      <Route path="/scaffolder/bindings" element={<ScaffolderBindingsPage />} />
-      <Route path="/scaffolder/plans/:planId" element={<ScaffolderPlanPage />} />
-      <Route path="/scaffolder/tasks/:taskId" element={<ScaffolderTaskPage />} />
-      <Route path="/scaffolder/:templateId" element={<ScaffolderTemplatePage />} />
-      <Route path="/search" element={<SearchPage />} />
-      <Route path="/teams" element={<TeamsPage />} />
-      <Route path="/teams/requests" element={<Navigate to="/requests/team" replace />} />
-      <Route path="/teams/maintainer-requests" element={<Navigate to="/requests/team" replace />} />
-      <Route
-        path="/teams/maintainer-approvals"
-        element={<Navigate to="/approvals/team" replace />}
-      />
-      <Route path="/teams/:slug" element={<TeamDetailPage />} />
-      <Route path="/requests/team" element={<MyRequestsTeamPage />} />
-      <Route path="/approvals/team" element={<MyApprovalsTeamPage />} />
-      <Route path="/self-service/request-team" element={<RequestTeamPage />} />
-      <Route path="/self-service/request-maintainer" element={<RequestMaintainerPickerPage />} />
-      <Route path="/teams/:slug/webhooks" element={<WebhookSettingsPage scope="team" />} />
-      <Route path="/projects" element={<ProjectsPage />} />
-      <Route path="/projects/:id" element={<ProjectDetailPage />} />
-      <Route path="/tasks/:id" element={<TaskDetailPage />} />
-      <Route path="/notifications" element={<NotificationsPage />} />
-      <Route path="/settings/webhooks" element={<WebhookSettingsPage scope="user" />} />
-      <Route path="/admin/team-requests" element={<AdminTeamRequestsPage />} />
-      <Route path="/admin/team-policies" element={<AdminTeamPoliciesPage />} />
-      <Route path="/settings" element={<SettingsPage />} />
-      <Route path="/admin/users" element={<AdminUsersPage />} />
-      <Route path="/admin/ai-models" element={<AdminAiModelsPage />} />
-      <Route path="/admin/audit" element={<AuditPage />} />
-      <Route path="/admin/jobs" element={<JobsPage />} />
-      <Route path="/admin/mcp-tokens" element={<McpTokensPage />} />
-      {import.meta.env.DEV && <Route path="/theme-audit" element={<ThemeAuditPage />} />}
-    </Routes>
-  );
+  const shellRoutes: RouteObject[] = [
+    { path: "/", element: <HomePage /> },
+    { path: "/chat/:conversationId?", element: <ChatRoute /> },
+    { path: "/p/:pageId", element: <DashboardPage /> },
+    { path: "/settings", element: <SettingsPage /> },
+    { path: "/admin/users", element: <AdminUsersPage /> },
+    { path: "/admin/ai-models", element: <AdminAiModelsPage /> },
+    { path: "/admin/audit", element: <AuditPage /> },
+    { path: "/admin/jobs", element: <JobsPage /> },
+    { path: "/admin/mcp-tokens", element: <McpTokensPage /> },
+  ];
+  if (import.meta.env.DEV) {
+    shellRoutes.push({ path: "/theme-audit", element: <ThemeAuditPage /> });
+  }
+  return useRoutes([...shellRoutes, ...buildFeatureRoutes({ avatarPresets, AdminRoute })]);
 }

@@ -138,3 +138,9 @@ export async function notify(
     })),
   });
 }
+
+import type { FeatureManifest } from "@internal/feature-host";
+
+export const featureManifest: FeatureManifest = {
+  mounts: [{ path: "/api/notifications", router: notificationsRouter }],
+};

@@ -18,3 +18,9 @@ doraMetricsRouter.get("/entity/:entityId", async (req, res) => {
   });
   res.json({ items: snapshots });
 });
+
+import type { FeatureManifest } from "@internal/feature-host";
+
+export const featureManifest: FeatureManifest = {
+  mounts: [{ path: "/api/dora-metrics", router: doraMetricsRouter }],
+};

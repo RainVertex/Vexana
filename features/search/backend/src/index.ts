@@ -34,3 +34,9 @@ searchRouter.get("/", async (req, res) => {
   const hits = rankHits(query, perSource.flat());
   res.json({ query, hits } satisfies SearchResults);
 });
+
+import type { FeatureManifest } from "@internal/feature-host";
+
+export const featureManifest: FeatureManifest = {
+  mounts: [{ path: "/api/search", router: searchRouter }],
+};

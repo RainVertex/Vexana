@@ -18,11 +18,12 @@
     "@feature/integrations-backend": "0.1.0",
     "@feature/projects-backend": "0.1.0",
     "@internal/db": "0.1.0",
+    "@internal/feature-host": "0.1.0",
     "@internal/shared-types": "0.1.0",
     "express": "^5.2.1",
     "gray-matter": "^4.0.3",
     "octokit": "^5.0.5",
-    "yaml": "^2.8.4",
+    "yaml": "^2.8.3",
     "zod": "^4.3.6"
   },
   "devDependencies": {

@@ -1,0 +1,49 @@
+# Code ownership, one owner line per package. GitHub requests review from the owner
+# automatically when a PR touches files under that path. Last matching pattern wins.
+
+# Shared packages. Changes here ripple across many features, so keep platform review on them.
+/packages/db/                           @caglayagmuricerr
+/packages/shared-types/                 @caglayagmuricerr
+/packages/shared-ui/                    @caglayagmuricerr
+/packages/api-client/                   @caglayagmuricerr
+/packages/llm-core/                     @caglayagmuricerr
+/packages/grafana-client/               @caglayagmuricerr
+/packages/feature-host/                 @caglayagmuricerr
+/packages/scaffolder-core/              @caglayagmuricerr
+/packages/scaffolder-templates/         @caglayagmuricerr
+/packages/scaffolder-templates-yaml-adapter/ @caglayagmuricerr
+
+# Features. Each line owns that feature's backend and frontend together.
+/features/agent-tools/                  @caglayagmuricerr
+/features/agents/                       @caglayagmuricerr
+/features/catalog/                      @caglayagmuricerr
+/features/chat/                         @caglayagmuricerr
+/features/devdocs/                      @caglayagmuricerr
+/features/dora-metrics/                 @caglayagmuricerr
+/features/integrations/                 @caglayagmuricerr
+/features/notifications/                @caglayagmuricerr
+/features/observability/                @caglayagmuricerr
+/features/onboarding/                   @caglayagmuricerr
+/features/pages/                        @caglayagmuricerr
+/features/projects/                     @caglayagmuricerr
+/features/requests/                     @caglayagmuricerr
+/features/scaffolder/                   @caglayagmuricerr
+/features/scorecards/                   @caglayagmuricerr
+/features/search/                       @caglayagmuricerr
+/features/teams/                        @caglayagmuricerr
+/features/webhooks/                     @caglayagmuricerr
+
+# Apps (the shell). Routing, auth, and the feature registry live here.
+/apps/api/                              @caglayagmuricerr
+/apps/web/                              @caglayagmuricerr
+
+# Architecture governance. These define the boundaries and wiring every feature depends on,
+# so they should always get platform review even after per-feature owners are assigned.
+/eslint.config.mjs                      @caglayagmuricerr
+/.dependency-cruiser.cjs                @caglayagmuricerr
+/scripts/check-workspace-deps.mjs       @caglayagmuricerr
+/apps/api/src/createServer.ts           @caglayagmuricerr
+/apps/api/src/featureRegistry.ts        @caglayagmuricerr
+/package.json                           @caglayagmuricerr
+/.github/                               @caglayagmuricerr
+/docs/architecture.md                   @caglayagmuricerr

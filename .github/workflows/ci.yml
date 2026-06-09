@@ -66,6 +66,9 @@ jobs:
       - name: Architecture check
         run: yarn arch:check
 
+      - name: Single-version policy
+        run: yarn manypkg:check
+
       - name: Format check
         run: yarn format:check
 

@@ -162,3 +162,9 @@ onboardingRouter.post("/tasks/:id/dismiss", async (req, res, next) => {
     next(err);
   }
 });
+
+import type { FeatureManifest } from "@internal/feature-host";
+
+export const featureManifest: FeatureManifest = {
+  mounts: [{ path: "/api/onboarding", router: onboardingRouter }],
+};

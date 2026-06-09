@@ -1,8 +1,10 @@
-// Builds the Express app: tool registration, CORS, body parsing, and all route mounts.
+// Builds the Express app: feature boot hooks, CORS, body parsing, and route mounts.
+// Feature routes come from featureRegistry; only shell-owned routes are wired by hand here.
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { resolve } from "node:path";
+import { collectMounts, type FeatureHostContext } from "@internal/feature-host";
 import { registerHealthRoute } from "./routes/health";
 import { errorHandler } from "./middleware/errorHandler";
 import { requestId } from "./middleware/requestId";
@@ -20,40 +22,17 @@ import { scaffolderAccessRequestsRouter } from "./routes/scaffolderAccessRequest
 import { adminScaffolderAccessRequestsRouter } from "./routes/admin/scaffolderAccessRequests";
 import { adminScaffolderTemplateAclsRouter } from "./routes/admin/scaffolderTemplateAcls";
 import { usersRouter } from "./routes/users";
-import { agentsRouter, llmRouter } from "@feature/agents-backend";
-import { chatRouter, registerChatWriteTools } from "@feature/chat-backend";
-import { registerAllTools } from "@feature/agent-tools-backend";
-import {
-  catalogRouter,
-  devdocsRouter,
-  githubAppWebhookRouter,
-  githubWebhookRouter,
-  scorecardsRouter,
-} from "@feature/catalog-backend";
-import { doraMetricsRouter } from "@feature/dora-metrics-backend";
-import { integrationsRouter } from "@feature/integrations-backend";
 import { githubIntegrationRouter } from "./routes/integrations/github";
-import { grafanaWebhookRouter, observabilityRouter } from "@feature/observability-backend";
-import { notificationsRouter } from "@feature/notifications-backend";
-import { onboardingRouter } from "@feature/onboarding-backend";
-import { pagesRouter } from "@feature/pages-backend";
-import { projectsRouter } from "@feature/projects-backend";
-import { createScaffolderMcpRouter, createScaffolderRouter } from "@feature/scaffolder-backend";
-import { searchRouter } from "@feature/search-backend";
-import { requestsRouter } from "@feature/requests-backend";
-import {
-  maintainerRequestsRouter,
-  teamPoliciesRouter,
-  teamRequestsRouter,
-  teamsRouter,
-} from "@feature/teams-backend";
-import { webhooksRouter } from "@feature/webhooks-backend";
+import { featureRegistry } from "./featureRegistry";
 
 export function createServer() {
   const env = loadEnv();
-  // Register tools into the shared llm-core registry at boot so resolveTools() can find them.
-  registerAllTools();
-  registerChatWriteTools();
+  const ctx: FeatureHostContext = { liveRepoRoot: resolve(__dirname, "../../..") };
+  const { manifests, mountsByPhase } = collectMounts(featureRegistry, ctx);
+
+  // Boot-time feature side effects (e.g. registering tools into the shared llm-core registry).
+  for (const manifest of manifests) manifest.onBoot?.();
+
   const app = express();
 
   app.set("trust proxy", 1);
@@ -68,14 +47,8 @@ export function createServer() {
     }),
   );
 
-  // Mounted before express.json() because HMAC signature verification needs the raw body.
-  app.use("/integrations/github/webhook", githubWebhookRouter);
-
-  // Separate path so the App-wide secret is verified independently of the per-repo webhook above.
-  app.use("/integrations/github/app-webhook", githubAppWebhookRouter);
-
-  // Raw body needed for the Bearer-token check and replay protection (body parsed after auth).
-  app.use("/integrations/grafana/webhook", grafanaWebhookRouter);
+  // Raw-body feature routes (HMAC webhooks) mount before express.json since they need the exact bytes.
+  for (const mount of mountsByPhase.raw) app.use(mount.path, mount.router);
 
   app.use(express.json());
   app.use(cookieParser(env.sessionSecret));
@@ -84,14 +57,13 @@ export function createServer() {
 
   app.use("/auth", authRouter);
 
-  // Bearer-token auth (not session cookie), so it sits outside the /api requireAuth and apiLimiter chain.
-  app.use(
-    "/mcp/scaffolder",
-    createScaffolderMcpRouter({ liveRepoRoot: resolve(__dirname, "../../..") }),
-  );
+  // Feature routes that run their own auth (e.g. MCP bearer token), outside the /api session chain.
+  for (const mount of mountsByPhase.preApi) app.use(mount.path, mount.router);
 
   app.use("/api", apiLimiter, requireAuth);
 
+  // Shell-owned /api routers, mounted before feature routers so the more-specific shell paths
+  // (e.g. /api/integrations/github, /api/scaffolder/access-requests) win over feature catch-alls.
   app.use("/api/admin/users", adminUsersRouter);
   app.use("/api/admin/ai", adminAiRouter);
   app.use("/api/admin/audit", adminAuditRouter);
@@ -100,36 +72,12 @@ export function createServer() {
   app.use("/api/admin/scaffolder/access-requests", adminScaffolderAccessRequestsRouter);
   app.use("/api/admin/scaffolder/templates", adminScaffolderTemplateAclsRouter);
   app.use("/api/departments", departmentsRouter);
-  app.use("/api/agents", agentsRouter);
-  app.use("/api/chat", chatRouter);
-  app.use("/api/llm", llmRouter);
-  app.use("/api/catalog", catalogRouter);
-  app.use("/api/devdocs", devdocsRouter);
-  app.use("/api/scorecards", scorecardsRouter);
-  app.use("/api/dora-metrics", doraMetricsRouter);
-  // Mounted before the catch-all integrations router so its routes aren't shadowed.
   app.use("/api/integrations/github", githubIntegrationRouter);
-  app.use("/api/integrations", integrationsRouter);
-  app.use("/api/observability", observabilityRouter);
-  // Mounted before the catch-all `/api/scaffolder` so it isn't shadowed.
   app.use("/api/scaffolder/access-requests", scaffolderAccessRequestsRouter);
-  app.use(
-    "/api/scaffolder",
-    createScaffolderRouter({ liveRepoRoot: resolve(__dirname, "../../..") }),
-  );
   app.use("/api/users", usersRouter);
-  app.use("/api/notifications", notificationsRouter);
-  app.use("/api/onboarding", onboardingRouter);
-  app.use("/api/pages", pagesRouter);
-  app.use("/api/projects", projectsRouter);
-  app.use("/api/search", searchRouter);
-  // Team subrouters mounted before catch-all `/api/teams` so the `/:slug` route doesn't match them.
-  app.use("/api/requests", requestsRouter);
-  app.use("/api/teams/requests", teamRequestsRouter);
-  app.use("/api/teams/maintainer-requests", maintainerRequestsRouter);
-  app.use("/api/teams/policies", teamPoliciesRouter);
-  app.use("/api/teams", teamsRouter);
-  app.use("/api/webhooks", webhooksRouter);
+
+  // Feature /api routers, each ordered by its featureManifest (subrouters before catch-alls).
+  for (const mount of mountsByPhase.api) app.use(mount.path, mount.router);
 
   app.use(errorHandler);
 

@@ -296,3 +296,9 @@ webhooksRouter.get("/:id/deliveries", async (req, res, next) => {
     next(err);
   }
 });
+
+import type { FeatureManifest } from "@internal/feature-host";
+
+export const featureManifest: FeatureManifest = {
+  mounts: [{ path: "/api/webhooks", router: webhooksRouter }],
+};

@@ -13,6 +13,7 @@
   "dependencies": {
     "@feature/notifications-backend": "0.1.0",
     "@internal/db": "0.1.0",
+    "@internal/feature-host": "0.1.0",
     "@internal/grafana-client": "0.1.0",
     "express": "^5.2.1",
     "express-rate-limit": "^8.5.2"

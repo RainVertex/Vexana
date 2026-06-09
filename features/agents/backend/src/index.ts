@@ -451,3 +451,12 @@ agentsRouter.post("/:id/run", async (req, res) => {
     res.status(500).json({ error: (err as Error).message });
   }
 });
+
+import type { FeatureManifest } from "@internal/feature-host";
+
+export const featureManifest: FeatureManifest = {
+  mounts: [
+    { path: "/api/agents", router: agentsRouter },
+    { path: "/api/llm", router: llmRouter },
+  ],
+};

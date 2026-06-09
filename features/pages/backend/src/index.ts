@@ -619,3 +619,9 @@ async function collectDescendantIds(rootId: string): Promise<string[]> {
   }
   return ids;
 }
+
+import type { FeatureManifest } from "@internal/feature-host";
+
+export const featureManifest: FeatureManifest = {
+  mounts: [{ path: "/api/pages", router: pagesRouter }],
+};

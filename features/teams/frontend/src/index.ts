@@ -13,3 +13,5 @@ export { RequestTeamPage } from "./RequestTeamPage";
 export { RequestMaintainerPickerPage } from "./RequestMaintainerPickerPage";
 export { UserPicker } from "./UserPicker";
 export { ProposedMembersList } from "./ProposedMembersList";
+
+export { featureRoutes } from "./routes";

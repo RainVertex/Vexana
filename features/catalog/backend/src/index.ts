@@ -462,3 +462,31 @@ catalogRouter.delete("/:id", async (req, res) => {
   });
   res.status(204).end();
 });
+
+import type { FeatureManifest } from "@internal/feature-host";
+import {
+  devdocsRouter as devdocsRouterForManifest,
+  githubWebhookRouter as githubWebhookRouterForManifest,
+} from "./devdocs";
+import { githubAppWebhookRouter as githubAppWebhookRouterForManifest } from "./github-sync/webhook";
+import { scorecardsRouter as scorecardsRouterForManifest } from "./scorecards/routes";
+
+export const featureManifest: FeatureManifest = {
+  mounts: [
+    {
+      path: "/integrations/github/webhook",
+      router: githubWebhookRouterForManifest,
+      phase: "raw",
+      order: 10,
+    },
+    {
+      path: "/integrations/github/app-webhook",
+      router: githubAppWebhookRouterForManifest,
+      phase: "raw",
+      order: 20,
+    },
+    { path: "/api/catalog", router: catalogRouter },
+    { path: "/api/devdocs", router: devdocsRouterForManifest },
+    { path: "/api/scorecards", router: scorecardsRouterForManifest },
+  ],
+};
