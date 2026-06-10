@@ -15,10 +15,10 @@ export {
   resetRegistries,
 } from "./services/registry";
 export {
-  templateDefSchema,
-  compileTemplateDef,
-  buildFormSchema,
-  type TemplateDef,
+  validateTemplateSource,
+  wizardSchemaFromYaml,
+  yamlTemplateSchema,
+  type YamlTemplate,
 } from "./services/template-defs";
 export { buildPlanCtx } from "./services/plan-ctx";
 export { loadCapabilityPolicy } from "./services/policy";

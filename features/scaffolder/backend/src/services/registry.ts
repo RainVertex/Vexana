@@ -1,4 +1,4 @@
-// Lazily builds and caches the scaffolder action registry and the merged template registry.
+// Lazily builds and caches the scaffolder action registry and the YAML-backed template registry.
 import {
   createActionRegistry,
   createTemplateRegistry,
@@ -10,14 +10,13 @@ import {
   type ActionRegistry,
   type TemplateRegistry,
 } from "@internal/scaffolder-core";
-import { githubServiceTemplate } from "@internal/scaffolder-templates";
 import { prisma } from "@internal/db";
 import { catalogRegisterAction } from "../actions/catalog";
 import { catalogDiscoverAction } from "../actions/catalog-discover";
 import { bindingWriteAction } from "../actions/binding";
 import { publishGithubAction } from "../actions/publish-github";
 import { publishGithubPrAction } from "../actions/publish-github-pr";
-import { compileTemplateDef, templateDefSchema } from "./template-defs";
+import { validateTemplateSource } from "./template-defs";
 
 let actionsCache: ActionRegistry | null = null;
 let templatesCache: TemplateRegistry | null = null;
@@ -26,12 +25,6 @@ let templatesDirty = false;
 
 // DB-defined templates refresh on CRUD invalidation, the TTL covers other instances.
 const TEMPLATE_CACHE_TTL_MS = 30_000;
-
-const CODE_TEMPLATES = [githubServiceTemplate];
-
-export function builtInTemplateIds(): string[] {
-  return CODE_TEMPLATES.map((t) => t.metadata.id);
-}
 
 export function getActionRegistry(): ActionRegistry {
   if (actionsCache) return actionsCache;
@@ -62,15 +55,16 @@ export async function getTemplates(): Promise<TemplateRegistry> {
   if (fresh) return templatesCache!;
 
   const registry = createTemplateRegistry();
-  for (const template of CODE_TEMPLATES) registry.register(template);
-
+  const actions = getActionRegistry();
   const rows = await prisma.scaffoldTemplateDef.findMany({ where: { enabled: true } });
   for (const row of rows) {
-    const parsed = templateDefSchema.safeParse(row.definition);
-    // Broken or colliding rows are skipped, built-in templates win on id collision.
-    if (!parsed.success) continue;
-    if (registry.get(parsed.data.identifier)) continue;
-    registry.register(compileTemplateDef(parsed.data));
+    try {
+      const { compiled } = validateTemplateSource(row.source, actions);
+      if (registry.get(compiled.metadata.id)) continue;
+      registry.register(compiled);
+    } catch {
+      // Broken rows are skipped, the editor surfaces their validation errors.
+    }
   }
 
   templatesCache = registry;

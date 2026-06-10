@@ -94,7 +94,7 @@ export async function execute(input: ExecuteInput): Promise<ExecuteResult> {
   emit({ kind: "task.started", taskId });
 
   const stepOutputs: Record<string, unknown> = {};
-  const stepsJqState: Record<string, { outputs: unknown }> = {};
+  const stepsState: Record<string, { output: unknown }> = {};
   const compensations: ExecuteResult["compensations"] = [];
 
   const buildWriteCtx = (logger: ActionLogger): WriteCtx => ({
@@ -122,17 +122,16 @@ export async function execute(input: ExecuteInput): Promise<ExecuteResult> {
       let stepInput = step.input;
       if (step.deferred || containsToken(stepInput)) {
         const ctx: StepTemplateContext = {
-          inputs: templateContext?.inputs ?? {},
+          parameters: templateContext?.parameters ?? {},
           user: templateContext?.user ?? null,
           entity: templateContext?.entity ?? null,
-          operation: templateContext?.operation ?? "create",
-          steps: stepsJqState,
+          steps: stepsState,
         };
-        stepInput = action.schema.parse(await resolveTokens(stepInput, ctx, "apply"));
+        stepInput = action.schema.parse(resolveTokens(stepInput, ctx, "apply"));
       }
       const result = await action.apply(stepInput, buildWriteCtx(logger));
       stepOutputs[step.stepId] = result.output;
-      stepsJqState[step.stepId] = { outputs: result.output };
+      stepsState[step.stepId] = { output: result.output };
       if (result.compensation && !dryRun) {
         compensations.push({ stepId: step.stepId, compensation: result.compensation });
       }

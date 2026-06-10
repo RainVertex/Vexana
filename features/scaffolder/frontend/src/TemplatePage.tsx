@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Form from "@rjsf/core";
 import validator from "@rjsf/validator-ajv8";
@@ -10,8 +10,7 @@ import { useTranslation } from "@internal/i18n";
 import type { ScaffolderTemplateDetail } from "@internal/api-client";
 import type { CatalogEntityWithOwners } from "@internal/shared-types";
 import { TemplateDriftBadge } from "./TemplateDriftBadge";
-
-const FORM_STATE_DEBOUNCE_MS = 300;
+import { themeTemplates, themeWidgets } from "./rjsfTheme";
 
 export function TemplatePage() {
   const { templateId } = useParams<{ templateId: string }>();
@@ -26,7 +25,6 @@ export function TemplatePage() {
   const [entityId, setEntityId] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const formStateSeq = useRef(0);
 
   useEffect(() => {
     if (!templateId) return;
@@ -49,28 +47,6 @@ export function TemplatePage() {
       .then((res) => setEntities(res.items))
       .catch(() => setEntities([]));
   }, [api, needsEntity, entities]);
-
-  // Re-resolves jqQuery dynamic fields server-side as the form changes.
-  useEffect(() => {
-    if (!template) return;
-    const seq = ++formStateSeq.current;
-    const handle = setTimeout(() => {
-      api.scaffolder
-        .formState(template.id, {
-          formData,
-          ...(entityId ? { catalogEntityId: entityId } : {}),
-        })
-        .then((state) => {
-          if (formStateSeq.current !== seq) return;
-          setSchema(state.schema);
-          setUiSchema(state.uiSchema ?? {});
-        })
-        .catch(() => {
-          // Keep the last resolved schema when the resolve call fails.
-        });
-    }, FORM_STATE_DEBOUNCE_MS);
-    return () => clearTimeout(handle);
-  }, [api, template, formData, entityId]);
 
   async function handleSubmit(e: IChangeEvent<Record<string, unknown>>) {
     if (!template) return;
@@ -143,6 +119,8 @@ export function TemplatePage() {
           uiSchema={uiSchema as UiSchema}
           formData={formData}
           validator={validator}
+          templates={themeTemplates}
+          widgets={themeWidgets}
           onChange={(e) => setFormData((e.formData ?? {}) as Record<string, unknown>)}
           onSubmit={handleSubmit}
           disabled={submitting}

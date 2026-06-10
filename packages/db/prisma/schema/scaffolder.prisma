@@ -135,11 +135,11 @@ model TemplateHashSnapshot {
   observedAt      DateTime @default(now())
 }
 
-// Port-style declarative template definitions managed via the admin API.
+// Backstage-style template.yaml definitions managed via the admin API and the template editor.
 model ScaffoldTemplateDef {
   id              String   @id @default(cuid())
   identifier      String   @unique
-  definition      Json
+  source          String
   enabled         Boolean  @default(true)
   createdByUserId String
   createdAt       DateTime @default(now())

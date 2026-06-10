@@ -10,7 +10,6 @@
 /packages/grafana-client/               @caglayagmuricerr
 /packages/feature-host/                 @caglayagmuricerr
 /packages/scaffolder-core/              @caglayagmuricerr
-/packages/scaffolder-templates/         @caglayagmuricerr
 /packages/scaffolder-templates-yaml-adapter/ @caglayagmuricerr
 
 # Features. Each line owns that feature's backend and frontend together.

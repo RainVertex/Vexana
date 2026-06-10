@@ -138,7 +138,7 @@ export default [
       "**/generated/**",
       "**/.turbo/**",
       "packages/db/src/generated/**",
-      "packages/scaffolder-templates/skeletons/**",
+      "tooling/scaffolder/skeletons/**",
       "tooling/scaffolder/templates/**",
     ],
   },

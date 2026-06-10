@@ -17,12 +17,7 @@ import { applyPlan, ApprovalsMissingError, PlanExpiredError } from "./services/a
 import { StalePlanError, TargetLockBusyError } from "./services/locks";
 import { taskEventBus } from "./services/events";
 import { actorFromRequest } from "./services/actor";
-import {
-  builtInTemplateIds,
-  getActionRegistry,
-  getTemplates,
-  invalidateTemplateCache,
-} from "./services/registry";
+import { getActionRegistry, getTemplates, invalidateTemplateCache } from "./services/registry";
 import { buildPlanCtx } from "./services/plan-ctx";
 import { loadCapabilityPolicy } from "./services/policy";
 import { createApprovalSigner, type ApprovalGrant } from "./services/approvals";
@@ -31,14 +26,15 @@ import { loadEnvSecrets } from "./services/secrets";
 import { filterByTemplateAcl } from "./services/acl";
 import { buildEntityContext, buildUserContext } from "./services/jq-context";
 import {
-  buildFormSchema,
   createTemplateDef,
   deleteTemplateDef,
   listTemplateDefs,
-  templateDefSchema,
   TemplateDefValidationError,
   updateTemplateDef,
-  validateTemplateDef,
+  validateTemplateSource,
+  wizardSchemaFromYaml,
+  yamlTemplateSchema,
+  YamlTemplateError,
 } from "./services/template-defs";
 
 // Express router for the scaffolder HTTP API: templates, plans, apply, approvals, tasks, bindings, drift.
@@ -46,37 +42,26 @@ import {
 const planRequestSchema = z.object({
   templateId: z.string().min(1),
   params: z.record(z.string(), z.unknown()),
-  // Required for day2/delete templates, feeds the jq .entity context.
-  catalogEntityId: z.string().min(1).optional(),
-});
-
-const formStateRequestSchema = z.object({
-  formData: z.record(z.string(), z.unknown()).default({}),
+  // Optional, feeds the ${{ entity.* }} template context.
   catalogEntityId: z.string().min(1).optional(),
 });
 
 const templateDefUpsertSchema = z.object({
-  definition: z.unknown(),
+  source: z.string().min(1),
   enabled: z.boolean().optional(),
 });
 
 const templateDefPreviewSchema = z.object({
-  definition: z.unknown(),
-  formData: z.record(z.string(), z.unknown()).default({}),
-  catalogEntityId: z.string().min(1).optional(),
+  source: z.string().min(1),
 });
 
-// Resolves the wizard schema: declarative templates resolve jqQuery fields, code templates use static zod.
-async function formSchemaFor(
-  tpl: CompiledTemplate<unknown>,
-  ctx: {
-    form: Record<string, unknown>;
-    user: Record<string, unknown> | null;
-    entity: Record<string, unknown> | null;
-  },
-): Promise<{ schema: Record<string, unknown>; uiSchema: Record<string, unknown> }> {
-  const parsedDef = tpl.definitionSource ? templateDefSchema.safeParse(tpl.definitionSource) : null;
-  if (parsedDef?.success) return buildFormSchema(parsedDef.data, ctx);
+// Resolves the wizard schema from the template.yaml parameter pages.
+function formSchemaFor(tpl: CompiledTemplate<unknown>): {
+  schema: Record<string, unknown>;
+  uiSchema: Record<string, unknown>;
+} {
+  const parsed = tpl.definitionSource ? yamlTemplateSchema.safeParse(tpl.definitionSource) : null;
+  if (parsed?.success) return wizardSchemaFromYaml(parsed.data);
   return { schema: toJsonSchema(tpl.parameters) as Record<string, unknown>, uiSchema: {} };
 }
 
@@ -225,8 +210,7 @@ export function createScaffolderRouter(): Router {
         res.status(404).json({ error: "Template not found" });
         return;
       }
-      const user = await buildUserContext(actor.userId);
-      const form = await formSchemaFor(tpl, { form: {}, user, entity: null });
+      const form = formSchemaFor(tpl);
       res.json({
         id: tpl.metadata.id,
         version: tpl.metadata.version,
@@ -244,40 +228,6 @@ export function createScaffolderRouter(): Router {
         defaultTarget: tpl.resolvedDefaultTarget,
         planTtlSeconds: tpl.resolvedPlanTtlSeconds,
       });
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  // POST /templates/:id/form-state, re-resolves jqQuery form fields against the current form data.
-  router.post("/templates/:id/form-state", async (req, res, next) => {
-    try {
-      const actor = await actorFromRequest(req);
-      if (!actor) {
-        res.status(401).json({ error: "Not authenticated" });
-        return;
-      }
-      const parsed = formStateRequestSchema.safeParse(req.body);
-      if (!parsed.success) {
-        res.status(400).json({ error: "Invalid body", issues: parsed.error.issues });
-        return;
-      }
-      const templates = await getTemplates();
-      const tpl = templates.get(req.params.id!);
-      if (!tpl) {
-        res.status(404).json({ error: "Template not found" });
-        return;
-      }
-      const isAdmin = req.user?.role === "admin";
-      const visible = await filterByTemplateAcl([tpl], actor, isAdmin);
-      if (visible.length === 0) {
-        res.status(404).json({ error: "Template not found" });
-        return;
-      }
-      const user = await buildUserContext(actor.userId);
-      const entity = await buildEntityContext(parsed.data.catalogEntityId);
-      const form = await formSchemaFor(tpl, { form: parsed.data.formData, user, entity });
-      res.json(form);
     } catch (err) {
       next(err);
     }
@@ -306,10 +256,6 @@ export function createScaffolderRouter(): Router {
       const visible = await filterByTemplateAcl([tpl], actor, isAdmin, true);
       if (visible.length === 0) {
         res.status(404).json({ error: "Template not found" });
-        return;
-      }
-      if (tpl.resolvedOperation !== "create" && !parsed.data.catalogEntityId) {
-        res.status(400).json({ error: "catalogEntityId is required for this template" });
         return;
       }
       const entity = await buildEntityContext(parsed.data.catalogEntityId);
@@ -995,10 +941,9 @@ export function createScaffolderRouter(): Router {
       }
       try {
         const row = await createTemplateDef({
-          raw: parsed.data.definition,
+          source: parsed.data.source,
           userId: actor.userId,
           actions,
-          reservedIds: builtInTemplateIds(),
         });
         invalidateTemplateCache();
         await auditTemplateDef(req, actor.userId, "scaffolder.templateDef.created", row.id, {
@@ -1006,14 +951,7 @@ export function createScaffolderRouter(): Router {
         });
         res.status(201).json(row);
       } catch (err) {
-        if (err instanceof TemplateDefValidationError) {
-          res.status(400).json({ error: err.message });
-          return;
-        }
-        if (err instanceof z.ZodError) {
-          res.status(400).json({ error: "Invalid definition", issues: err.issues });
-          return;
-        }
+        if (sendTemplateDefError(res, err)) return;
         throw err;
       }
     } catch (err) {
@@ -1021,7 +959,7 @@ export function createScaffolderRouter(): Router {
     }
   });
 
-  // Validates an unsaved definition and resolves its wizard form for the editor preview.
+  // Validates an unsaved template.yaml and resolves its wizard form for the editor preview.
   router.post("/admin/template-defs/preview", async (req, res, next) => {
     try {
       const actor = await actorFromRequest(req);
@@ -1039,28 +977,17 @@ export function createScaffolderRouter(): Router {
         return;
       }
       try {
-        const def = validateTemplateDef(parsed.data.definition, actions);
-        const user = await buildUserContext(actor.userId);
-        const entity = await buildEntityContext(parsed.data.catalogEntityId);
-        const form = await buildFormSchema(def, { form: parsed.data.formData, user, entity });
+        const { parsed: template, compiled } = validateTemplateSource(parsed.data.source, actions);
+        const form = wizardSchemaFromYaml(template);
         res.json({
           ...form,
-          identifier: def.identifier,
-          title: def.title,
-          operation: def.operation,
+          identifier: template.metadata.name,
+          title: compiled.metadata.name,
+          description: compiled.metadata.description,
+          type: template.spec.type ?? null,
         });
       } catch (err) {
-        if (err instanceof TemplateDefValidationError) {
-          res.status(400).json({ error: err.message });
-          return;
-        }
-        if (err instanceof z.ZodError) {
-          const detail = err.issues
-            .map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`)
-            .join(", ");
-          res.status(400).json({ error: `Invalid definition: ${detail}`, issues: err.issues });
-          return;
-        }
+        if (sendTemplateDefError(res, err)) return;
         throw err;
       }
     } catch (err) {
@@ -1087,7 +1014,7 @@ export function createScaffolderRouter(): Router {
       try {
         const row = await updateTemplateDef({
           id: req.params.id!,
-          raw: parsed.data.definition,
+          source: parsed.data.source,
           actions,
           ...(parsed.data.enabled === undefined ? {} : { enabled: parsed.data.enabled }),
         });
@@ -1102,14 +1029,7 @@ export function createScaffolderRouter(): Router {
         });
         res.json(row);
       } catch (err) {
-        if (err instanceof TemplateDefValidationError) {
-          res.status(400).json({ error: err.message });
-          return;
-        }
-        if (err instanceof z.ZodError) {
-          res.status(400).json({ error: "Invalid definition", issues: err.issues });
-          return;
-        }
+        if (sendTemplateDefError(res, err)) return;
         throw err;
       }
     } catch (err) {
@@ -1148,6 +1068,22 @@ export function createScaffolderRouter(): Router {
   });
 
   return router;
+}
+
+// Maps template source validation failures to a 400, returns true when handled.
+function sendTemplateDefError(res: Response, err: unknown): boolean {
+  if (err instanceof TemplateDefValidationError || err instanceof YamlTemplateError) {
+    res.status(400).json({ error: err.message });
+    return true;
+  }
+  if (err instanceof z.ZodError) {
+    const detail = err.issues
+      .map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`)
+      .join(", ");
+    res.status(400).json({ error: `Invalid template: ${detail}`, issues: err.issues });
+    return true;
+  }
+  return false;
 }
 
 async function auditTemplateDef(

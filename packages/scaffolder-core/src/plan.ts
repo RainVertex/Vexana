@@ -64,10 +64,9 @@ export async function buildPlan<TParams>(input: BuildPlanInput<TParams>): Promis
   const steps = await template.plan(params, ctx);
 
   const templateContext: StepTemplateContext = {
-    inputs: params as Record<string, unknown>,
+    parameters: params as Record<string, unknown>,
     user,
     entity,
-    operation: template.resolvedOperation,
   };
 
   const planSteps: PlanStep[] = [];
@@ -82,7 +81,7 @@ export async function buildPlan<TParams>(input: BuildPlanInput<TParams>): Promis
     const step = steps[i]!;
     const action = actions.require(step.action);
     const stepId = step.id ?? `${action.id}-${i}`;
-    const planInput = await resolveTokens(step.input, templateContext, "plan");
+    const planInput = resolveTokens(step.input, templateContext, "plan");
     // Steps still holding .steps tokens validate and diff at apply time instead.
     const deferred = containsToken(planInput);
 

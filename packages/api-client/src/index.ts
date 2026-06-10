@@ -37,7 +37,6 @@ import type {
   RunAgentResponse,
   ScaffolderBinding,
   ScaffolderDriftSummaryDto,
-  ScaffolderFormState,
   ScaffolderPlan,
   ScaffolderTask,
   ScaffolderTemplateDefPreview,
@@ -930,14 +929,6 @@ export function createApiClient(options: ApiClientOptions = {}) {
         request<ListResponse<ScaffolderTemplateSummary>>(`/api/scaffolder/templates`),
       getTemplate: (id: string) =>
         request<ScaffolderTemplateDetail>(`/api/scaffolder/templates/${encodeURIComponent(id)}`),
-      formState: (
-        id: string,
-        body: { formData: Record<string, unknown>; catalogEntityId?: string },
-      ) =>
-        request<ScaffolderFormState>(
-          `/api/scaffolder/templates/${encodeURIComponent(id)}/form-state`,
-          { method: "POST", body: JSON.stringify(body) },
-        ),
       createPlan: (body: {
         templateId: string;
         params: Record<string, unknown>;
@@ -986,24 +977,17 @@ export function createApiClient(options: ApiClientOptions = {}) {
         }),
       listTemplateDefs: () =>
         request<ListResponse<ScaffolderTemplateDefRow>>(`/api/scaffolder/admin/template-defs`),
-      createTemplateDef: (body: { definition: Record<string, unknown> }) =>
+      createTemplateDef: (body: { source: string }) =>
         request<ScaffolderTemplateDefRow>(`/api/scaffolder/admin/template-defs`, {
           method: "POST",
           body: JSON.stringify(body),
         }),
-      previewTemplateDef: (body: {
-        definition: Record<string, unknown>;
-        formData?: Record<string, unknown>;
-        catalogEntityId?: string;
-      }) =>
+      previewTemplateDef: (body: { source: string }) =>
         request<ScaffolderTemplateDefPreview>(`/api/scaffolder/admin/template-defs/preview`, {
           method: "POST",
           body: JSON.stringify(body),
         }),
-      updateTemplateDef: (
-        id: string,
-        body: { definition: Record<string, unknown>; enabled?: boolean },
-      ) =>
+      updateTemplateDef: (id: string, body: { source: string; enabled?: boolean }) =>
         request<ScaffolderTemplateDefRow>(
           `/api/scaffolder/admin/template-defs/${encodeURIComponent(id)}`,
           { method: "PUT", body: JSON.stringify(body) },

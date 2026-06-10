@@ -53,18 +53,20 @@ export interface ScaffolderFormState {
 export interface ScaffolderTemplateDefRow {
   id: ID;
   identifier: string;
-  definition: Record<string, unknown>;
+  // Backstage-style template.yaml source text.
+  source: string;
   enabled: boolean;
   createdByUserId: ID;
   createdAt: ISODateString;
   updatedAt: ISODateString;
 }
 
-// Editor preview: resolved form plus the validated identity of the draft definition.
+// Editor preview: resolved form plus the validated identity of the draft template.yaml.
 export interface ScaffolderTemplateDefPreview extends ScaffolderFormState {
   identifier: string;
   title: string;
-  operation: "CREATE" | "DAY-2" | "DELETE";
+  description: string;
+  type: string | null;
 }
 
 export interface ScaffolderApprovalRequirement {

@@ -32,6 +32,11 @@ export function renderTemplate(source: string, values: Record<string, unknown>):
   return sharedEnv.renderString(source, { values });
 }
 
+// Renders with an arbitrary top-level context (parameters, steps, user, entity).
+export function renderWithContext(source: string, context: Record<string, unknown>): string {
+  return sharedEnv.renderString(source, context);
+}
+
 // Lets callers short-circuit pure copies and skip an unnecessary render pass.
 export function hasTemplating(source: string): boolean {
   return source.includes("${{") || source.includes("${%");

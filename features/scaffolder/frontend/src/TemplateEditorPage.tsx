@@ -10,39 +10,37 @@ import type {
   ScaffolderTemplateDefPreview,
   ScaffolderTemplateDefRow,
 } from "@internal/shared-types";
+import { themeTemplates, themeWidgets } from "./rjsfTheme";
 
 const PREVIEW_DEBOUNCE_MS = 400;
 
-const STARTER_DEFINITION = {
-  identifier: "my-template",
-  title: "My template",
-  description: "Describe what this template provisions.",
-  version: "1.0.0",
-  operation: "CREATE",
-  audience: ["human"],
-  requiredRole: "member",
-  requiredApproval: false,
-  tags: ["service"],
-  userInputs: {
-    properties: {
-      name: { type: "string", title: "Name" },
-      team: {
-        type: "string",
-        title: "Owner team",
-        enum: { jqQuery: "[.user.teams[].slug]" },
-      },
-    },
-    required: ["name"],
-  },
-  steps: [
-    {
-      id: "log",
-      action: "debug:log",
-      input: { message: "Scaffolding {{ .inputs.name }} for {{ .inputs.team }}" },
-    },
-  ],
-  capabilities: [],
-};
+const STARTER_SOURCE = `apiVersion: scaffolder.platform/v1
+kind: Template
+metadata:
+  name: my-template
+  title: My template
+  description: Describe what this template provisions.
+  tags:
+    - service
+  annotations:
+    scaffolder.platform/version: 1.0.0
+spec:
+  type: service
+  parameters:
+    - title: Basic info
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          title: Name
+          description: Unique name of the component
+  steps:
+    - id: log
+      action: debug:log
+      input:
+        message: Scaffolding \${{ parameters.name }}
+`;
 
 export function TemplateEditorPage() {
   const api = useApi();
@@ -50,11 +48,10 @@ export function TemplateEditorPage() {
   const [me, setMe] = useState<CurrentUser | null | undefined>(undefined);
   const [defs, setDefs] = useState<ScaffolderTemplateDefRow[] | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [source, setSource] = useState<string>(JSON.stringify(STARTER_DEFINITION, null, 2));
+  const [source, setSource] = useState<string>(STARTER_SOURCE);
   const [enabled, setEnabled] = useState(true);
   const [preview, setPreview] = useState<ScaffolderTemplateDefPreview | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
-  const [parseError, setParseError] = useState<string | null>(null);
   const [playgroundData, setPlaygroundData] = useState<Record<string, unknown>>({});
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -78,21 +75,13 @@ export function TemplateEditorPage() {
       .catch((err) => setError(err instanceof Error ? err.message : String(err)));
   }, [api, isAdmin, defs]);
 
-  // Live validation plus jqQuery form resolution against the draft definition.
+  // Live validation of the draft template.yaml plus the resolved wizard form.
   useEffect(() => {
     if (!isAdmin) return;
     const seq = ++previewSeq.current;
-    let definition: Record<string, unknown>;
-    try {
-      definition = JSON.parse(source) as Record<string, unknown>;
-      setParseError(null);
-    } catch (err) {
-      setParseError(err instanceof Error ? err.message : String(err));
-      return;
-    }
     const handle = setTimeout(() => {
       api.scaffolder
-        .previewTemplateDef({ definition, formData: playgroundData })
+        .previewTemplateDef({ source })
         .then((result) => {
           if (previewSeq.current !== seq) return;
           setPreview(result);
@@ -104,11 +93,11 @@ export function TemplateEditorPage() {
         });
     }, PREVIEW_DEBOUNCE_MS);
     return () => clearTimeout(handle);
-  }, [api, isAdmin, source, playgroundData]);
+  }, [api, isAdmin, source]);
 
   function selectDef(row: ScaffolderTemplateDefRow) {
     setSelectedId(row.id);
-    setSource(JSON.stringify(row.definition, null, 2));
+    setSource(row.source);
     setEnabled(row.enabled);
     setPlaygroundData({});
     setNotice(null);
@@ -117,7 +106,7 @@ export function TemplateEditorPage() {
 
   function newDraft() {
     setSelectedId(null);
-    setSource(JSON.stringify(STARTER_DEFINITION, null, 2));
+    setSource(STARTER_SOURCE);
     setEnabled(true);
     setPlaygroundData({});
     setNotice(null);
@@ -125,15 +114,13 @@ export function TemplateEditorPage() {
   }
 
   async function save() {
-    if (parseError) return;
-    const definition = JSON.parse(source) as Record<string, unknown>;
     setBusy(true);
     setError(null);
     setNotice(null);
     try {
       const row = selectedId
-        ? await api.scaffolder.updateTemplateDef(selectedId, { definition, enabled })
-        : await api.scaffolder.createTemplateDef({ definition });
+        ? await api.scaffolder.updateTemplateDef(selectedId, { source, enabled })
+        : await api.scaffolder.createTemplateDef({ source });
       const refreshed = await api.scaffolder.listTemplateDefs();
       setDefs(refreshed.items);
       setSelectedId(row.id);
@@ -202,7 +189,7 @@ export function TemplateEditorPage() {
           )}
           <button
             type="button"
-            disabled={busy || parseError !== null}
+            disabled={busy}
             onClick={save}
             className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on disabled:opacity-50"
           >
@@ -269,12 +256,7 @@ export function TemplateEditorPage() {
             spellCheck={false}
             className="h-[34rem] w-full rounded-md border border-app-border bg-app-surface p-3 font-mono text-xs leading-5"
           />
-          {parseError && (
-            <p className="mt-2 rounded bg-rose-50 p-2 text-xs text-rose-700">
-              {t("editor.jsonInvalid", { message: parseError })}
-            </p>
-          )}
-          {!parseError && previewError && (
+          {previewError && (
             <p className="mt-2 rounded bg-amber-50 p-2 text-xs text-amber-800">{previewError}</p>
           )}
         </section>
@@ -285,24 +267,29 @@ export function TemplateEditorPage() {
           </h2>
           {preview ? (
             <div className="rounded-md border border-app-border bg-app-surface p-4">
-              <div className="mb-3 flex items-center gap-2 text-xs text-app-text-muted">
-                <span className="font-mono">{preview.identifier}</span>
-                <span className="rounded bg-app-surface-hover px-1.5 py-0.5 text-[10px]">
-                  {preview.operation}
-                </span>
+              <div className="mb-4 border-b border-app-border pb-3">
+                <h3 className="text-base font-semibold text-app-text">{preview.title}</h3>
+                <p className="mt-0.5 text-sm text-app-text-muted">{preview.description}</p>
+                <div className="mt-2 flex items-center gap-2 text-xs text-app-text-muted">
+                  <span className="font-mono">{preview.identifier}</span>
+                  {preview.type && (
+                    <span className="rounded bg-app-surface-hover px-1.5 py-0.5 text-[10px]">
+                      {preview.type}
+                    </span>
+                  )}
+                </div>
               </div>
               <Form
                 schema={preview.schema as RJSFSchema}
                 uiSchema={preview.uiSchema as UiSchema}
                 formData={playgroundData}
                 validator={validator}
+                templates={themeTemplates}
+                widgets={themeWidgets}
                 onChange={(e) => setPlaygroundData((e.formData ?? {}) as Record<string, unknown>)}
               >
                 <div className="hidden" />
               </Form>
-              {preview.operation !== "CREATE" && (
-                <p className="mt-2 text-[11px] text-app-text-muted">{t("editor.entityNote")}</p>
-              )}
             </div>
           ) : (
             <p className="text-xs text-app-text-muted">{t("editor.previewEmpty")}</p>
