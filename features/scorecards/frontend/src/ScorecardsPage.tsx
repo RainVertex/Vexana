@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { PageLayout } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type { Scorecard } from "@internal/shared-types";
 
 export function ScorecardsPage() {
+  const { t } = useTranslation("scorecards");
   const api = useApi();
   const nav = useNavigate();
   const [items, setItems] = useState<Scorecard[] | null>(null);
@@ -14,15 +16,15 @@ export function ScorecardsPage() {
     api.scorecards
       .list()
       .then((res) => setItems(res.items))
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed"));
-  }, [api]);
+      .catch((err) => setError(err instanceof Error ? err.message : t("errors.loadFailed")));
+  }, [api, t]);
 
   async function createBlank() {
     try {
       const slug = `new-scorecard-${Date.now()}`;
       const created = await api.scorecards.create({
         slug,
-        name: "New Scorecard",
+        name: t("page.newScorecardDefaultName"),
         appliesTo: [],
         tierStyle: "stage",
         enabled: true,
@@ -30,21 +32,21 @@ export function ScorecardsPage() {
       });
       nav(`/scorecards/${created.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create");
+      setError(err instanceof Error ? err.message : t("errors.createFailed"));
     }
   }
 
   return (
     <PageLayout
-      title="Scorecards"
-      description="Define rules that grade catalog entities. Tier styles: stage (bronze/silver/gold) or threshold (red/orange/yellow/green)."
+      title={t("page.title")}
+      description={t("page.description")}
       actions={
         <button
           type="button"
           onClick={createBlank}
           className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on hover:opacity-90"
         >
-          New scorecard
+          {t("page.newScorecard")}
         </button>
       }
     >
@@ -54,11 +56,9 @@ export function ScorecardsPage() {
         </div>
       )}
       {!items ? (
-        <p className="text-sm text-app-text-muted">Loading…</p>
+        <p className="text-sm text-app-text-muted">{t("page.loading")}</p>
       ) : items.length === 0 ? (
-        <p className="text-sm text-app-text-muted">
-          No scorecards yet. Create one to start grading entities.
-        </p>
+        <p className="text-sm text-app-text-muted">{t("page.noScorecards")}</p>
       ) : (
         <ul className="divide-y divide-app-border rounded-lg border border-app-border bg-app-surface">
           {items.map((s) => (
@@ -74,8 +74,13 @@ export function ScorecardsPage() {
                   <div className="text-xs text-app-text-muted">{s.description}</div>
                 )}
                 <div className="text-[11px] text-app-text-muted mt-1">
-                  {s.tierStyle} · {s.rules?.length ?? 0} rules ·{" "}
-                  {s.appliesTo.length === 0 ? "all kinds" : s.appliesTo.join(", ")}
+                  {t(`tierStyleLabel.${s.tierStyle}` as Parameters<typeof t>[0])} ·{" "}
+                  {t("page.rulesCount", { count: s.rules?.length ?? 0 })} ·{" "}
+                  {s.appliesTo.length === 0
+                    ? t("page.allKinds")
+                    : s.appliesTo
+                        .map((k) => t(`entityKindLabel.${k}` as Parameters<typeof t>[0]))
+                        .join(", ")}
                 </div>
               </div>
               <span className="flex items-center gap-3">
@@ -83,10 +88,10 @@ export function ScorecardsPage() {
                   to={`/scorecards/${s.id}/report`}
                   className="text-xs text-app-primary-on hover:underline"
                 >
-                  Report
+                  {t("page.report")}
                 </Link>
                 <span className="text-xs text-app-text-muted">
-                  {s.enabled ? "enabled" : "disabled"}
+                  {s.enabled ? t("page.enabled") : t("page.disabled")}
                 </span>
               </span>
             </li>

@@ -10,4 +10,5 @@ export {
   type LocaleOption,
 } from "./locales";
 export { i18n, SHELL_NS } from "./i18n";
+export { registerLocaleBundle } from "./register";
 export { useTranslation, Trans } from "react-i18next";

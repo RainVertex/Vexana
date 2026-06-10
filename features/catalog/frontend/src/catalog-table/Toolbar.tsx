@@ -1,3 +1,4 @@
+import { useTranslation } from "@internal/i18n";
 import { ColumnsPopover } from "./ColumnsPopover";
 import { FilterByPopover } from "./FilterByPopover";
 import { FilterChip } from "./FilterChip";
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function Toolbar({ view, total, filtered }: Props) {
+  const { t } = useTranslation("catalog");
   const activeFacets = Object.entries(view.facets).filter(([, v]) => v && v.length > 0) as Array<
     [CatalogColumnId, string[]]
   >;
@@ -26,6 +28,11 @@ export function Toolbar({ view, total, filtered }: Props) {
     view.visibleColumns.length !==
       Object.values(COLUMN_META).filter((m) => m.defaultVisible).length;
 
+  const countLabel =
+    filtered === total
+      ? t("toolbar.entitiesCount_other", { count: total })
+      : t("toolbar.entitiesFiltered", { filtered, total });
+
   return (
     <div className="mb-3 space-y-2">
       <div className="flex flex-wrap items-center gap-3">
@@ -34,7 +41,7 @@ export function Toolbar({ view, total, filtered }: Props) {
             type="search"
             value={view.search}
             onChange={(e) => view.setSearch(e.target.value)}
-            placeholder="Search name, description, tags…"
+            placeholder={t("toolbar.searchPlaceholder")}
             className="w-full rounded-md border border-app-border bg-app-surface px-3 py-1.5 text-sm text-app-text placeholder:text-app-text-muted focus:outline-none focus:ring-2 focus:ring-app-primary"
           />
         </div>
@@ -54,12 +61,10 @@ export function Toolbar({ view, total, filtered }: Props) {
             onClick={view.reset}
             className="rounded-md border border-app-border px-3 py-1.5 text-xs text-app-text-muted hover:bg-app-surface-hover"
           >
-            Reset
+            {t("toolbar.reset")}
           </button>
         )}
-        <span className="ml-auto text-xs text-app-text-muted">
-          {filtered === total ? `${total} entities` : `${filtered} of ${total} entities`}
-        </span>
+        <span className="ml-auto text-xs text-app-text-muted">{countLabel}</span>
       </div>
       {activeFacets.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5">

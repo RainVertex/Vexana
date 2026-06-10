@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useTranslation } from "@internal/i18n";
 import type { Task } from "../api";
 
 const PRIORITY_COLORS: Record<number, string> = {
@@ -11,12 +12,12 @@ const PRIORITY_COLORS: Record<number, string> = {
   4: "bg-red-600",
 };
 
-const PRIORITY_LABELS: Record<number, string> = {
-  0: "None",
-  1: "Low",
-  2: "Med",
-  3: "High",
-  4: "Urg",
+const PRIORITY_KEYS: Record<number, string> = {
+  0: "priority.none",
+  1: "priority.low",
+  2: "priority.med",
+  3: "priority.high",
+  4: "priority.urg",
 };
 
 function getInitials(name: string): string {
@@ -33,6 +34,7 @@ interface TaskCardProps {
 }
 
 export function TaskCard({ task }: TaskCardProps) {
+  const { t } = useTranslation("projects");
   return (
     <div className="rounded-md border border-app-border bg-app-surface p-3 shadow-sm">
       <Link to={`/tasks/${task.id}`} className="text-sm font-medium text-app-text hover:underline">
@@ -42,7 +44,7 @@ export function TaskCard({ task }: TaskCardProps) {
         <span
           className={`rounded-full px-1.5 py-0.5 text-[10px] text-white ${PRIORITY_COLORS[task.priority] ?? "bg-gray-600"}`}
         >
-          {PRIORITY_LABELS[task.priority] ?? "None"}
+          {t(PRIORITY_KEYS[task.priority] ?? "priority.none")}
         </span>
         {task.assignees?.map((a) => (
           <span

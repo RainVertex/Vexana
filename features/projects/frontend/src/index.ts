@@ -1,3 +1,4 @@
+import "./i18n";
 export { ProjectsPage } from "./ProjectsPage";
 export { ProjectDetailPage } from "./ProjectDetailPage";
 export { TaskDetailPage } from "./TaskDetailPage";

@@ -12,6 +12,7 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { useTranslation } from "@internal/i18n";
 import {
   useBuckets,
   useUpdateTask,
@@ -56,6 +57,7 @@ interface Props {
 }
 
 export function KanbanBoard({ projectId, tasks, onUpdate, canEdit = true }: Props) {
+  const { t } = useTranslation("projects");
   const { buckets: apiBuckets, loading, error, refetch: refetchBuckets } = useBuckets(projectId);
   const { update } = useUpdateTask();
   const { create: createBucket } = useCreateBucket(projectId);
@@ -79,7 +81,7 @@ export function KanbanBoard({ projectId, tasks, onUpdate, canEdit = true }: Prop
         {
           id: FALLBACK_BUCKET_ID,
           projectId,
-          title: "All Tasks",
+          title: t("view.allTasks"),
           position: 0,
           taskLimit: null,
           tasks,
@@ -89,13 +91,13 @@ export function KanbanBoard({ projectId, tasks, onUpdate, canEdit = true }: Prop
     }
     const tasksByBucket = new Map<string, Task[]>();
     const unassigned: Task[] = [];
-    for (const t of tasks) {
-      if (t.bucketId) {
-        const list = tasksByBucket.get(t.bucketId) ?? [];
-        list.push(t);
-        tasksByBucket.set(t.bucketId, list);
+    for (const task of tasks) {
+      if (task.bucketId) {
+        const list = tasksByBucket.get(task.bucketId) ?? [];
+        list.push(task);
+        tasksByBucket.set(task.bucketId, list);
       } else {
-        unassigned.push(t);
+        unassigned.push(task);
       }
     }
     const sorted = apiBuckets.slice().sort((a, b) => a.position - b.position);
@@ -105,10 +107,10 @@ export function KanbanBoard({ projectId, tasks, onUpdate, canEdit = true }: Prop
       tasks: [...(tasksByBucket.get(b.id) ?? []), ...(b === first ? unassigned : [])],
     }));
     setBuckets(boards);
-  }, [apiBuckets, tasks, projectId]);
+  }, [apiBuckets, tasks, projectId, t]);
 
   function handleDragStart(event: DragStartEvent) {
-    const task = tasks.find((t) => String(t.id) === String(event.active.id));
+    const task = tasks.find((task) => String(task.id) === String(event.active.id));
     setActiveTask(task ?? null);
   }
 
@@ -130,7 +132,7 @@ export function KanbanBoard({ projectId, tasks, onUpdate, canEdit = true }: Prop
           targetBucketId = b.id;
           break;
         }
-        if (b.tasks.some((t) => t.id === overId)) {
+        if (b.tasks.some((task) => task.id === overId)) {
           targetBucketId = b.id;
           break;
         }
@@ -139,7 +141,7 @@ export function KanbanBoard({ projectId, tasks, onUpdate, canEdit = true }: Prop
 
     if (targetBucketId === null || targetBucketId === FALLBACK_BUCKET_ID) return;
 
-    const task = tasks.find((t) => t.id === taskId);
+    const task = tasks.find((task) => task.id === taskId);
     if (!task || task.bucketId === targetBucketId) return;
 
     try {
@@ -190,7 +192,7 @@ export function KanbanBoard({ projectId, tasks, onUpdate, canEdit = true }: Prop
 
   async function handleDeleteBucket(bucket: BoardBucket) {
     if (bucket.id === FALLBACK_BUCKET_ID) return;
-    if (!confirm(`Delete column "${bucket.title}"? Tasks will not be deleted.`)) return;
+    if (!confirm(t("confirm.deleteColumn", { title: bucket.title }))) return;
     try {
       await deleteBucket(bucket.id);
       refetchBuckets();
@@ -213,7 +215,7 @@ export function KanbanBoard({ projectId, tasks, onUpdate, canEdit = true }: Prop
     }
   }
 
-  if (loading) return <p className="text-sm text-app-text-muted">Loading board...</p>;
+  if (loading) return <p className="text-sm text-app-text-muted">{t("loading.board")}</p>;
   if (error) {
     return (
       <div className="rounded-md border border-app-danger bg-app-surface px-3 py-2 text-sm text-app-danger">
@@ -255,7 +257,7 @@ export function KanbanBoard({ projectId, tasks, onUpdate, canEdit = true }: Prop
                   onDoubleClick={() =>
                     canEdit && bucket.id !== FALLBACK_BUCKET_ID && startRename(bucket)
                   }
-                  title={canEdit ? "Double-click to rename" : undefined}
+                  title={canEdit ? t("info.doubleClickRename") : undefined}
                 >
                   {bucket.title}
                 </h3>
@@ -266,14 +268,14 @@ export function KanbanBoard({ projectId, tasks, onUpdate, canEdit = true }: Prop
                   type="button"
                   onClick={() => void handleDeleteBucket(bucket)}
                   className="ml-2 text-xs text-app-danger hover:opacity-80"
-                  title="Delete column"
+                  title={t("info.deleteColumnTitle")}
                 >
                   ×
                 </button>
               )}
             </div>
             <SortableContext
-              items={bucket.tasks.map((t) => t.id)}
+              items={bucket.tasks.map((task) => task.id)}
               strategy={verticalListSortingStrategy}
               id={bucket.id}
             >
@@ -291,7 +293,7 @@ export function KanbanBoard({ projectId, tasks, onUpdate, canEdit = true }: Prop
                       type="text"
                       value={newTaskTitle}
                       onChange={(e) => setNewTaskTitle(e.target.value)}
-                      placeholder="Task title"
+                      placeholder={t("form.taskTitlePlaceholder")}
                       autoFocus
                       className="flex-1 rounded border border-app-border bg-app-surface px-2 py-1 text-xs text-app-text"
                     />
@@ -299,7 +301,7 @@ export function KanbanBoard({ projectId, tasks, onUpdate, canEdit = true }: Prop
                       type="submit"
                       className="rounded bg-app-primary px-2 py-1 text-xs text-app-primary-on"
                     >
-                      Add
+                      {t("actions.add")}
                     </button>
                     <button
                       type="button"
@@ -318,7 +320,7 @@ export function KanbanBoard({ projectId, tasks, onUpdate, canEdit = true }: Prop
                     onClick={() => setNewTaskBucket(bucket.id)}
                     className="w-full rounded px-2 py-1 text-left text-xs text-app-text-muted hover:bg-app-surface-hover"
                   >
-                    + Add task
+                    {t("actions.addTask")}
                   </button>
                 )}
               </div>
@@ -336,7 +338,7 @@ export function KanbanBoard({ projectId, tasks, onUpdate, canEdit = true }: Prop
                   type="text"
                   value={newBucketTitle}
                   onChange={(e) => setNewBucketTitle(e.target.value)}
-                  placeholder="Column name"
+                  placeholder={t("form.columnNamePlaceholder")}
                   autoFocus
                   className="w-full rounded border border-app-border bg-app-surface px-2 py-1 text-sm text-app-text"
                 />
@@ -346,7 +348,7 @@ export function KanbanBoard({ projectId, tasks, onUpdate, canEdit = true }: Prop
                     disabled={!newBucketTitle.trim()}
                     className="rounded bg-app-primary px-3 py-1 text-xs text-app-primary-on hover:opacity-90 disabled:opacity-60"
                   >
-                    Add
+                    {t("actions.add")}
                   </button>
                   <button
                     type="button"
@@ -356,7 +358,7 @@ export function KanbanBoard({ projectId, tasks, onUpdate, canEdit = true }: Prop
                     }}
                     className="rounded border border-app-border px-3 py-1 text-xs text-app-text"
                   >
-                    Cancel
+                    {t("actions.cancel")}
                   </button>
                 </div>
               </form>
@@ -366,7 +368,7 @@ export function KanbanBoard({ projectId, tasks, onUpdate, canEdit = true }: Prop
                 onClick={() => setShowNewBucket(true)}
                 className="rounded-lg border border-dashed border-app-border px-3 py-2 text-sm text-app-text-muted hover:bg-app-surface-hover"
               >
-                + Add Column
+                {t("actions.addColumn")}
               </button>
             )}
           </div>

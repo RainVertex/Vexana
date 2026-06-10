@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { PageLayout } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import { CatalogTable } from "./catalog-table/CatalogTable";
 import { Toolbar } from "./catalog-table/Toolbar";
 import type { CatalogRow } from "./catalog-table/columns";
@@ -10,6 +11,7 @@ import { RegisterEntityDialog } from "./RegisterEntityDialog";
 export function CatalogPage() {
   const api = useApi();
   const view = useCatalogView();
+  const { t } = useTranslation("catalog");
   const [rows, setRows] = useState<CatalogRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [filteredCount, setFilteredCount] = useState(0);
@@ -25,26 +27,26 @@ export function CatalogPage() {
       })
       .catch((err) => {
         if (cancelled) return;
-        setError(err instanceof Error ? err.message : "Failed to load catalog");
+        setError(err instanceof Error ? err.message : t("page.errorLoad"));
       });
     return () => {
       cancelled = true;
     };
-  }, [api, view.showAllOrgs]);
+  }, [api, view.showAllOrgs, t]);
 
   useEffect(() => load(), [load]);
 
   return (
     <PageLayout
-      title="Catalog"
-      description="Services, APIs, and infrastructure."
+      title={t("page.title")}
+      description={t("page.description")}
       actions={
         <button
           type="button"
           onClick={() => setDialogOpen(true)}
           className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on hover:opacity-90"
         >
-          Register existing
+          {t("page.registerButton")}
         </button>
       }
     >
@@ -55,24 +57,24 @@ export function CatalogPage() {
       )}
 
       {rows === null ? (
-        <p className="text-sm text-app-text-muted">Loading…</p>
+        <p className="text-sm text-app-text-muted">{t("page.loading")}</p>
       ) : (
         <>
           <Toolbar view={view} total={rows.length} filtered={filteredCount} />
           {rows.length === 0 ? (
-            <p className="text-sm text-app-text-muted">No catalog entities yet.</p>
+            <p className="text-sm text-app-text-muted">{t("page.emptyEntities")}</p>
           ) : (
             <CatalogTable data={rows} view={view} onFilteredCountChange={setFilteredCount} />
           )}
           {rows.length > 0 && filteredCount === 0 && (
             <p className="mt-3 text-sm text-app-text-muted">
-              No entities match these filters.{" "}
+              {t("page.noMatch")}{" "}
               <button
                 type="button"
                 onClick={view.reset}
                 className="text-app-primary-on hover:underline"
               >
-                Reset filters
+                {t("page.resetFilters")}
               </button>
             </p>
           )}

@@ -7,6 +7,7 @@ import type {
   ChatConversationSummaryDto,
   ChatMessageDto,
 } from "@internal/shared-types";
+import { useTranslation } from "@internal/i18n";
 import { ConversationList } from "./ConversationList";
 import { MessageList } from "./MessageList";
 import { Composer } from "./Composer";
@@ -37,6 +38,7 @@ interface ChatPageProps {
 
 // Stop is disabled during a *_submit (stream.submitInFlight) so we don't orphan a GitHub team mid-approval.
 export function ChatPage({ userName, userAvatarUrl }: ChatPageProps = {}) {
+  const { t } = useTranslation("chat");
   const api = useApi();
   const navigate = useNavigate();
   const { conversationId } = useParams<{ conversationId: string }>();
@@ -185,19 +187,19 @@ export function ChatPage({ userName, userAvatarUrl }: ChatPageProps = {}) {
           <button
             type="button"
             onClick={() => setDrawerOpen(true)}
-            aria-label="Open conversations"
+            aria-label={t("page.openConversations")}
             className="-ml-1 flex h-9 w-9 items-center justify-center rounded-app-md text-app-text-muted hover:bg-app-surface-hover hover:text-app-text"
           >
             <MenuIcon />
           </button>
         )}
         <h1 className="truncate text-sm font-semibold text-app-text">
-          {active?.title ?? "Assistant"}
+          {active?.title ?? t("page.defaultTitle")}
         </h1>
       </header>
       {loading ? (
         <div className="flex flex-1 items-center justify-center text-sm text-app-text-muted">
-          Loading…
+          {t("page.loading")}
         </div>
       ) : (
         <MessageList

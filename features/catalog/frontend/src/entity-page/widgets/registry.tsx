@@ -1,3 +1,4 @@
+import { useTranslation } from "@internal/i18n";
 import type { WidgetDefinition, WidgetInstance, WidgetRegistry } from "@internal/shared-ui";
 import { DetailsWidget } from "./DetailsWidget";
 import { ScorecardsWidget } from "./ScorecardsWidget";
@@ -67,6 +68,43 @@ export const ENTITY_WIDGETS: WidgetRegistry<EntityWidgetId> = {
     minSize: { w: 3, h: 4 },
   },
 };
+
+/** Returns the widget registry with title/description resolved from the catalog namespace. */
+export function useLocalizedEntityWidgets(): WidgetRegistry<EntityWidgetId> {
+  const { t } = useTranslation("catalog");
+  return {
+    details: {
+      ...ENTITY_WIDGETS.details,
+      title: t("widgets.details.title"),
+      description: t("widgets.details.description"),
+    },
+    scorecards: {
+      ...ENTITY_WIDGETS.scorecards,
+      title: t("widgets.scorecards.title"),
+      description: t("widgets.scorecards.description"),
+    },
+    "relations-graph": {
+      ...ENTITY_WIDGETS["relations-graph"],
+      title: t("widgets.relationsGraph.title"),
+      description: t("widgets.relationsGraph.description"),
+    },
+    links: {
+      ...ENTITY_WIDGETS.links,
+      title: t("widgets.links.title"),
+      description: t("widgets.links.description"),
+    },
+    "dora-chart": {
+      ...ENTITY_WIDGETS["dora-chart"],
+      title: t("widgets.doraChart.title"),
+      description: t("widgets.doraChart.description"),
+    },
+    pipelines: {
+      ...ENTITY_WIDGETS.pipelines,
+      title: t("widgets.pipelines.title"),
+      description: t("widgets.pipelines.description"),
+    },
+  };
+}
 
 export const ENTITY_WIDGET_LIST: EntityWidgetDefinition[] = Object.values(ENTITY_WIDGETS);
 

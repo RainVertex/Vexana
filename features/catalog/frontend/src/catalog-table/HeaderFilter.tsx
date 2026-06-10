@@ -1,7 +1,8 @@
 // Header-cell facet filter; portals the dropdown so the table's overflow-x-auto does not clip it.
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { COLUMN_META, type CatalogColumnId } from "./columns";
+import { useTranslation } from "@internal/i18n";
+import { useLocalizedColumnMeta, type CatalogColumnId } from "./columns";
 
 interface Props {
   column: CatalogColumnId;
@@ -18,6 +19,8 @@ export function HeaderFilter({ column, options, selected, onToggle, onClear }: P
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
+  const { t } = useTranslation("catalog");
+  const localizedMeta = useLocalizedColumnMeta();
 
   const reposition = () => {
     const rect = triggerRef.current?.getBoundingClientRect();
@@ -60,7 +63,7 @@ export function HeaderFilter({ column, options, selected, onToggle, onClear }: P
     };
   }, [open]);
 
-  const meta = COLUMN_META[column];
+  const meta = localizedMeta[column];
   const active = selected.length > 0;
 
   return (
@@ -77,7 +80,7 @@ export function HeaderFilter({ column, options, selected, onToggle, onClear }: P
             ? "bg-app-primary-soft text-app-primary-on"
             : "text-app-text-muted hover:bg-app-surface-hover"
         }`}
-        aria-label={`Filter ${meta.label}`}
+        aria-label={t("headerFilter.filterLabel", { label: meta.label })}
       >
         {active ? `▼ ${selected.length}` : "▾"}
       </button>
@@ -92,19 +95,21 @@ export function HeaderFilter({ column, options, selected, onToggle, onClear }: P
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-1 flex items-center justify-between px-1 text-[10px] uppercase tracking-wide text-app-text-muted">
-              <span>Filter {meta.label}</span>
+              <span>{t("headerFilter.filterLabel", { label: meta.label })}</span>
               {active && (
                 <button
                   type="button"
                   onClick={onClear}
                   className="text-app-primary-on hover:underline"
                 >
-                  clear
+                  {t("headerFilter.clear")}
                 </button>
               )}
             </div>
             {options.length === 0 ? (
-              <div className="px-2 py-1 text-xs text-app-text-muted">No values</div>
+              <div className="px-2 py-1 text-xs text-app-text-muted">
+                {t("headerFilter.noValues")}
+              </div>
             ) : (
               <ul className="max-h-60 overflow-auto">
                 {options.map((opt) => (

@@ -1,20 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type { DeploymentRow, WorkflowRunRow } from "@internal/shared-types";
 import { useEntityOverviewContext } from "../EntityOverviewContext";
 
 // Compact Overview CI/CD widget: recent workflow runs plus latest deploy per environment.
-
-const CONCLUSION_COLOR: Record<string, string> = {
-  success: "text-app-success",
-  failure: "text-app-danger",
-  cancelled: "text-app-text-muted",
-  skipped: "text-app-text-muted",
-  timed_out: "text-app-danger",
-  action_required: "text-app-warning",
-  neutral: "text-app-text-muted",
-};
 
 const DEPLOY_STATE_COLOR: Record<string, string> = {
   success: "text-app-success",
@@ -26,10 +17,10 @@ const DEPLOY_STATE_COLOR: Record<string, string> = {
   inactive: "text-app-text-muted",
 };
 
-function fmtAge(iso: string | null): string {
+function fmtAge(iso: string | null, justNow: string): string {
   if (!iso) return "—";
   const ms = Date.now() - new Date(iso).getTime();
-  if (ms < 60_000) return "just now";
+  if (ms < 60_000) return justNow;
   if (ms < 3_600_000) return `${Math.floor(ms / 60_000)}m`;
   if (ms < 86_400_000) return `${Math.floor(ms / 3_600_000)}h`;
   return `${Math.floor(ms / 86_400_000)}d`;
@@ -50,6 +41,7 @@ function latestPerEnvironment(deploys: DeploymentRow[]): DeploymentRow[] {
 export function PipelinesWidget() {
   const { data } = useEntityOverviewContext();
   const api = useApi();
+  const { t } = useTranslation("catalog");
   const entityId = data.entity.id;
   const hasInstallation = data.entity.installationId != null;
 
@@ -74,38 +66,33 @@ export function PipelinesWidget() {
         setDeploys(d.items);
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Failed");
+        if (!cancelled) setError(err instanceof Error ? err.message : t("errors.generic"));
       });
     return () => {
       cancelled = true;
     };
-  }, [api, entityId, hasInstallation]);
+  }, [api, entityId, hasInstallation, t]);
 
   if (!hasInstallation) {
-    return (
-      <p className="text-sm text-app-text-muted">
-        Connect the GitHub App to see CI runs and deployments here.
-      </p>
-    );
+    return <p className="text-sm text-app-text-muted">{t("runs.noGithubApp")}</p>;
   }
   if (error) return <p className="text-sm text-app-danger">{error}</p>;
   if (runs === null || deploys === null) {
-    return <p className="text-sm text-app-text-muted">Loading…</p>;
+    return <p className="text-sm text-app-text-muted">{t("runs.loading")}</p>;
   }
   if (runs.length === 0 && deploys.length === 0) {
-    return (
-      <p className="text-sm text-app-text-muted">No workflow runs or deployments synced yet.</p>
-    );
+    return <p className="text-sm text-app-text-muted">{t("runs.noRunsOrDeploys")}</p>;
   }
 
   const envs = latestPerEnvironment(deploys);
+  const justNow = t("runs.justNow");
 
   return (
     <div className="space-y-3 text-sm">
       {envs.length > 0 && (
         <section>
           <div className="text-xs uppercase tracking-wide text-app-text-muted mb-1">
-            Environments
+            {t("runs.widgetEnvironments")}
           </div>
           <ul className="space-y-1">
             {envs.map((d) => (
@@ -118,13 +105,13 @@ export function PipelinesWidget() {
                     DEPLOY_STATE_COLOR[d.state] ?? "text-app-text-muted"
                   }`}
                 >
-                  {d.state}
+                  {t(`runs.deployState.${d.state}`)}
                 </span>
                 <span className="flex-1 truncate text-right font-mono text-xs text-app-text-muted">
                   {d.sha.slice(0, 7)}
                 </span>
                 <span className="text-xs text-app-text-muted whitespace-nowrap">
-                  {fmtAge(d.deployedAt)}
+                  {fmtAge(d.deployedAt, justNow)}
                 </span>
               </li>
             ))}
@@ -135,7 +122,7 @@ export function PipelinesWidget() {
       {runs.length > 0 && (
         <section>
           <div className="text-xs uppercase tracking-wide text-app-text-muted mb-1">
-            Recent runs
+            {t("runs.widgetRecentRuns")}
           </div>
           <ul className="space-y-1">
             {runs.map((r) => (
@@ -154,7 +141,7 @@ export function PipelinesWidget() {
                   {r.headBranch ?? "—"}
                 </span>
                 <span className="text-xs text-app-text-muted whitespace-nowrap">
-                  {fmtAge(r.runUpdatedAt)}
+                  {fmtAge(r.runUpdatedAt, justNow)}
                 </span>
               </li>
             ))}
@@ -167,7 +154,7 @@ export function PipelinesWidget() {
           to={`/catalog/${entityId}/runs`}
           className="text-xs text-app-primary-on hover:underline"
         >
-          View all CI/CD activity →
+          {t("runs.viewAll")}
         </Link>
       </div>
     </div>
@@ -181,17 +168,15 @@ function RunBadge({
   status: WorkflowRunRow["status"];
   conclusion: WorkflowRunRow["conclusion"];
 }) {
+  const { t } = useTranslation("catalog");
   if (status !== "completed") {
     return (
       <span
         className="inline-block w-2 h-2 rounded-full bg-app-warning shrink-0"
-        aria-label={status}
+        aria-label={t(`runs.runStatus.${status}`)}
       />
     );
   }
-  const color = conclusion
-    ? (CONCLUSION_COLOR[conclusion] ?? "text-app-text-muted")
-    : "text-app-text-muted";
   const dot =
     conclusion === "success"
       ? "bg-app-success"
@@ -201,8 +186,9 @@ function RunBadge({
   return (
     <span
       className={`inline-block w-2 h-2 rounded-full ${dot} shrink-0`}
-      aria-label={conclusion ?? "completed"}
-      title={`${color}`}
+      aria-label={
+        conclusion ? t(`runs.runConclusion.${conclusion}`) : t("runs.runStatus.completed")
+      }
     />
   );
 }

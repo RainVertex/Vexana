@@ -1,3 +1,4 @@
+import { useTranslation } from "@internal/i18n";
 import type { ScorecardTier, ScorecardTierStyle } from "@internal/shared-types";
 
 const STAGE_STYLES: Record<string, string> = {
@@ -42,15 +43,14 @@ export function TierPill({
   tierStyle: ScorecardTierStyle;
   size?: "sm" | "md";
 }) {
+  const { t } = useTranslation("catalog");
   const styles = tierStyle === "stage" ? STAGE_STYLES : THRESHOLD_STYLES;
   const cls = styles[tier] ?? styles.none;
   const isStage = STAGE_TIERS.has(tier);
   const padding = size === "sm" ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-0.5 text-[11px]";
-  const display = tier === "none" ? "—" : tier;
+  const display = tier === "none" ? "—" : t(`scorecardTier.${tier}`);
   return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-full font-medium capitalize ${padding} ${cls}`}
-    >
+    <span className={`inline-flex items-center gap-1 rounded-full font-medium ${padding} ${cls}`}>
       {tier !== "none" && (isStage ? <MedalIcon /> : <DotIcon />)}
       {display}
     </span>

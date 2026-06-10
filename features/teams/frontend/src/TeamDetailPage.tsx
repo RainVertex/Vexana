@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PageLayout } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type {
   CurrentUser,
   MaintainerRequestDto,
@@ -18,6 +19,7 @@ export function TeamDetailPage() {
   const { slug = "" } = useParams<{ slug: string }>();
   const api = useApi();
   const navigate = useNavigate();
+  const { t } = useTranslation("teams");
   const [team, setTeam] = useState<TeamDetail | null>(null);
   const [me, setMe] = useState<CurrentUser | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -34,9 +36,9 @@ export function TeamDetailPage() {
       const res = await api.teams.get(slug);
       setTeam(res);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load");
+      setError(err instanceof Error ? err.message : t("errors.failedToLoad"));
     }
-  }, [api, slug]);
+  }, [api, slug, t]);
 
   const loadMyMaintainerRequest = useCallback(
     async (currentSlug: string) => {
@@ -67,15 +69,15 @@ export function TeamDetailPage() {
 
   if (error) {
     return (
-      <PageLayout title="Team">
+      <PageLayout title={t("page.teamTitle")}>
         <p className="text-sm text-app-danger">{error}</p>
       </PageLayout>
     );
   }
   if (!team || !me) {
     return (
-      <PageLayout title="Team">
-        <p className="text-sm text-app-text-muted">Loading…</p>
+      <PageLayout title={t("page.teamTitle")}>
+        <p className="text-sm text-app-text-muted">{t("status.loading")}</p>
       </PageLayout>
     );
   }
@@ -93,7 +95,7 @@ export function TeamDetailPage() {
       const updated = await api.teams.addMember(team!.slug, { userId: user.id });
       setTeam(updated);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Add failed");
+      setError(err instanceof Error ? err.message : t("errors.addFailed"));
     } finally {
       setBusy(false);
     }
@@ -105,7 +107,7 @@ export function TeamDetailPage() {
       const updated = await api.teams.setMemberRole(team!.slug, userId, role);
       setTeam(updated);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Update failed");
+      setError(err instanceof Error ? err.message : t("errors.updateFailed"));
     } finally {
       setBusy(false);
     }
@@ -121,7 +123,7 @@ export function TeamDetailPage() {
       }
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Remove failed");
+      setError(err instanceof Error ? err.message : t("errors.removeFailed"));
     } finally {
       setBusy(false);
     }
@@ -132,23 +134,23 @@ export function TeamDetailPage() {
     setBusy(true);
     try {
       const result = await api.teams.transferOwnership(team!.slug, transferTarget);
-      alert(`Transferred ${result.entityCount} entities to ${result.to.slug}.`);
+      alert(t("confirm.transferResult", { count: result.entityCount, slug: result.to.slug }));
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Transfer failed");
+      setError(err instanceof Error ? err.message : t("errors.transferFailed"));
     } finally {
       setBusy(false);
     }
   }
 
   async function handleDelete() {
-    if (!confirm(`Soft-delete "${team!.name}"? It can be restored within 30 days.`)) return;
+    if (!confirm(t("confirm.deleteTeam", { name: team!.name }))) return;
     setBusy(true);
     try {
       await api.teams.delete(team!.slug);
       navigate("/teams");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Delete failed");
+      setError(err instanceof Error ? err.message : t("errors.deleteFailed"));
     } finally {
       setBusy(false);
     }
@@ -167,12 +169,12 @@ export function TeamDetailPage() {
               disabled={busy}
               className="rounded-md border border-app-border px-3 py-1 text-sm text-app-text hover:bg-app-surface-hover"
             >
-              Request to become maintainer
+              {t("actions.requestToBecomeMaintianer")}
             </button>
           )}
           {canRequestMaintainer && pendingMaintainerRequest && (
             <span className="rounded-md border border-app-border px-3 py-1 text-sm text-app-text-muted">
-              Maintainer request pending
+              {t("status.maintainerRequestPending")}
             </span>
           )}
           {canManage && isAdmin && (
@@ -182,7 +184,7 @@ export function TeamDetailPage() {
               disabled={busy}
               className="rounded-md border border-app-danger px-3 py-1 text-sm text-app-danger hover:bg-app-surface-hover"
             >
-              Delete
+              {t("actions.delete")}
             </button>
           )}
         </>
@@ -192,7 +194,7 @@ export function TeamDetailPage() {
 
       <section className="mb-6">
         <h2 className="mb-2 text-sm font-semibold text-app-text">
-          Members ({team.members.length})
+          {t("members.sectionTitle", { count: team.members.length })}
         </h2>
         <ul className="divide-y divide-app-border rounded-lg border border-app-border bg-app-surface">
           {team.members.map((m) => {
@@ -211,12 +213,12 @@ export function TeamDetailPage() {
                       onChange={(e) => void changeRole(m.userId, e.target.value as TeamMemberRole)}
                       className="rounded-md border border-app-border bg-app-surface px-2 py-1 text-xs"
                     >
-                      <option value="lead">lead</option>
-                      <option value="member">member</option>
+                      <option value="lead">{t("members.roleLead")}</option>
+                      <option value="member">{t("members.roleMember")}</option>
                     </select>
                   ) : (
                     <span className="rounded bg-app-surface-hover px-2 py-0.5 text-xs">
-                      {m.role}
+                      {m.role === "lead" ? t("members.roleLead") : t("members.roleMember")}
                     </span>
                   )}
                   {(canManage || isSelf) && (
@@ -226,7 +228,7 @@ export function TeamDetailPage() {
                       onClick={() => void removeMember(m.userId)}
                       className="text-xs text-app-text-muted hover:text-app-danger"
                     >
-                      {isSelf ? "Leave" : "Remove"}
+                      {isSelf ? t("actions.leave") : t("actions.remove")}
                     </button>
                   )}
                 </div>
@@ -238,7 +240,9 @@ export function TeamDetailPage() {
 
       {canManage && (
         <section className="mb-6">
-          <h2 className="mb-2 text-sm font-semibold text-app-text">Add a member</h2>
+          <h2 className="mb-2 text-sm font-semibold text-app-text">
+            {t("members.addMemberTitle")}
+          </h2>
           <UserPicker
             excludeIds={team.members.map((m) => m.userId)}
             onSelect={addMember}
@@ -259,11 +263,8 @@ export function TeamDetailPage() {
 
       {canManage && (
         <section className="mb-6">
-          <h2 className="mb-2 text-sm font-semibold text-app-text">Transfer ownership</h2>
-          <p className="mb-2 text-xs text-app-text-muted">
-            Move all catalog entities and projects owned by this team to another team. Required
-            before deletion if this team owns resources.
-          </p>
+          <h2 className="mb-2 text-sm font-semibold text-app-text">{t("transfer.sectionTitle")}</h2>
+          <p className="mb-2 text-xs text-app-text-muted">{t("transfer.description")}</p>
           <div className="flex gap-2 text-sm">
             <select
               value={transferTarget}
@@ -271,12 +272,12 @@ export function TeamDetailPage() {
               disabled={busy}
               className="rounded-md border border-app-border bg-app-surface px-2 py-1"
             >
-              <option value="">— Select target team —</option>
+              <option value="">{t("transfer.selectTargetPlaceholder")}</option>
               {allTeams
-                .filter((t) => t.slug !== team.slug)
-                .map((t) => (
-                  <option key={t.id} value={t.slug}>
-                    {t.name}
+                .filter((team2) => team2.slug !== team.slug)
+                .map((team2) => (
+                  <option key={team2.id} value={team2.slug}>
+                    {team2.name}
                   </option>
                 ))}
             </select>
@@ -286,7 +287,7 @@ export function TeamDetailPage() {
               disabled={busy || !transferTarget}
               className="rounded-md bg-app-primary px-3 py-1 text-app-primary-on disabled:opacity-50"
             >
-              Transfer
+              {t("actions.transfer")}
             </button>
           </div>
         </section>

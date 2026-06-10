@@ -1,4 +1,6 @@
+import { useMemo } from "react";
 import type { WidgetDefinition, WidgetInstance, WidgetRegistry } from "@internal/shared-ui";
+import { useTranslation } from "@internal/i18n";
 import type { WidgetId } from "./types";
 import { OnboardingWidget } from "@feature/onboarding-frontend";
 import { SearchWidget } from "./search";
@@ -159,3 +161,26 @@ export const DEFAULT_WIDGETS: HomeWidgetInstance[] = [
   { i: "top-visited-1", widgetId: "top-visited", x: 6, y: 11, w: 6, h: 4 },
   { i: "chat-assistant-1", widgetId: "chat-assistant", x: 0, y: 15, w: 6, h: 7 },
 ];
+
+// Titles, descriptions, and category labels resolved against the shell namespace so they react to language changes.
+export function useLocalizedWidgets() {
+  const { t } = useTranslation();
+  const registry = useMemo(() => {
+    const out = {} as WidgetRegistry<WidgetId>;
+    for (const def of WIDGET_LIST) {
+      out[def.id] = {
+        ...def,
+        title: t(`widgets.${def.id}.title`, { defaultValue: def.title }),
+        description: t(`widgets.${def.id}.description`, { defaultValue: def.description }),
+        category: def.category
+          ? t(`widgets.categories.${def.category}`, { defaultValue: def.category })
+          : def.category,
+      };
+    }
+    return out;
+  }, [t]);
+  const list = useMemo(() => Object.values(registry), [registry]);
+  const homeList = useMemo(() => list.filter((w) => widgetOnSurface(w, "home")), [list]);
+  const dashboardList = useMemo(() => list.filter((w) => widgetOnSurface(w, "dashboard")), [list]);
+  return { registry, homeList, dashboardList };
+}

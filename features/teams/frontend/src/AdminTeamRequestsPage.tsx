@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { PageLayout } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type { TeamRequestDto } from "@internal/shared-types";
 import { RejectTeamRequestDialog } from "./RejectTeamRequestDialog";
 import { ProposeChangesDialog } from "./ProposeChangesDialog";
@@ -10,6 +11,7 @@ import { RequestDiff } from "./RequestDiff";
 
 export function AdminTeamRequestsPage() {
   const api = useApi();
+  const { t } = useTranslation("teams");
   const [items, setItems] = useState<TeamRequestDto[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -29,9 +31,9 @@ export function AdminTeamRequestsPage() {
       );
       setItems(combined);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load");
+      setError(err instanceof Error ? err.message : t("errors.failedToLoad"));
     }
-  }, [api]);
+  }, [api, t]);
 
   useEffect(() => {
     void load();
@@ -44,7 +46,7 @@ export function AdminTeamRequestsPage() {
       await api.teamRequests.approve(id);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Approve failed");
+      setError(err instanceof Error ? err.message : t("errors.approveFailed"));
     } finally {
       setBusyId(null);
     }
@@ -59,21 +61,18 @@ export function AdminTeamRequestsPage() {
       setRejecting(null);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Reject failed");
+      setError(err instanceof Error ? err.message : t("errors.rejectFailed"));
     } finally {
       setBusyId(null);
     }
   }
 
   return (
-    <PageLayout
-      title="Team requests"
-      description="Approve, reject, or propose changes to pending team-creation requests."
-    >
+    <PageLayout title={t("page.teamRequestsTitle")} description={t("page.teamRequestsDescription")}>
       {error && <p className="mb-3 text-sm text-app-danger">{error}</p>}
-      {!items && !error && <p className="text-sm text-app-text-muted">Loading…</p>}
+      {!items && !error && <p className="text-sm text-app-text-muted">{t("status.loading")}</p>}
       {items && items.length === 0 && (
-        <p className="text-sm text-app-text-muted">Queue is empty.</p>
+        <p className="text-sm text-app-text-muted">{t("empty.queueEmpty")}</p>
       )}
       {items && items.length > 0 && (
         <ul className="divide-y divide-app-border rounded-lg border border-app-border bg-app-surface">
@@ -87,7 +86,7 @@ export function AdminTeamRequestsPage() {
                       <span>{r.name}</span>
                       {awaitingUser && (
                         <span className="rounded-full border border-app-border px-2 py-0.5 text-xs text-app-text-muted">
-                          waiting on requester
+                          {t("status.waitingOnRequester")}
                         </span>
                       )}
                     </div>
@@ -96,16 +95,19 @@ export function AdminTeamRequestsPage() {
                       <p className="mt-1 text-sm text-app-text-muted">{r.description}</p>
                     )}
                     <div className="mt-1 text-xs text-app-text-muted">
-                      by {r.requestedBy.displayName} · round {r.roundCount} of 3
+                      {t("requestList.byRound", {
+                        name: r.requestedBy.displayName,
+                        round: r.roundCount,
+                      })}
                     </div>
                     {r.mirrorToGithub && r.githubOrgLogin && (
                       <div className="mt-0.5 text-xs text-app-text-muted">
-                        Mirror to GitHub org: {r.githubOrgLogin}
+                        {t("requestList.mirrorToOrg", { org: r.githubOrgLogin })}
                       </div>
                     )}
                     {r.mirrorToGithub && !r.githubOrgLogin && (
                       <div className="mt-0.5 text-xs text-app-danger">
-                        Mirror requested but the linked GitHub integration is missing or disabled.
+                        {t("requestList.mirrorMissingIntegration")}
                       </div>
                     )}
                     <ProposedMembersList request={r} />
@@ -118,7 +120,7 @@ export function AdminTeamRequestsPage() {
                       onClick={() => void approve(r.id)}
                       className="rounded-md bg-app-primary px-3 py-1 text-app-primary-on disabled:opacity-50"
                     >
-                      Approve
+                      {t("actions.approve")}
                     </button>
                     <button
                       type="button"
@@ -126,7 +128,7 @@ export function AdminTeamRequestsPage() {
                       onClick={() => setRejecting(r)}
                       className="rounded-md border border-app-border px-3 py-1 text-app-text-muted hover:text-app-danger disabled:opacity-50"
                     >
-                      Reject
+                      {t("actions.reject")}
                     </button>
                     {!awaitingUser && (
                       <button
@@ -135,7 +137,7 @@ export function AdminTeamRequestsPage() {
                         onClick={() => setProposing(r)}
                         className="rounded-md border border-app-border px-3 py-1 text-app-text-muted hover:text-app-text disabled:opacity-50"
                       >
-                        Propose changes
+                        {t("actions.proposeChanges")}
                       </button>
                     )}
                   </div>

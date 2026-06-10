@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import { DatasourceSelect, pickDefaultUid, type DatasourceCandidate } from "./DatasourceSelect";
 
 export interface GrafanaConnectDialogProps {
@@ -29,6 +30,7 @@ interface ConnectResult {
 
 export function GrafanaConnectDialog({ open, onClose, onConnected }: GrafanaConnectDialogProps) {
   const api = useApi();
+  const { t } = useTranslation("integrations");
   const [name, setName] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
   const [apiToken, setApiToken] = useState("");
@@ -60,7 +62,7 @@ export function GrafanaConnectDialog({ open, onClose, onConnected }: GrafanaConn
       setLokiUid(pickDefaultUid(res.datasources.loki));
       setTempoUid(pickDefaultUid(res.datasources.tempo));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Probe failed");
+      setError(err instanceof Error ? err.message : t("errors.probeFailed"));
     } finally {
       setBusy(false);
     }
@@ -93,7 +95,7 @@ export function GrafanaConnectDialog({ open, onClose, onConnected }: GrafanaConn
       });
       onConnected();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Connect failed");
+      setError(err instanceof Error ? err.message : t("errors.connectFailed"));
     } finally {
       setBusy(false);
     }
@@ -112,28 +114,29 @@ export function GrafanaConnectDialog({ open, onClose, onConnected }: GrafanaConn
       >
         {!probe && !result && (
           <form onSubmit={handleProbe} className="space-y-3">
-            <h3 className="text-sm font-semibold text-app-text">Connect Grafana</h3>
+            <h3 className="text-sm font-semibold text-app-text">
+              {t("grafanaConnect.stepCredentialsTitle")}
+            </h3>
             <p className="text-xs text-app-text-muted">
-              The platform talks to Prometheus, Loki, and Tempo through Grafana&apos;s datasource
-              proxy. One service-account token is all that&apos;s needed.
+              {t("grafanaConnect.stepCredentialsDescription")}
             </p>
             <Field
-              label="Display name"
+              label={t("grafanaConnect.fieldDisplayName")}
               value={name}
               onChange={setName}
-              placeholder="Grafana (prod)"
+              placeholder={t("grafanaConnect.fieldDisplayNamePlaceholder")}
             />
             <Field
-              label="Base URL"
+              label={t("grafanaConnect.fieldBaseUrl")}
               value={baseUrl}
               onChange={setBaseUrl}
-              placeholder="https://grafana.example.com"
+              placeholder={t("grafanaConnect.fieldBaseUrlPlaceholder")}
             />
             <Field
-              label="Service account token"
+              label={t("grafanaConnect.fieldServiceAccountToken")}
               value={apiToken}
               onChange={setApiToken}
-              placeholder="glsa_…"
+              placeholder={t("grafanaConnect.fieldServiceAccountTokenPlaceholder")}
               type="password"
             />
             <button
@@ -141,11 +144,11 @@ export function GrafanaConnectDialog({ open, onClose, onConnected }: GrafanaConn
               onClick={() => setAdvancedOpen((v) => !v)}
               className="text-xs text-app-text-muted underline-offset-2 hover:underline"
             >
-              {advancedOpen ? "Hide advanced" : "Advanced…"}
+              {advancedOpen ? t("grafanaConnect.advancedHide") : t("grafanaConnect.advancedShow")}
             </button>
             {advancedOpen && (
               <Field
-                label="Re-notify suppression window (minutes)"
+                label={t("grafanaConnect.fieldSuppressionWindow")}
                 value={suppressionMinutes}
                 onChange={setSuppressionMinutes}
                 placeholder="60"
@@ -158,14 +161,14 @@ export function GrafanaConnectDialog({ open, onClose, onConnected }: GrafanaConn
                 onClick={onClose}
                 className="rounded px-3 py-1.5 text-sm text-app-text-muted hover:bg-app-surface-hover"
               >
-                Cancel
+                {t("grafanaConnect.cancel")}
               </button>
               <button
                 type="submit"
                 disabled={busy || !baseUrl.trim() || !apiToken.trim()}
                 className="rounded bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on disabled:opacity-50"
               >
-                {busy ? "Probing…" : "Connect"}
+                {busy ? t("grafanaConnect.probing") : t("grafanaConnect.connectButton")}
               </button>
             </div>
           </form>
@@ -173,34 +176,34 @@ export function GrafanaConnectDialog({ open, onClose, onConnected }: GrafanaConn
 
         {probe && !result && (
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-app-text">Pick datasources</h3>
+            <h3 className="text-sm font-semibold text-app-text">
+              {t("grafanaConnect.stepDatasourcesTitle")}
+            </h3>
             <p className="text-xs text-app-text-muted">
-              Grafana exposes more than one matching datasource for some types. Confirm which one
-              the platform should query.
+              {t("grafanaConnect.stepDatasourcesDescription")}
             </p>
             <DatasourceSelect
-              label="Prometheus (required for the scrape job)"
+              label={t("grafanaConnect.dsPrometheus")}
               value={promUid}
               onChange={setPromUid}
               candidates={probe.datasources.prometheus}
               required
             />
             <DatasourceSelect
-              label="Loki (optional; enables the logs panel)"
+              label={t("grafanaConnect.dsLoki")}
               value={lokiUid}
               onChange={setLokiUid}
               candidates={probe.datasources.loki}
             />
             <DatasourceSelect
-              label="Tempo (optional; enables trace drill-down)"
+              label={t("grafanaConnect.dsTempo")}
               value={tempoUid}
               onChange={setTempoUid}
               candidates={probe.datasources.tempo}
             />
             {!probe.imageRendererAvailable && (
               <p className="rounded border border-app-border bg-app-bg p-2 text-xs text-app-text-muted">
-                Dashboard embeds disabled — install the <code>grafana-image-renderer</code> plugin
-                on this Grafana to enable PNG panel embeds.
+                {t("grafanaConnect.noImageRenderer")}
               </p>
             )}
             {error && <p className="text-xs text-app-danger">{error}</p>}
@@ -210,7 +213,7 @@ export function GrafanaConnectDialog({ open, onClose, onConnected }: GrafanaConn
                 onClick={() => setProbe(null)}
                 className="rounded px-3 py-1.5 text-sm text-app-text-muted hover:bg-app-surface-hover"
               >
-                Back
+                {t("grafanaConnect.back")}
               </button>
               <button
                 type="button"
@@ -218,7 +221,7 @@ export function GrafanaConnectDialog({ open, onClose, onConnected }: GrafanaConn
                 disabled={busy || !promUid}
                 className="rounded bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on disabled:opacity-50"
               >
-                {busy ? "Saving…" : "Save integration"}
+                {busy ? t("grafanaConnect.saving") : t("grafanaConnect.saveIntegration")}
               </button>
             </div>
           </div>
@@ -226,36 +229,35 @@ export function GrafanaConnectDialog({ open, onClose, onConnected }: GrafanaConn
 
         {result && (
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-app-text">Connected</h3>
+            <h3 className="text-sm font-semibold text-app-text">
+              {t("grafanaConnect.stepConnectedTitle")}
+            </h3>
             <p className="text-xs text-app-text-muted">
-              Set up the Alertmanager webhook in Grafana so firing alerts land in the notifications
-              bell. Copy the secret <strong>now</strong> — it is shown exactly once.
+              {t("grafanaConnect.stepConnectedDescription")}
             </p>
             <ol className="space-y-2 text-xs text-app-text-muted">
               <li>
-                <span className="font-medium text-app-text">1.</span> In Grafana → Alerting →
-                Contact points, create a <em>Webhook</em> contact point. Use this URL (prefix with
-                your public tunnel host):
+                <span className="font-medium text-app-text">1.</span>{" "}
+                {t("grafanaConnect.webhookStep1")}
                 <code className="mt-1 block break-all rounded bg-app-bg p-2 text-app-text">
                   {result.webhookUrl}
                 </code>
               </li>
               <li>
-                <span className="font-medium text-app-text">2.</span> Under{" "}
-                <em>Optional Webhook settings → HTTP headers</em>, add a header:
+                <span className="font-medium text-app-text">2.</span>{" "}
+                {t("grafanaConnect.webhookStep2")}
                 <code className="mt-1 block break-all rounded bg-app-bg p-2 text-app-text">
                   Authorization: Bearer {result.webhookSecret}
                 </code>
               </li>
               <li>
-                <span className="font-medium text-app-text">3.</span> Save the contact point and
-                route alert rules to it.
+                <span className="font-medium text-app-text">3.</span>{" "}
+                {t("grafanaConnect.webhookStep3")}
               </li>
             </ol>
             {!result.imageRendererAvailable && (
               <p className="rounded border border-app-border bg-app-bg p-2 text-xs text-app-text-muted">
-                Dashboard embeds are disabled until <code>grafana-image-renderer</code> is
-                installed.
+                {t("grafanaConnect.noImageRendererConnected")}
               </p>
             )}
             <div className="flex justify-end gap-2 pt-2">
@@ -264,7 +266,7 @@ export function GrafanaConnectDialog({ open, onClose, onConnected }: GrafanaConn
                 onClick={onClose}
                 className="rounded bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on"
               >
-                Done
+                {t("grafanaConnect.done")}
               </button>
             </div>
           </div>

@@ -1,62 +1,66 @@
 import { useCallback, useEffect, useState } from "react";
 import { PageLayout } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type { NotificationDto } from "@internal/shared-types";
+import type { TFunction } from "i18next";
 
-function summary(n: NotificationDto): string {
+function summary(n: NotificationDto, t: TFunction): string {
   switch (n.kind) {
     case "team.request.submitted": {
       const name = (n.payload as Record<string, unknown>).requestedByDisplayName;
       return typeof name === "string"
-        ? `New team request from ${name}`
-        : "New team request awaiting review";
+        ? t("summary.teamRequestSubmittedBy", { name })
+        : t("summary.teamRequestSubmitted");
     }
     case "team.request.approved":
-      return "Team request approved";
+      return t("summary.teamRequestApproved");
     case "team.request.rejected":
-      return "Team request rejected";
+      return t("summary.teamRequestRejected");
     case "team.request.changes_proposed": {
       const name = (n.payload as Record<string, unknown>).proposedByDisplayName;
       return typeof name === "string"
-        ? `Admin (${name}) proposed changes to your team request`
-        : "Admin proposed changes to your team request";
+        ? t("summary.teamRequestChangesProposedBy", { name })
+        : t("summary.teamRequestChangesProposed");
     }
     case "team.request.counter_proposed": {
       const name = (n.payload as Record<string, unknown>).requestedByDisplayName;
       return typeof name === "string"
-        ? `${name} counter-proposed changes`
-        : "Requester counter-proposed changes";
+        ? t("summary.teamRequestCounterProposedBy", { name })
+        : t("summary.teamRequestCounterProposed");
     }
     case "team.request.auto_cancelled":
-      return "Team request auto-cancelled (3-round limit)";
+      return t("summary.teamRequestAutoCancelled");
     case "team.request.expired":
-      return "Team request expired";
+      return t("summary.teamRequestExpired");
     case "team.maintainer_request.submitted": {
       const name = (n.payload as Record<string, unknown>).requestedByDisplayName;
       const teamName = (n.payload as Record<string, unknown>).teamName;
       return typeof name === "string" && typeof teamName === "string"
-        ? `${name} requested to become a maintainer of ${teamName}`
-        : "New maintainer request awaiting review";
+        ? t("summary.maintainerRequestSubmittedBy", { name, teamName })
+        : t("summary.maintainerRequestSubmitted");
     }
     case "team.maintainer_request.approved":
-      return "Maintainer request approved";
+      return t("summary.maintainerRequestApproved");
     case "team.maintainer_request.rejected":
-      return "Maintainer request rejected";
+      return t("summary.maintainerRequestRejected");
     case "team.member.added":
-      return "Added to team";
+      return t("summary.memberAdded");
     case "team.member.removed":
-      return "Removed from team";
+      return t("summary.memberRemoved");
     case "projects.task.assigned": {
       const p = n.payload as Record<string, unknown>;
-      const title = typeof p.taskTitle === "string" ? p.taskTitle : "a task";
-      const project = typeof p.projectTitle === "string" ? ` in ${p.projectTitle}` : "";
-      return `Assigned to: ${title}${project}`;
+      const title = typeof p.taskTitle === "string" ? p.taskTitle : t("fallback.aTask");
+      const project = typeof p.projectTitle === "string" ? p.projectTitle : null;
+      return project
+        ? t("summary.taskAssignedInProject", { title, project })
+        : t("summary.taskAssigned", { title });
     }
     case "projects.task.commentAdded": {
       const p = n.payload as Record<string, unknown>;
-      const title = typeof p.taskTitle === "string" ? p.taskTitle : "a task";
-      const author = typeof p.authorName === "string" ? p.authorName : "Someone";
-      return `${author} commented on: ${title}`;
+      const title = typeof p.taskTitle === "string" ? p.taskTitle : t("fallback.aTask");
+      const author = typeof p.authorName === "string" ? p.authorName : t("fallback.someone");
+      return t("summary.taskCommented", { author, title });
     }
     default:
       return n.kind;
@@ -65,6 +69,7 @@ function summary(n: NotificationDto): string {
 
 export function NotificationsPage() {
   const api = useApi();
+  const { t } = useTranslation("notifications");
   const [items, setItems] = useState<NotificationDto[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [unreadOnly, setUnreadOnly] = useState(false);
@@ -74,9 +79,9 @@ export function NotificationsPage() {
       const res = await api.notifications.list({ unread: unreadOnly, limit: 200 });
       setItems(res.items);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load");
+      setError(err instanceof Error ? err.message : t("page.errorLoad"));
     }
-  }, [api, unreadOnly]);
+  }, [api, unreadOnly, t]);
 
   useEffect(() => {
     void load();
@@ -94,15 +99,15 @@ export function NotificationsPage() {
 
   return (
     <PageLayout
-      title="Notifications"
-      description="In-app inbox."
+      title={t("page.title")}
+      description={t("page.description")}
       actions={
         <button
           type="button"
           onClick={() => void markAll()}
           className="rounded-md border border-app-border px-3 py-1 text-sm text-app-text hover:bg-app-surface-hover"
         >
-          Mark all read
+          {t("page.markAllRead")}
         </button>
       }
     >
@@ -113,11 +118,11 @@ export function NotificationsPage() {
           checked={unreadOnly}
           onChange={(e) => setUnreadOnly(e.target.checked)}
         />
-        Unread only
+        {t("page.unreadOnly")}
       </label>
-      {!items && <p className="text-sm text-app-text-muted">Loading…</p>}
+      {!items && <p className="text-sm text-app-text-muted">{t("page.loading")}</p>}
       {items && items.length === 0 && (
-        <p className="text-sm text-app-text-muted">No notifications.</p>
+        <p className="text-sm text-app-text-muted">{t("page.empty")}</p>
       )}
       {items && items.length > 0 && (
         <ul className="divide-y divide-app-border rounded-lg border border-app-border bg-app-surface">
@@ -139,8 +144,8 @@ export function NotificationsPage() {
                   />
                   <div className="min-w-0">
                     <div className={isUnread ? "font-medium text-app-text" : "text-app-text-muted"}>
-                      {summary(n)}
-                      {isUnread && <span className="sr-only"> (unread)</span>}
+                      {summary(n, t)}
+                      {isUnread && <span className="sr-only"> {t("page.unreadSrOnly")}</span>}
                     </div>
                     <div className="text-xs text-app-text-muted">
                       {new Date(n.createdAt).toLocaleString()}
@@ -156,7 +161,7 @@ export function NotificationsPage() {
                     onClick={() => void markRead(n.id)}
                     className="shrink-0 text-xs text-app-primary"
                   >
-                    Mark read
+                    {t("page.markRead")}
                   </button>
                 )}
               </li>

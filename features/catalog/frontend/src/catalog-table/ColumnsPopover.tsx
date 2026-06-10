@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { COLUMN_META, COLUMN_ORDER, PINNED_COLUMN, type CatalogColumnId } from "./columns";
+import { useTranslation } from "@internal/i18n";
+import {
+  COLUMN_ORDER,
+  PINNED_COLUMN,
+  useLocalizedColumnMeta,
+  type CatalogColumnId,
+} from "./columns";
 
 interface Props {
   visibleColumns: CatalogColumnId[];
@@ -9,6 +15,8 @@ interface Props {
 export function ColumnsPopover({ visibleColumns, onToggle }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const { t } = useTranslation("catalog");
+  const localizedMeta = useLocalizedColumnMeta();
 
   useEffect(() => {
     if (!open) return;
@@ -35,12 +43,12 @@ export function ColumnsPopover({ visibleColumns, onToggle }: Props) {
         onClick={() => setOpen((v) => !v)}
         className="rounded-md border border-app-border bg-app-surface px-3 py-1.5 text-xs text-app-text hover:bg-app-surface-hover"
       >
-        Manage properties ▾
+        {t("columns.manageProperties")} ▾
       </button>
       {open && (
         <div className="absolute left-0 z-20 mt-1 w-56 rounded-md border border-app-border bg-app-surface p-2 shadow-lg">
           <div className="mb-1 px-1 text-[10px] uppercase tracking-wide text-app-text-muted">
-            Columns
+            {t("columns.label")}
           </div>
           <ul className="max-h-72 overflow-auto">
             {COLUMN_ORDER.map((id) => {
@@ -60,9 +68,11 @@ export function ColumnsPopover({ visibleColumns, onToggle }: Props) {
                       onChange={() => onToggle(id)}
                       className="h-3.5 w-3.5 rounded border-app-border accent-app-primary"
                     />
-                    <span className="text-app-text">{COLUMN_META[id].label}</span>
+                    <span className="text-app-text">{localizedMeta[id].label}</span>
                     {isPinned && (
-                      <span className="ml-auto text-[10px] text-app-text-muted">pinned</span>
+                      <span className="ml-auto text-[10px] text-app-text-muted">
+                        {t("columns.pinned")}
+                      </span>
                     )}
                   </label>
                 </li>

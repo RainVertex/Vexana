@@ -1,26 +1,29 @@
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { useTranslation } from "@internal/i18n";
 import type { DoraMetricsSnapshot } from "@internal/shared-types";
 import { useEntityOverviewContext } from "../EntityOverviewContext";
 
-const METRICS: Array<{
-  key: keyof Pick<
-    DoraMetricsSnapshot,
-    "deployFrequencyPerDay" | "leadTimeHours" | "changeFailureRate" | "mttrHours"
-  >;
-  label: string;
-  color: string;
-}> = [
-  { key: "deployFrequencyPerDay", label: "Deploy Freq / day", color: "#10b981" },
-  { key: "leadTimeHours", label: "Lead Time (h)", color: "#6366f1" },
-  { key: "changeFailureRate", label: "CFR", color: "#ef4444" },
-  { key: "mttrHours", label: "MTTR (h)", color: "#f59e0b" },
-];
-
 export function DoraChartWidget() {
   const { data } = useEntityOverviewContext();
+  const { t } = useTranslation("catalog");
   const dora = data.dora;
+
+  const METRICS: Array<{
+    key: keyof Pick<
+      DoraMetricsSnapshot,
+      "deployFrequencyPerDay" | "leadTimeHours" | "changeFailureRate" | "mttrHours"
+    >;
+    label: string;
+    color: string;
+  }> = [
+    { key: "deployFrequencyPerDay", label: t("dora.deployFreq"), color: "#10b981" },
+    { key: "leadTimeHours", label: t("dora.leadTime"), color: "#6366f1" },
+    { key: "changeFailureRate", label: t("dora.cfr"), color: "#ef4444" },
+    { key: "mttrHours", label: t("dora.mttr"), color: "#f59e0b" },
+  ];
+
   if (dora.length < 2) {
-    return <p className="text-sm text-app-text-muted">Not enough DORA data yet.</p>;
+    return <p className="text-sm text-app-text-muted">{t("dora.notEnoughData")}</p>;
   }
 
   const series = [...dora]

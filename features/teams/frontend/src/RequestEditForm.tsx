@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ApiError } from "@internal/api-client";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type {
   GithubInstallationSummary,
   TeamPolicyViolation,
@@ -30,6 +31,7 @@ interface RequestEditFormProps {
 export function RequestEditForm(props: RequestEditFormProps) {
   const { request, busy, nextRound, onSubmit, onCancel, submitLabel, error } = props;
   const api = useApi();
+  const { t } = useTranslation("teams");
 
   const [slug, setSlug] = useState(request.slug);
   const [name, setName] = useState(request.name);
@@ -79,13 +81,12 @@ export function RequestEditForm(props: RequestEditFormProps) {
     <div className="mt-4 space-y-3 text-sm">
       {aboutToAutoCancel && (
         <div className="rounded-md border border-app-danger/40 bg-app-danger/10 px-3 py-2 text-xs text-app-danger">
-          This will be the {nextRound}th edit and exceeds the 3-round negotiation cap. Submitting
-          will auto-cancel the request and notify both parties.
+          {t("form.autoCancelWarning", { round: nextRound })}
         </div>
       )}
 
       <label className="block">
-        <span className="text-xs text-app-text-muted">Team name</span>
+        <span className="text-xs text-app-text-muted">{t("form.teamNameLabel")}</span>
         <input
           type="text"
           value={name}
@@ -97,7 +98,7 @@ export function RequestEditForm(props: RequestEditFormProps) {
       </label>
 
       <label className="block">
-        <span className="text-xs text-app-text-muted">Slug</span>
+        <span className="text-xs text-app-text-muted">{t("form.slugLabel")}</span>
         <input
           type="text"
           value={slug}
@@ -109,7 +110,7 @@ export function RequestEditForm(props: RequestEditFormProps) {
       </label>
 
       <label className="block">
-        <span className="text-xs text-app-text-muted">Description</span>
+        <span className="text-xs text-app-text-muted">{t("form.descriptionLabelEdit")}</span>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
@@ -126,19 +127,19 @@ export function RequestEditForm(props: RequestEditFormProps) {
           onChange={(e) => setMirrorToGithub(e.target.checked)}
           disabled={busy}
         />
-        <span className="text-app-text">Mirror to GitHub?</span>
+        <span className="text-app-text">{t("form.mirrorToGithub")}</span>
       </label>
 
       {mirrorToGithub && (
         <label className="block">
-          <span className="text-xs text-app-text-muted">Which GitHub org?</span>
+          <span className="text-xs text-app-text-muted">{t("form.whichGithubOrg")}</span>
           <select
             value={githubIntegrationId}
             onChange={(e) => setGithubIntegrationId(e.target.value)}
             disabled={busy || !installationsLoaded || installations.length === 0}
             className="mt-1 w-full rounded-md border border-app-border bg-app-surface px-2 py-1 text-app-text"
           >
-            <option value="">— Select an org —</option>
+            <option value="">{t("form.selectOrgPlaceholder")}</option>
             {installations.map((i) => (
               <option key={i.integrationId} value={i.integrationId}>
                 {i.accountLogin} ({i.name})
@@ -147,7 +148,7 @@ export function RequestEditForm(props: RequestEditFormProps) {
           </select>
           {installationsLoaded && installations.length === 0 && (
             <p className="mt-1 text-xs text-app-text-muted">
-              No active GitHub integrations connected.
+              {t("form.noGithubIntegrationsShort")}
             </p>
           )}
         </label>
@@ -162,7 +163,7 @@ export function RequestEditForm(props: RequestEditFormProps) {
           disabled={busy}
           className="rounded-md px-3 py-1 text-app-text-muted hover:bg-app-surface-hover"
         >
-          Cancel
+          {t("actions.cancel")}
         </button>
         <button
           type="button"
@@ -170,14 +171,17 @@ export function RequestEditForm(props: RequestEditFormProps) {
           disabled={!canSubmit}
           className="rounded-md bg-app-primary px-3 py-1 text-app-primary-on disabled:opacity-50"
         >
-          {busy ? "Submitting…" : submitLabel}
+          {busy ? t("actions.submitting") : submitLabel}
         </button>
       </div>
     </div>
   );
 }
 
-export function toEditError(err: unknown): {
+export function toEditError(
+  err: unknown,
+  t: (key: string) => string,
+): {
   message: string;
   policyViolation: TeamPolicyViolation | null;
 } {
@@ -191,7 +195,7 @@ export function toEditError(err: unknown): {
     return { message: err.message, policyViolation: null };
   }
   return {
-    message: err instanceof Error ? err.message : "Submission failed",
+    message: err instanceof Error ? err.message : t("errors.submissionFailed"),
     policyViolation: null,
   };
 }

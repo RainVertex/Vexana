@@ -1,4 +1,5 @@
 // Read-only chips for the maintainers and members chosen on a team request.
+import { useTranslation } from "@internal/i18n";
 import type { TeamRequestDto } from "@internal/shared-types";
 
 interface ProposedMembersListProps {
@@ -6,13 +7,18 @@ interface ProposedMembersListProps {
 }
 
 export function ProposedMembersList({ request }: ProposedMembersListProps) {
+  const { t } = useTranslation("teams");
   const hasMaintainers = request.proposedMaintainers.length > 0;
   const hasMembers = request.proposedMembers.length > 0;
   if (!hasMaintainers && !hasMembers) return null;
   return (
     <div className="mt-1 space-y-1 text-xs">
-      {hasMaintainers && <Row label="Maintainers" users={request.proposedMaintainers} />}
-      {hasMembers && <Row label="Members" users={request.proposedMembers} />}
+      {hasMaintainers && (
+        <Row label={t("proposedMembers.maintainersLabel")} users={request.proposedMaintainers} />
+      )}
+      {hasMembers && (
+        <Row label={t("proposedMembers.membersLabel")} users={request.proposedMembers} />
+      )}
     </div>
   );
 }

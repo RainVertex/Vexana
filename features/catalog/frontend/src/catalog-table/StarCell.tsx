@@ -1,4 +1,5 @@
 import { useStarred } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 
 interface Props {
   entityId: string;
@@ -7,12 +8,15 @@ interface Props {
 
 export function StarCell({ entityId, entityName }: Props) {
   const { isStarred, toggle } = useStarred();
+  const { t } = useTranslation("catalog");
   const starred = isStarred(entityId);
   return (
     <button
       type="button"
       onClick={() => toggle(entityId)}
-      aria-label={starred ? `Unstar ${entityName}` : `Star ${entityName}`}
+      aria-label={
+        starred ? t("star.unstar", { name: entityName }) : t("star.star", { name: entityName })
+      }
       aria-pressed={starred}
       className={
         starred

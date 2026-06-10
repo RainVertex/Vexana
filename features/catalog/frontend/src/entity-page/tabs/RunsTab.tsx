@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type { DeploymentRow, WorkflowRunRow } from "@internal/shared-types";
 import { useEntityContext } from "../outletContext";
 
@@ -25,13 +26,15 @@ const DEPLOY_STATE_COLOR: Record<string, string> = {
   inactive: "text-app-text-muted",
 };
 
-function fmtAge(iso: string | null): string {
+type AgeTranslate = (key: string, options?: { n: number }) => string;
+
+function fmtAge(iso: string | null, t: AgeTranslate): string {
   if (!iso) return "—";
   const ms = Date.now() - new Date(iso).getTime();
-  if (ms < 60_000) return "just now";
-  if (ms < 3_600_000) return `${Math.floor(ms / 60_000)}m ago`;
-  if (ms < 86_400_000) return `${Math.floor(ms / 3_600_000)}h ago`;
-  return `${Math.floor(ms / 86_400_000)}d ago`;
+  if (ms < 60_000) return t("runs.justNow");
+  if (ms < 3_600_000) return t("runs.agoMinutes", { n: Math.floor(ms / 60_000) });
+  if (ms < 86_400_000) return t("runs.agoHours", { n: Math.floor(ms / 3_600_000) });
+  return t("runs.agoDays", { n: Math.floor(ms / 86_400_000) });
 }
 
 function fmtDuration(start: string | null, end: string | null): string {
@@ -45,6 +48,7 @@ function fmtDuration(start: string | null, end: string | null): string {
 export function RunsTab() {
   const { data } = useEntityContext();
   const api = useApi();
+  const { t } = useTranslation("catalog");
   const entityId = data.entity.id;
   const hasInstallation = data.entity.installationId != null;
 
@@ -68,7 +72,7 @@ export function RunsTab() {
         }
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Failed");
+        if (!cancelled) setError(err instanceof Error ? err.message : t("errors.generic"));
       });
     return () => {
       cancelled = true;
@@ -92,14 +96,15 @@ export function RunsTab() {
       const res = await api.catalog.refreshPipelines(entityId);
       setRefreshNote(
         res.error
-          ? `Sync error: ${res.error}`
-          : `Synced ${res.runsUpserted} run${res.runsUpserted === 1 ? "" : "s"} and ${
-              res.deploymentsUpserted
-            } deployment${res.deploymentsUpserted === 1 ? "" : "s"}.`,
+          ? t("runs.syncError", { error: res.error })
+          : t("runs.syncedRuns_other", {
+              runs: res.runsUpserted,
+              deploys: res.deploymentsUpserted,
+            }),
       );
       load();
     } catch (err) {
-      setRefreshNote(err instanceof Error ? err.message : "Refresh failed");
+      setRefreshNote(err instanceof Error ? err.message : t("runs.refreshFailed"));
     } finally {
       setRefreshing(false);
     }
@@ -108,26 +113,22 @@ export function RunsTab() {
   if (!hasInstallation) {
     return (
       <div className="rounded-lg border border-app-border bg-app-surface p-6">
-        <h2 className="text-sm font-semibold text-app-text mb-2">CI integration not connected</h2>
-        <p className="text-sm text-app-text-muted">
-          Connect the GitHub App for this entity&apos;s organization to see workflow runs and
-          deployments here.
-        </p>
+        <h2 className="text-sm font-semibold text-app-text mb-2">{t("runs.noIntegrationTitle")}</h2>
+        <p className="text-sm text-app-text-muted">{t("runs.noIntegrationBody")}</p>
       </div>
     );
   }
 
   if (error) return <p className="text-sm text-app-danger">{error}</p>;
   if (runs === null || deploys === null) {
-    return <p className="text-sm text-app-text-muted">Loading…</p>;
+    return <p className="text-sm text-app-text-muted">{t("runs.loading")}</p>;
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <p className="text-sm text-app-text-muted">
-          {runs.length} run{runs.length === 1 ? "" : "s"} · {deploys.length} deployment
-          {deploys.length === 1 ? "" : "s"}
+          {t("runs.countSummary_other", { runs: runs.length, deploys: deploys.length })}
         </p>
         <button
           type="button"
@@ -135,7 +136,7 @@ export function RunsTab() {
           disabled={refreshing}
           className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on hover:opacity-90 disabled:opacity-60"
         >
-          {refreshing ? "Refreshing…" : "Refresh now"}
+          {refreshing ? t("runs.refreshing") : t("runs.refresh")}
         </button>
       </div>
       {refreshNote && (
@@ -151,27 +152,26 @@ export function RunsTab() {
 }
 
 function RunsSection({ runs }: { runs: WorkflowRunRow[] }) {
+  const { t } = useTranslation("catalog");
   return (
     <section>
-      <h2 className="text-sm font-semibold text-app-text mb-2">Recent workflow runs</h2>
+      <h2 className="text-sm font-semibold text-app-text mb-2">{t("runs.recentRuns")}</h2>
       {runs.length === 0 ? (
         <div className="rounded-lg border border-app-border bg-app-surface p-6">
-          <p className="text-sm text-app-text-muted">
-            No workflow runs synced yet. Runs appear here as GitHub Actions completes them.
-          </p>
+          <p className="text-sm text-app-text-muted">{t("runs.noRuns")}</p>
         </div>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-app-border bg-app-surface">
           <table className="w-full text-sm">
             <thead className="border-b border-app-border">
               <tr className="text-left text-xs uppercase tracking-wide text-app-text-muted">
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Workflow</th>
-                <th className="px-4 py-3">Branch</th>
-                <th className="px-4 py-3">Commit</th>
-                <th className="px-4 py-3">Actor</th>
-                <th className="px-4 py-3">Duration</th>
-                <th className="px-4 py-3">When</th>
+                <th className="px-4 py-3">{t("runs.colStatus")}</th>
+                <th className="px-4 py-3">{t("runs.colWorkflow")}</th>
+                <th className="px-4 py-3">{t("runs.colBranch")}</th>
+                <th className="px-4 py-3">{t("runs.colCommit")}</th>
+                <th className="px-4 py-3">{t("runs.colActor")}</th>
+                <th className="px-4 py-3">{t("runs.colDuration")}</th>
+                <th className="px-4 py-3">{t("runs.colWhen")}</th>
               </tr>
             </thead>
             <tbody>
@@ -200,7 +200,7 @@ function RunsSection({ runs }: { runs: WorkflowRunRow[] }) {
                     {fmtDuration(r.runStartedAt, r.runUpdatedAt)}
                   </td>
                   <td className="px-4 py-3 text-app-text-muted whitespace-nowrap">
-                    {fmtAge(r.runUpdatedAt)}
+                    {fmtAge(r.runUpdatedAt, t)}
                   </td>
                 </tr>
               ))}
@@ -219,36 +219,44 @@ function RunStatus({
   status: WorkflowRunRow["status"];
   conclusion: WorkflowRunRow["conclusion"];
 }) {
+  const { t } = useTranslation("catalog");
   if (status !== "completed") {
-    return <span className="text-xs uppercase tracking-wide text-app-warning">{status}</span>;
+    return (
+      <span className="text-xs uppercase tracking-wide text-app-warning">
+        {t(`runs.runStatus.${status}`)}
+      </span>
+    );
   }
   const color = conclusion
     ? (CONCLUSION_COLOR[conclusion] ?? "text-app-text-muted")
     : "text-app-text-muted";
-  return <span className={`text-xs uppercase tracking-wide ${color}`}>{conclusion ?? "—"}</span>;
+  return (
+    <span className={`text-xs uppercase tracking-wide ${color}`}>
+      {conclusion ? t(`runs.runConclusion.${conclusion}`) : "—"}
+    </span>
+  );
 }
 
 function DeploymentsSection({ deploys }: { deploys: DeploymentRow[] }) {
+  const { t } = useTranslation("catalog");
   return (
     <section>
-      <h2 className="text-sm font-semibold text-app-text mb-2">Recent deployments</h2>
+      <h2 className="text-sm font-semibold text-app-text mb-2">{t("runs.recentDeploys")}</h2>
       {deploys.length === 0 ? (
         <div className="rounded-lg border border-app-border bg-app-surface p-6">
-          <p className="text-sm text-app-text-muted">
-            No deployments synced yet. They appear here as GitHub records deployment events.
-          </p>
+          <p className="text-sm text-app-text-muted">{t("runs.noDeploys")}</p>
         </div>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-app-border bg-app-surface">
           <table className="w-full text-sm">
             <thead className="border-b border-app-border">
               <tr className="text-left text-xs uppercase tracking-wide text-app-text-muted">
-                <th className="px-4 py-3">Environment</th>
-                <th className="px-4 py-3">State</th>
-                <th className="px-4 py-3">Ref</th>
-                <th className="px-4 py-3">Commit</th>
-                <th className="px-4 py-3">Actor</th>
-                <th className="px-4 py-3">When</th>
+                <th className="px-4 py-3">{t("runs.colEnvironment")}</th>
+                <th className="px-4 py-3">{t("runs.colState")}</th>
+                <th className="px-4 py-3">{t("runs.colRef")}</th>
+                <th className="px-4 py-3">{t("runs.colCommit")}</th>
+                <th className="px-4 py-3">{t("runs.colActor")}</th>
+                <th className="px-4 py-3">{t("runs.colWhen")}</th>
               </tr>
             </thead>
             <tbody>
@@ -265,7 +273,7 @@ function DeploymentsSection({ deploys }: { deploys: DeploymentRow[] }) {
                         DEPLOY_STATE_COLOR[d.state] ?? "text-app-text-muted"
                       }`}
                     >
-                      {d.state}
+                      {t(`runs.deployState.${d.state}`)}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-app-text-muted">{d.ref}</td>
@@ -285,7 +293,7 @@ function DeploymentsSection({ deploys }: { deploys: DeploymentRow[] }) {
                   </td>
                   <td className="px-4 py-3 text-app-text-muted">{d.actorLogin ?? "—"}</td>
                   <td className="px-4 py-3 text-app-text-muted whitespace-nowrap">
-                    {fmtAge(d.deployedAt)}
+                    {fmtAge(d.deployedAt, t)}
                   </td>
                 </tr>
               ))}

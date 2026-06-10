@@ -1,6 +1,7 @@
 // Sidebar list of conversations with inline new-chat and delete-confirm controls.
 import { NavLink } from "react-router-dom";
 import type { ChatConversationSummaryDto } from "@internal/shared-types";
+import { useTranslation } from "@internal/i18n";
 import { TrashIcon, PlusIcon, CheckIcon, CrossIcon } from "./icons";
 
 interface Props {
@@ -25,17 +26,19 @@ export function ConversationList({
   onCancelDelete,
   onSelect,
 }: Props) {
+  const { t } = useTranslation("chat");
+
   return (
     <aside className="flex h-full w-full flex-col bg-app-surface">
       <div className="flex items-center justify-between p-3">
-        <h2 className="text-sm font-semibold text-app-text">Conversations</h2>
+        <h2 className="text-sm font-semibold text-app-text">{t("conversations.heading")}</h2>
         <button
           type="button"
           onClick={() => {
             onNewChat();
             onSelect?.();
           }}
-          title="New chat"
+          title={t("conversations.newChat")}
           className="flex h-9 w-9 items-center justify-center rounded-app-md bg-app-primary text-app-primary-foreground hover:bg-app-primary-hover sm:h-8 sm:w-8"
         >
           <PlusIcon />
@@ -43,9 +46,7 @@ export function ConversationList({
       </div>
       <ul className="flex-1 space-y-1 overflow-y-auto p-2">
         {conversations.length === 0 && (
-          <li className="px-2 py-3 text-xs text-app-text-muted">
-            No conversations yet. Send a message to start one.
-          </li>
+          <li className="px-2 py-3 text-xs text-app-text-muted">{t("conversations.empty")}</li>
         )}
         {conversations.map((c) => (
           <li key={c.id} className="group relative">
@@ -70,7 +71,7 @@ export function ConversationList({
                     e.preventDefault();
                     onConfirmDelete(c.id);
                   }}
-                  title="Confirm delete"
+                  title={t("conversations.confirmDelete")}
                   className="rounded p-1.5 text-app-text-muted hover:bg-app-surface-hover hover:text-app-danger"
                 >
                   <CheckIcon />
@@ -81,7 +82,7 @@ export function ConversationList({
                     e.preventDefault();
                     onCancelDelete();
                   }}
-                  title="Cancel delete"
+                  title={t("conversations.cancelDelete")}
                   className="rounded p-1.5 text-app-text-muted hover:bg-app-surface-hover hover:text-app-text"
                 >
                   <CrossIcon />
@@ -94,7 +95,7 @@ export function ConversationList({
                   e.preventDefault();
                   onRequestDelete(c.id);
                 }}
-                title="Delete conversation"
+                title={t("conversations.deleteConversation")}
                 className="absolute right-1.5 top-1/2 block -translate-y-1/2 rounded p-1.5 text-app-text-muted hover:bg-app-surface-hover hover:text-app-danger sm:hidden sm:group-hover:block"
               >
                 <TrashIcon />

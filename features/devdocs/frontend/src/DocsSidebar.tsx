@@ -1,5 +1,6 @@
 // DevDocs sidebar: builds a collapsible page tree with per-entity persisted expand state.
 import { useEffect, useState } from "react";
+import { useTranslation } from "@internal/i18n";
 import type { DocPageSummary } from "@internal/shared-types";
 
 export interface DocsSidebarProps {
@@ -94,8 +95,7 @@ function freshnessDot(state: DocPageSummary["freshness"]) {
   }
 }
 
-function humanize(name: string): string {
-  if (name === "index") return "Overview";
+function humanizeName(name: string): string {
   return name.replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
@@ -144,11 +144,13 @@ interface RenderCtx {
   onSelect: (slug: string) => void;
   expanded: Set<string>;
   toggle: (path: string) => void;
+  overviewLabel: string;
 }
 
 function PageRow({ node, ctx }: { node: TreeNode; ctx: RenderCtx }) {
   const isActive = node.slug === ctx.activeSlug;
-  const label = node.page?.title || humanize(node.name);
+  const label =
+    node.page?.title || (node.name === "index" ? ctx.overviewLabel : humanizeName(node.name));
   return (
     <button
       type="button"
@@ -185,7 +187,9 @@ function FolderRow({ node, ctx, open }: { node: TreeNode; ctx: RenderCtx; open: 
       <span className="text-app-text-muted">
         <FolderGlyph />
       </span>
-      <span className="truncate">{humanize(node.name)}</span>
+      <span className="truncate">
+        {node.name === "index" ? ctx.overviewLabel : humanizeName(node.name)}
+      </span>
     </button>
   );
 }
@@ -225,6 +229,7 @@ function NodeItem({ node, ctx }: { node: TreeNode; ctx: RenderCtx }) {
 }
 
 export function DocsSidebar({ entityId, pages, activeSlug, onSelect }: DocsSidebarProps) {
+  const { t } = useTranslation("devdocs");
   const [expanded, setExpanded] = useState<Set<string>>(() => loadExpanded(entityId));
 
   // Reload per entity so each keeps its own collapse state.
@@ -244,10 +249,16 @@ export function DocsSidebar({ entityId, pages, activeSlug, onSelect }: DocsSideb
 
   if (pages.length === 0) return null;
   const tree = buildTree(pages);
-  const ctx: RenderCtx = { activeSlug, onSelect, expanded, toggle };
+  const ctx: RenderCtx = {
+    activeSlug,
+    onSelect,
+    expanded,
+    toggle,
+    overviewLabel: t("sidebar.overview"),
+  };
 
   return (
-    <nav aria-label="DevDocs pages" className="text-sm">
+    <nav aria-label={t("sidebar.navLabel")} className="text-sm">
       <ul className="space-y-0.5">
         {tree.children.map((c) => (
           <NodeItem key={c.path} node={c} ctx={ctx} />

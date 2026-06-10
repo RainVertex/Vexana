@@ -1,3 +1,4 @@
+import "./i18n";
 export { ObservabilityPage } from "./ObservabilityPage";
 export { ObservabilityConfigPage } from "./ObservabilityConfigPage";
 export { EntityLogsPanel } from "./EntityLogsPanel";

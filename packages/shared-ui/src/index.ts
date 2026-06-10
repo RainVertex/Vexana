@@ -1,3 +1,5 @@
+import "./i18n";
+
 export * from "./PageLayout";
 export * from "./ConfirmDialog";
 export * from "./DriftBadge";

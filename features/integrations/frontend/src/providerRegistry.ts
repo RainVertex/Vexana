@@ -20,8 +20,8 @@ export interface ManagePanelProps {
 
 export interface ProviderEntry {
   kind: IntegrationKind;
-  label: string;
-  description: string;
+  labelKey: string;
+  descriptionKey: string;
   ConnectDialog?: ComponentType<ProviderDialogProps>;
   ManagePanel?: ComponentType<ManagePanelProps>;
 }
@@ -29,27 +29,25 @@ export interface ProviderEntry {
 export const PROVIDERS: ProviderEntry[] = [
   {
     kind: "github",
-    label: "GitHub (App Installation)",
-    description:
-      "Install the GitHub App on an organization. Imports repos, teams, and members, kept in sync via webhooks and weekly reconciliation.",
+    labelKey: "providers.github.label",
+    descriptionKey: "providers.github.description",
     ConnectDialog: GithubConnectDialog,
     ManagePanel: GithubManagePanel,
   },
   {
     kind: "jira",
-    label: "Jira",
-    description: "Atlassian projects, issues, and sprints.",
+    labelKey: "providers.jira.label",
+    descriptionKey: "providers.jira.description",
   },
   {
     kind: "slack",
-    label: "Slack",
-    description: "Channel events, mentions, and notifications.",
+    labelKey: "providers.slack.label",
+    descriptionKey: "providers.slack.description",
   },
   {
     kind: "grafana",
-    label: "Grafana",
-    description:
-      "Service-account-token connection to a Grafana instance. Proxies queries to Prometheus, Loki, and Tempo and routes Alertmanager webhooks into the notifications bell.",
+    labelKey: "providers.grafana.label",
+    descriptionKey: "providers.grafana.description",
     ConnectDialog: GrafanaConnectDialog,
     ManagePanel: GrafanaManagePanel,
   },

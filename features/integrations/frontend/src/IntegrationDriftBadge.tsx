@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { DriftBadge } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type { GithubDriftSummaryDto } from "@internal/shared-types";
 
 export interface IntegrationDriftBadgeProps {
@@ -12,6 +13,7 @@ export interface IntegrationDriftBadgeProps {
 
 export function IntegrationDriftBadge({ integrationId, kind }: IntegrationDriftBadgeProps) {
   const api = useApi();
+  const { t } = useTranslation("integrations");
   const [data, setData] = useState<GithubDriftSummaryDto | null>(null);
   const [resyncing, setResyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,28 +43,30 @@ export function IntegrationDriftBadge({ integrationId, kind }: IntegrationDriftB
       await api.integrations.githubResync(integrationId);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Resync failed");
+      setError(err instanceof Error ? err.message : t("errors.resyncFailed"));
     } finally {
       setResyncing(false);
     }
   }
 
   return (
-    <DriftBadge count={data.staleTeamCount} label="stale teams" severity="warn">
+    <DriftBadge count={data.staleTeamCount} label={t("drift.staleTeams")} severity="warn">
       <div className="space-y-2">
         <div className="text-app-text-muted">
-          Last reconciliation:{" "}
+          {t("drift.lastReconciliation")}{" "}
           {data.lastReconciliationAt
             ? new Date(data.lastReconciliationAt).toLocaleString()
-            : "never"}
+            : t("drift.never")}
         </div>
         {data.staleTeams.length > 0 && (
           <ul className="space-y-1">
-            {data.staleTeams.map((t) => (
-              <li key={t.id} className="flex justify-between gap-2">
-                <span className="text-app-text">{t.name}</span>
+            {data.staleTeams.map((team) => (
+              <li key={team.id} className="flex justify-between gap-2">
+                <span className="text-app-text">{team.name}</span>
                 <span className="text-app-text-muted">
-                  {t.lastSyncedAt ? new Date(t.lastSyncedAt).toLocaleDateString() : "never"}
+                  {team.lastSyncedAt
+                    ? new Date(team.lastSyncedAt).toLocaleDateString()
+                    : t("drift.never")}
                 </span>
               </li>
             ))}
@@ -70,7 +74,7 @@ export function IntegrationDriftBadge({ integrationId, kind }: IntegrationDriftB
         )}
         {data.pendingMemberCount > 0 && (
           <div className="text-app-text-muted">
-            {data.pendingMemberCount} pending team memberships awaiting SSO sign-in.
+            {t("drift.pendingMemberships", { count: data.pendingMemberCount })}
           </div>
         )}
         {error && <div className="text-app-danger">{error}</div>}
@@ -80,7 +84,7 @@ export function IntegrationDriftBadge({ integrationId, kind }: IntegrationDriftB
           disabled={resyncing}
           className="rounded border border-app-border px-2 py-1 text-app-text hover:bg-app-surface-hover disabled:opacity-50"
         >
-          {resyncing ? "Resyncing…" : "Resync now"}
+          {resyncing ? t("drift.resyncing") : t("drift.resyncNow")}
         </button>
       </div>
     </DriftBadge>

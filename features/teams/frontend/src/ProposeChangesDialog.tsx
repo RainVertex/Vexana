@@ -1,6 +1,7 @@
 // Admin dialog to edit a team request and send it back to the requester for confirmation.
 import { useState } from "react";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type { TeamRequestDto } from "@internal/shared-types";
 import { RequestEditForm, toEditError } from "./RequestEditForm";
 
@@ -12,6 +13,7 @@ interface ProposeChangesDialogProps {
 
 export function ProposeChangesDialog({ request, onClose, onProposed }: ProposeChangesDialogProps) {
   const api = useApi();
+  const { t } = useTranslation("teams");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ReturnType<typeof toEditError> | null>(null);
 
@@ -26,7 +28,7 @@ export function ProposeChangesDialog({ request, onClose, onProposed }: ProposeCh
       onProposed(next);
       onClose();
     } catch (err) {
-      setError(toEditError(err));
+      setError(toEditError(err, t));
     } finally {
       setBusy(false);
     }
@@ -39,18 +41,15 @@ export function ProposeChangesDialog({ request, onClose, onProposed }: ProposeCh
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
     >
       <div className="w-full max-w-md rounded-lg border border-app-border bg-app-surface p-5 shadow-lg">
-        <h2 className="text-lg font-semibold text-app-text">Propose changes</h2>
-        <p className="mt-1 text-xs text-app-text-muted">
-          Edit any field and send back to the requester for confirmation. They can confirm,
-          counter-propose, or cancel.
-        </p>
+        <h2 className="text-lg font-semibold text-app-text">{t("dialogs.proposeChangesTitle")}</h2>
+        <p className="mt-1 text-xs text-app-text-muted">{t("dialogs.proposeChangesDescription")}</p>
         <RequestEditForm
           request={request}
           busy={busy}
           nextRound={request.roundCount + 1}
           onSubmit={submit}
           onCancel={onClose}
-          submitLabel="Send proposal"
+          submitLabel={t("actions.sendProposal")}
           error={error}
         />
       </div>

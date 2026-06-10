@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useApi } from "@internal/api-client/react";
+import { Trans, useTranslation } from "@internal/i18n";
 import type { MaintainerRequestDto } from "@internal/shared-types";
 
 interface RequestMaintainerDialogProps {
@@ -18,6 +19,7 @@ export function RequestMaintainerDialog({
   onSubmitted,
 }: RequestMaintainerDialogProps) {
   const api = useApi();
+  const { t } = useTranslation("teams");
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +44,7 @@ export function RequestMaintainerDialog({
       onSubmitted(res);
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Submission failed");
+      setError(err instanceof Error ? err.message : t("errors.submissionFailed"));
     } finally {
       setBusy(false);
     }
@@ -59,22 +61,28 @@ export function RequestMaintainerDialog({
         className="w-full max-w-md rounded-lg border border-app-border bg-app-surface p-5 shadow-lg"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-semibold text-app-text">Request to become a maintainer</h2>
+        <h2 className="text-lg font-semibold text-app-text">
+          {t("dialogs.requestMaintainerTitle")}
+        </h2>
         <p className="mt-1 text-xs text-app-text-muted">
-          Submit a request for an admin or a current maintainer of <b>{teamName}</b> to review.
-          You&apos;ll be notified when the request is approved or rejected.
+          <Trans
+            ns="teams"
+            i18nKey="dialogs.requestMaintainerDescription"
+            values={{ teamName }}
+            components={{ b: <b /> }}
+          />
         </p>
 
         <div className="mt-4 space-y-3 text-sm">
           <label className="block">
-            <span className="text-xs text-app-text-muted">Why? (optional)</span>
+            <span className="text-xs text-app-text-muted">{t("form.whyOptionalLabel")}</span>
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               disabled={busy}
               rows={4}
               maxLength={1000}
-              placeholder="Context that will help the approver decide."
+              placeholder={t("form.whyPlaceholder")}
               className="mt-1 w-full rounded-md border border-app-border bg-app-surface px-2 py-1 text-app-text"
             />
           </label>
@@ -88,7 +96,7 @@ export function RequestMaintainerDialog({
             disabled={busy}
             className="rounded-md px-3 py-1 text-app-text-muted hover:bg-app-surface-hover"
           >
-            Cancel
+            {t("actions.cancel")}
           </button>
           <button
             type="button"
@@ -96,7 +104,7 @@ export function RequestMaintainerDialog({
             disabled={busy}
             className="rounded-md bg-app-primary px-3 py-1 text-app-primary-on disabled:opacity-50"
           >
-            {busy ? "Submitting…" : "Submit"}
+            {busy ? t("actions.submitting") : t("actions.submit")}
           </button>
         </div>
       </div>

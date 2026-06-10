@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { PageLayout } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type {
   CurrentUser,
   ScaffolderMutation,
@@ -14,6 +15,7 @@ export function PlanPage() {
   const { planId } = useParams<{ planId: string }>();
   const api = useApi();
   const navigate = useNavigate();
+  const { t } = useTranslation("scaffolder");
   const [plan, setPlan] = useState<ScaffolderPlan | null>(null);
   const [me, setMe] = useState<CurrentUser | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -25,12 +27,12 @@ export function PlanPage() {
     api.scaffolder
       .getPlan(planId)
       .then(setPlan)
-      .catch((err) => setError(err.message ?? "Failed to load plan"));
+      .catch((err) => setError(err.message ?? t("errors.loadPlan")));
     api.auth
       .me()
       .then(setMe)
       .catch(() => setMe(null));
-  }, [api, planId]);
+  }, [api, planId, t]);
 
   async function approveAll() {
     if (!plan || plan.requiresApproval.length === 0) return;
@@ -43,7 +45,7 @@ export function PlanPage() {
       );
       if (result.plan) setPlan(result.plan);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Approval failed");
+      setError(err instanceof Error ? err.message : t("errors.approvalFailed"));
     } finally {
       setApproving(false);
     }
@@ -57,7 +59,7 @@ export function PlanPage() {
       const result = await api.scaffolder.applyPlan(plan.id, { dryRun });
       navigate(`/scaffolder/tasks/${result.taskId}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Apply failed");
+      setError(err instanceof Error ? err.message : t("errors.applyFailed"));
     } finally {
       setApplying(false);
     }
@@ -65,14 +67,14 @@ export function PlanPage() {
 
   if (error && !plan)
     return (
-      <PageLayout title="Plan">
+      <PageLayout title={t("page.planTitle")}>
         <p className="text-sm text-red-600">{error}</p>
       </PageLayout>
     );
   if (!plan)
     return (
-      <PageLayout title="Plan">
-        <p className="text-sm text-app-text-muted">Loading…</p>
+      <PageLayout title={t("page.planTitle")}>
+        <p className="text-sm text-app-text-muted">{t("loading.generic")}</p>
       </PageLayout>
     );
 
@@ -82,8 +84,12 @@ export function PlanPage() {
 
   return (
     <PageLayout
-      title={`Plan: ${plan.templateId}`}
-      description={`v${plan.templateVersion} · ${plan.mode} · target=${plan.target}`}
+      title={t("page.planHeading", { templateId: plan.templateId })}
+      description={t("page.planDescription", {
+        version: plan.templateVersion,
+        mode: plan.mode,
+        target: plan.target,
+      })}
       actions={
         <>
           {canApprove && (
@@ -93,7 +99,9 @@ export function PlanPage() {
               onClick={approveAll}
               className="rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-800 hover:bg-amber-100 disabled:opacity-50"
             >
-              {approving ? "Approving…" : `Approve ${plan.requiresApproval.length}`}
+              {approving
+                ? t("form.approving")
+                : t("form.approve", { count: plan.requiresApproval.length })}
             </button>
           )}
           <button
@@ -102,7 +110,7 @@ export function PlanPage() {
             onClick={() => apply(true)}
             className="rounded-md border border-app-border px-3 py-1.5 text-sm text-app-text-muted hover:bg-app-surface-hover disabled:opacity-50"
           >
-            Dry run
+            {t("form.dryRun")}
           </button>
           <button
             type="button"
@@ -110,7 +118,7 @@ export function PlanPage() {
             onClick={() => apply(false)}
             className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on disabled:opacity-50"
           >
-            {applying ? "Applying…" : "Apply"}
+            {applying ? t("form.applying") : t("form.apply")}
           </button>
         </>
       }
@@ -120,12 +128,12 @@ export function PlanPage() {
       <div className="mb-4 rounded-md border border-app-border bg-app-surface p-3 text-xs">
         <div className="flex flex-wrap gap-3 text-app-text-muted">
           <span>
-            Mode: <span className="font-medium text-app-text">{plan.mode}</span>
+            {t("plan.modeLabel")}: <span className="font-medium text-app-text">{plan.mode}</span>
           </span>
           <span>
-            Capabilities:{" "}
+            {t("plan.capabilitiesLabel")}:{" "}
             {plan.capabilities.length === 0 ? (
-              <span className="text-app-text-muted">none</span>
+              <span className="text-app-text-muted">{t("plan.capabilitiesNone")}</span>
             ) : (
               plan.capabilities.map((c) => (
                 <span
@@ -139,16 +147,18 @@ export function PlanPage() {
           </span>
           {plan.irreversible && (
             <span className="rounded bg-rose-100 px-1.5 py-0.5 text-rose-700">
-              Contains irreversible actions
+              {t("plan.irreversible")}
             </span>
           )}
           {expired && (
-            <span className="rounded bg-rose-100 px-1.5 py-0.5 text-rose-700">Expired</span>
+            <span className="rounded bg-rose-100 px-1.5 py-0.5 text-rose-700">
+              {t("plan.expired")}
+            </span>
           )}
         </div>
         {plan.requiresApproval.length > 0 && (
           <div className="mt-2 rounded bg-amber-50 p-2 text-amber-800">
-            Requires approval for:{" "}
+            {t("plan.requiresApprovalFor")}{" "}
             {plan.requiresApproval.map((r) => (
               <span key={r.capability} className="mr-2 font-mono">
                 {r.capability}
@@ -179,15 +189,11 @@ function PlanStepCard({ step }: { step: ScaffolderPlanStep }) {
         </div>
         <div className="flex items-center gap-2 text-app-text-muted">
           <span>{step.matched}</span>
-          {!step.reversible && (
-            <span className="rounded bg-rose-100 px-1.5 py-0.5 text-rose-700">irreversible</span>
-          )}
+          {!step.reversible && <IrreversibleBadge />}
         </div>
       </div>
       <div className="space-y-3 p-3">
-        {step.mutations.length === 0 && (
-          <p className="text-xs text-app-text-muted">No mutations.</p>
-        )}
+        {step.mutations.length === 0 && <NoMutations />}
         {step.mutations.map((m, i) => (
           <MutationView key={i} mutation={m} />
         ))}
@@ -196,7 +202,23 @@ function PlanStepCard({ step }: { step: ScaffolderPlanStep }) {
   );
 }
 
+function IrreversibleBadge() {
+  const { t } = useTranslation("scaffolder");
+  return (
+    <span className="rounded bg-rose-100 px-1.5 py-0.5 text-rose-700">
+      {t("plan.irreversibleWarning")}
+    </span>
+  );
+}
+
+function NoMutations() {
+  const { t } = useTranslation("scaffolder");
+  return <p className="text-xs text-app-text-muted">{t("plan.noMutations")}</p>;
+}
+
 function MutationView({ mutation }: { mutation: ScaffolderMutation }) {
+  const { t } = useTranslation("scaffolder");
+
   switch (mutation.kind) {
     case "fs.write":
       return (
@@ -212,20 +234,20 @@ function MutationView({ mutation }: { mutation: ScaffolderMutation }) {
     case "fs.delete":
       return (
         <div className="rounded-md border border-rose-200 bg-rose-50 p-2 text-xs">
-          <span className="font-medium text-rose-700">delete</span>{" "}
+          <span className="font-medium text-rose-700">{t("plan.mutationDelete")}</span>{" "}
           <span className="font-mono">{mutation.path}</span>
         </div>
       );
     case "fs.rename":
       return (
         <div className="rounded-md border border-app-border bg-app-surface-hover p-2 text-xs font-mono">
-          rename {mutation.from} → {mutation.to}
+          {t("plan.mutationRename", { from: mutation.from, to: mutation.to })}
         </div>
       );
     case "db.upsert":
       return (
         <div className="rounded-md border border-app-border bg-app-surface-hover p-2 text-xs">
-          <div className="font-medium">db.upsert {mutation.model}</div>
+          <div className="font-medium">{t("plan.mutationDbUpsert", { model: mutation.model })}</div>
           <pre className="mt-1 overflow-x-auto text-[10px]">
             {JSON.stringify(mutation.data, null, 2)}
           </pre>
@@ -234,7 +256,7 @@ function MutationView({ mutation }: { mutation: ScaffolderMutation }) {
     case "catalog.register":
       return (
         <div className="rounded-md border border-app-border bg-app-surface-hover p-2 text-xs">
-          <div className="font-medium">catalog.register</div>
+          <div className="font-medium">{t("plan.mutationCatalogRegister")}</div>
           <pre className="mt-1 overflow-x-auto text-[10px]">
             {JSON.stringify(mutation.entity, null, 2)}
           </pre>
@@ -243,21 +265,29 @@ function MutationView({ mutation }: { mutation: ScaffolderMutation }) {
     case "github.createRepo":
       return (
         <div className="rounded-md border border-rose-200 bg-rose-50 p-2 text-xs text-rose-800">
-          <span className="font-medium">⚠ irreversible</span> github.createRepo {mutation.org}/
-          {mutation.name} ({mutation.visibility})
+          <span className="font-medium">⚠ {t("plan.irreversibleWarning")}</span>{" "}
+          {t("plan.mutationGithubCreateRepo", {
+            org: mutation.org,
+            name: mutation.name,
+            visibility: mutation.visibility,
+          })}
         </div>
       );
     case "github.push":
       return (
         <div className="rounded-md border border-rose-200 bg-rose-50 p-2 text-xs text-rose-800">
-          <span className="font-medium">⚠ irreversible</span> github.push to {mutation.remoteUrl} ·{" "}
-          {mutation.branch} · {mutation.fileCount} files
+          <span className="font-medium">⚠ {t("plan.irreversibleWarning")}</span>{" "}
+          {t("plan.mutationGithubPush", {
+            remoteUrl: mutation.remoteUrl,
+            branch: mutation.branch,
+            fileCount: mutation.fileCount,
+          })}
         </div>
       );
     case "debug.log":
       return (
         <div className="rounded-md border border-app-border bg-app-surface-hover p-2 text-xs font-mono">
-          log: {mutation.message}
+          {t("plan.mutationDebugLog", { message: mutation.message })}
         </div>
       );
     default:

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type { ScorecardSummary } from "@internal/shared-types";
 import { useEntityContext } from "../outletContext";
 import { TierPill } from "../TierPill";
@@ -8,6 +9,7 @@ import { TierTrend } from "../TierTrend";
 export function ScorecardsTab() {
   const { data, reload } = useEntityContext();
   const api = useApi();
+  const { t } = useTranslation("catalog");
   const [items, setItems] = useState<ScorecardSummary[]>(data.scorecards);
   const [recomputing, setRecomputing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +22,7 @@ export function ScorecardsTab() {
       setItems(res.items);
       reload();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed");
+      setError(err instanceof Error ? err.message : t("errors.generic"));
     } finally {
       setRecomputing(false);
     }
@@ -29,7 +31,7 @@ export function ScorecardsTab() {
   if (items.length === 0) {
     return (
       <div className="rounded-lg border border-app-border bg-app-surface p-6">
-        <p className="text-sm text-app-text-muted">No scorecards apply to this entity.</p>
+        <p className="text-sm text-app-text-muted">{t("scorecards.noScorecards")}</p>
       </div>
     );
   }
@@ -38,7 +40,7 @@ export function ScorecardsTab() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-app-text-muted">
-          {items.length} scorecard{items.length === 1 ? "" : "s"} apply to this entity.
+          {t("scorecards.count_other", { count: items.length })}
         </p>
         <button
           type="button"
@@ -46,7 +48,7 @@ export function ScorecardsTab() {
           disabled={recomputing}
           className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on hover:opacity-90 disabled:opacity-60"
         >
-          {recomputing ? "Recomputing…" : "Recompute now"}
+          {recomputing ? t("scorecards.recomputing") : t("scorecards.recompute")}
         </button>
       </div>
       {error && (
@@ -63,7 +65,8 @@ export function ScorecardsTab() {
             <h2 className="text-sm font-semibold text-app-text">{s.scorecard.name}</h2>
             <span className="flex items-center gap-3">
               <span className="text-xs text-app-text-muted">
-                {s.scorePercent}% · {s.rulesPassed}/{s.rulesTotal} passing
+                {s.scorePercent}% ·{" "}
+                {t("scorecards.passing", { passed: s.rulesPassed, total: s.rulesTotal })}
               </span>
               <TierPill tier={s.tier} tierStyle={s.scorecard.tierStyle} />
             </span>
@@ -77,14 +80,18 @@ export function ScorecardsTab() {
                     <span className="text-app-text">{rule.label}</span>
                     <code className="text-[10px] text-app-text-muted">{rule.kind}</code>
                   </div>
-                  <span className="text-xs text-app-text-muted capitalize">{rule.tier}</span>
+                  <span className="text-xs text-app-text-muted">
+                    {t(`scorecardTier.${rule.tier}`)}
+                  </span>
                 </div>
                 <div className="mt-1 text-xs text-app-text-muted">
-                  {result?.reason ?? "Not yet evaluated"}
+                  {result?.reason ?? t("scorecards.notEvaluated")}
                 </div>
                 {result?.evidence && (
                   <details className="mt-1 text-xs">
-                    <summary className="text-app-text-muted cursor-pointer">Evidence</summary>
+                    <summary className="text-app-text-muted cursor-pointer">
+                      {t("scorecards.evidenceLabel")}
+                    </summary>
                     <pre className="mt-1 rounded bg-app-surface-hover p-2 overflow-x-auto text-[11px]">
                       {JSON.stringify(result.evidence, null, 2)}
                     </pre>

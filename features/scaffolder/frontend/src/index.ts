@@ -1,3 +1,4 @@
+import "./i18n";
 export { ScaffolderPage } from "./ScaffolderPage";
 export { TemplatePage as ScaffolderTemplatePage } from "./TemplatePage";
 export { PlanPage as ScaffolderPlanPage } from "./PlanPage";

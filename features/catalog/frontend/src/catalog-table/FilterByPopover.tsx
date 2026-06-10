@@ -1,5 +1,6 @@
 // Toolbar popover with multi-select status filters (stale, orphaned) plus an all-orgs scope toggle.
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "@internal/i18n";
 
 interface Props {
   hideStale: boolean;
@@ -20,6 +21,7 @@ export function FilterByPopover({
 }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const { t } = useTranslation("catalog");
 
   useEffect(() => {
     if (!open) return;
@@ -39,26 +41,27 @@ export function FilterByPopover({
 
   const activeCount = (hideStale ? 1 : 0) + (hideOrphaned ? 1 : 0) + (showAllOrgs ? 1 : 0);
 
+  const ariaLabel =
+    activeCount > 0
+      ? t("filterBy.buttonLabel_other", { count: activeCount })
+      : t("filterBy.buttonLabelNone");
+
   return (
     <label className="flex items-center gap-2 text-xs text-app-text-muted">
-      Filter by:
+      {t("filterBy.label")}
       <div ref={ref} className="relative">
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
           aria-pressed={activeCount > 0}
-          aria-label={
-            activeCount > 0
-              ? `${activeCount} status filter${activeCount === 1 ? "" : "s"} active`
-              : "No status filters"
-          }
+          aria-label={ariaLabel}
           className={
             activeCount > 0
               ? "inline-flex items-center gap-1 rounded-md border border-app-primary bg-app-primary px-2 py-1 text-xs font-medium text-app-primary-on"
               : "inline-flex items-center gap-1 rounded-md border border-app-border bg-app-surface px-2 py-1 text-xs text-app-text hover:bg-app-surface-hover"
           }
         >
-          Hide
+          {t("filterBy.sectionHide")}
           {activeCount > 0 && (
             <span className="rounded-full bg-app-primary-on/20 px-1.5 text-[10px] font-semibold leading-tight">
               {activeCount}
@@ -69,7 +72,7 @@ export function FilterByPopover({
         {open && (
           <div className="absolute left-0 z-20 mt-1 w-56 rounded-md border border-app-border bg-app-surface p-2 shadow-lg">
             <div className="mb-1 px-1 text-[10px] uppercase tracking-wide text-app-text-muted">
-              Hide
+              {t("filterBy.sectionHide")}
             </div>
             <ul>
               <li>
@@ -80,7 +83,7 @@ export function FilterByPopover({
                     onChange={onToggleStale}
                     className="h-3.5 w-3.5 rounded border-app-border accent-app-primary"
                   />
-                  <span className="text-app-text">Stale</span>
+                  <span className="text-app-text">{t("filterBy.stale")}</span>
                 </label>
               </li>
               <li>
@@ -91,12 +94,12 @@ export function FilterByPopover({
                     onChange={onToggleOrphaned}
                     className="h-3.5 w-3.5 rounded border-app-border accent-app-primary"
                   />
-                  <span className="text-app-text">Orphaned</span>
+                  <span className="text-app-text">{t("filterBy.orphaned")}</span>
                 </label>
               </li>
             </ul>
             <div className="mt-2 px-1 text-[10px] uppercase tracking-wide text-app-text-muted">
-              Scope
+              {t("filterBy.sectionScope")}
             </div>
             <ul>
               <li>
@@ -107,13 +110,12 @@ export function FilterByPopover({
                     onChange={onToggleShowAllOrgs}
                     className="h-3.5 w-3.5 rounded border-app-border accent-app-primary"
                   />
-                  <span className="text-app-text">Tüm organizasyonları göster</span>
+                  <span className="text-app-text">{t("filterBy.showAllOrgs")}</span>
                 </label>
               </li>
             </ul>
             <p className="mt-2 px-2 text-[10px] leading-snug text-app-text-muted">
-              Stale = not seen recently or installation disconnected. Orphaned = stale and the
-              GitHub installation is gone (re-installing the same org revives via githubRepoId).
+              {t("filterBy.staleDescription")}
             </p>
           </div>
         )}

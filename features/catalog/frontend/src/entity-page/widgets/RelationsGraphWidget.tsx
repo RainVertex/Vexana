@@ -1,6 +1,7 @@
 // Overview widget that renders an entity's catalog relations as an SVG star graph.
 import { useEffect, useState } from "react";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type { CatalogRelation, CatalogRelationsResponse } from "@internal/shared-types";
 import { useEntityOverviewContext } from "../EntityOverviewContext";
 
@@ -22,6 +23,7 @@ export function RelationsGraphWidget() {
   const entityId = data.entity.id;
   const entityName = data.entity.name;
   const api = useApi();
+  const { t } = useTranslation("catalog");
   const [relations, setRelations] = useState<CatalogRelationsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,18 +37,18 @@ export function RelationsGraphWidget() {
         if (!cancelled) setRelations(res);
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Failed");
+        if (!cancelled) setError(err instanceof Error ? err.message : t("errors.generic"));
       });
     return () => {
       cancelled = true;
     };
-  }, [api, entityId]);
+  }, [api, entityId, t]);
 
   if (error) {
     return <p className="text-sm text-app-danger">{error}</p>;
   }
   if (!relations) {
-    return <p className="text-sm text-app-text-muted">Loading…</p>;
+    return <p className="text-sm text-app-text-muted">{t("relationsGraph.loading")}</p>;
   }
 
   const all: Array<CatalogRelation & { direction: "out" | "in" }> = [
@@ -55,11 +57,7 @@ export function RelationsGraphWidget() {
   ];
 
   if (all.length === 0) {
-    return (
-      <p className="text-sm text-app-text-muted">
-        No relations declared in <code>catalog-info.yaml</code>.
-      </p>
-    );
+    return <p className="text-sm text-app-text-muted">{t("relationsGraph.noRelations")}</p>;
   }
 
   // Star layout: this entity at center, related entities arranged on a circle.
@@ -75,7 +73,7 @@ export function RelationsGraphWidget() {
       viewBox={`0 0 ${W} ${H}`}
       className="w-full h-auto"
       role="img"
-      aria-label="Relations graph"
+      aria-label={t("relationsGraph.ariaLabel")}
     >
       {all.map((r, i) => {
         const angle = (2 * Math.PI * i) / all.length - Math.PI / 2;

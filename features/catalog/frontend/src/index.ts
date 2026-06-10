@@ -1,3 +1,4 @@
+import "./i18n";
 export { CatalogPage } from "./CatalogPage";
 export { CatalogEntityPage } from "./entity-page/CatalogEntityPage";
 export { OverviewTab as EntityOverviewTab } from "./entity-page/tabs/OverviewTab";

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { NotificationDto } from "@internal/shared-types";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 
 export interface GrafanaAlertsPanelProps {
   limit?: number;
@@ -24,6 +25,7 @@ interface AlertPayload {
 
 export function GrafanaAlertsPanel({ limit = 25 }: GrafanaAlertsPanelProps) {
   const api = useApi();
+  const { t } = useTranslation("observability");
   const [items, setItems] = useState<NotificationDto[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,17 +40,17 @@ export function GrafanaAlertsPanel({ limit = 25 }: GrafanaAlertsPanelProps) {
         setItems(res.items.filter((n) => GRAFANA_KINDS.has(n.kind)).slice(0, limit));
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load alerts");
+        if (!cancelled) setError(err instanceof Error ? err.message : t("errors.failedAlerts"));
       });
     return () => {
       cancelled = true;
     };
-  }, [api, limit]);
+  }, [api, limit, t]);
 
   if (error) return <p className="text-xs text-app-danger">{error}</p>;
-  if (items === null) return <p className="text-xs text-app-text-muted">Loading…</p>;
+  if (items === null) return <p className="text-xs text-app-text-muted">{t("errors.loading")}</p>;
   if (items.length === 0)
-    return <p className="text-xs text-app-text-muted">No recent Grafana alerts.</p>;
+    return <p className="text-xs text-app-text-muted">{t("empty.noAlerts")}</p>;
 
   return (
     <ul className="divide-y divide-app-border">
@@ -66,11 +68,11 @@ export function GrafanaAlertsPanel({ limit = 25 }: GrafanaAlertsPanelProps) {
                     : "bg-app-warning/20 text-app-warning"
               }`}
             >
-              {resolved ? "resolved" : (payload.severity ?? "firing")}
+              {resolved ? t("alerts.resolved") : (payload.severity ?? t("alerts.firing"))}
             </span>
             <div className="flex grow flex-col gap-0.5">
               <span className="font-medium text-app-text">
-                {payload.alertname ?? "(unnamed alert)"}
+                {payload.alertname ?? t("alerts.unnamedAlert")}
                 {payload.entity && (
                   <span className="ml-1 text-app-text-muted">· {payload.entity}</span>
                 )}
@@ -85,7 +87,7 @@ export function GrafanaAlertsPanel({ limit = 25 }: GrafanaAlertsPanelProps) {
                     rel="noreferrer"
                     className="ml-2 underline-offset-2 hover:underline"
                   >
-                    open in Grafana
+                    {t("alerts.openInGrafana")}
                   </a>
                 )}
               </span>

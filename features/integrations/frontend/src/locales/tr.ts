@@ -1,0 +1,196 @@
+import type { IntegrationsResources } from "./en";
+
+export const tr: IntegrationsResources = {
+  page: {
+    title: "Entegrasyonlar",
+    description: "Platforma yansıtılan harici araçlar.",
+    backToIntegrations: "← Entegrasyonlara geri dön",
+  },
+  connected: {
+    heading: "Bağlı",
+    loading: "Yükleniyor…",
+    empty: "Henüz bağlı bir şey yok. Başlamak için aşağıdan bir sağlayıcı seçin.",
+    enabled: "etkin",
+    disabled: "devre dışı",
+    configure: "Yapılandır",
+    disconnect: "Bağlantıyı kes",
+  },
+  providers: {
+    heading: "Mevcut sağlayıcılar",
+    comingSoon: "Yakında",
+    connect: "Bağlan",
+    github: {
+      label: "GitHub (Uygulama Kurulumu)",
+      description:
+        "GitHub Uygulamasını bir organizasyona kurun. Depoları, takımları ve üyeleri içe aktarır; webhooklar ve haftalık mutabakat ile senkronize eder.",
+    },
+    jira: {
+      label: "Jira",
+      description: "Atlassian projeleri, sorunlar ve sprint'ler.",
+    },
+    slack: {
+      label: "Slack",
+      description: "Kanal etkinlikleri, bahsler ve bildirimler.",
+    },
+    grafana: {
+      label: "Grafana",
+      description:
+        "Bir Grafana örneğine servis hesabı token bağlantısı. Prometheus, Loki ve Tempo sorgularını proxy'ler, Alertmanager webhook'larını bildirim ziline yönlendirir.",
+    },
+  },
+  manage: {
+    loading: "Yükleniyor…",
+    noPanel: "Bu sağlayıcı için henüz yapılandırma arayüzü yok.",
+    disable: "Devre dışı bırak",
+    enable: "Etkinleştir",
+    disconnect: "Bağlantıyı kes",
+    fallbackTitle: "Entegrasyon",
+  },
+  confirm: {
+    disconnectTitle: "{{name}} bağlantısı kesilsin mi?",
+    disconnectMessage: "Bu işlem yerel yansıma verisini siler. Harici araç etkilenmez.",
+    disconnectLabel: "Bağlantıyı kes",
+  },
+  errors: {
+    loadIntegrations: "Entegrasyonlar yüklenemedi",
+    loadIntegration: "Entegrasyon yüklenemedi",
+    toggleFailed: "Durum değiştirme başarısız oldu",
+    disconnectFailed: "Bağlantı kesme başarısız oldu",
+    resyncFailed: "Yeniden senkronizasyon başarısız oldu",
+    probeFailed: "Bağlantı testi başarısız oldu",
+    connectFailed: "Bağlanma başarısız oldu",
+    rotateFailed: "Yenileme başarısız oldu",
+    saveFailed: "Kaydetme başarısız oldu",
+  },
+  grafanaConnect: {
+    stepCredentialsTitle: "Grafana'ya Bağlan",
+    stepCredentialsDescription:
+      "Platform, Prometheus, Loki ve Tempo ile Grafana'nın veri kaynağı proxy'si üzerinden iletişim kurar. Tek bir servis hesabı token'ı yeterlidir.",
+    fieldDisplayName: "Görünen ad",
+    fieldDisplayNamePlaceholder: "Grafana (prod)",
+    fieldBaseUrl: "Temel URL",
+    fieldBaseUrlPlaceholder: "https://grafana.example.com",
+    fieldServiceAccountToken: "Servis hesabı token'ı",
+    fieldServiceAccountTokenPlaceholder: "glsa_…",
+    advancedShow: "Gelişmiş…",
+    advancedHide: "Gelişmişi gizle",
+    fieldSuppressionWindow: "Yeniden bildirim bekleme penceresi (dakika)",
+    cancel: "İptal",
+    probing: "Test ediliyor…",
+    connectButton: "Bağlan",
+    stepDatasourcesTitle: "Veri kaynağı seçin",
+    stepDatasourcesDescription:
+      "Grafana, bazı türler için birden fazla eşleşen veri kaynağı sunabilir. Platformun hangi veri kaynağını sorgulaması gerektiğini onaylayın.",
+    dsPrometheus: "Prometheus (scrape işi için zorunlu)",
+    dsLoki: "Loki (isteğe bağlı, günlük panelini etkinleştirir)",
+    dsTempo: "Tempo (isteğe bağlı, iz detayını etkinleştirir)",
+    noImageRenderer:
+      "Panel gömmesi devre dışı. PNG panel gömmesini etkinleştirmek için bu Grafana'ya grafana-image-renderer eklentisini kurun.",
+    back: "Geri",
+    saving: "Kaydediliyor…",
+    saveIntegration: "Entegrasyonu kaydet",
+    stepConnectedTitle: "Bağlandı",
+    stepConnectedDescription:
+      "Tetiklenen uyarıların bildirim ziline ulaşması için Grafana'da Alertmanager webhook'unu ayarlayın. Secret'ı şimdi kopyalayın, yalnızca bir kez gösterilir.",
+    webhookStep1:
+      "Grafana'da Alerting, Contact points bölümüne gidin ve bir Webhook iletişim noktası oluşturun. Şu URL'yi kullanın (başına genel tünel ana bilgisayarınızı ekleyin):",
+    webhookStep2: "Optional Webhook settings, HTTP headers bölümünde şu başlığı ekleyin:",
+    webhookStep3: "İletişim noktasını kaydedin ve uyarı kurallarını ona yönlendirin.",
+    noImageRendererConnected: "grafana-image-renderer kurulana kadar panel gömmesi devre dışıdır.",
+    done: "Tamam",
+  },
+  grafanaManage: {
+    sectionConnection: "Bağlantı",
+    fieldBaseUrl: "Temel URL",
+    fieldApiToken: "API token'ı",
+    apiTokenSet: "ayarlandı",
+    apiTokenNotSet: "ayarlanmadı",
+    rotateApiToken: "API token'ını yenile…",
+    sectionDatasources: "Veri kaynakları",
+    fieldPrometheusUid: "Prometheus UID",
+    fieldLokiUid: "Loki UID",
+    fieldTempoUid: "Tempo UID",
+    fieldImageRenderer: "Görüntü oluşturucu",
+    imageRendererAvailable: "mevcut",
+    imageRendererNotAvailable: "mevcut değil",
+    editDatasources: "Veri kaynaklarını düzenle…",
+    sectionSuppression: "Uyarı yeniden bildirim baskılaması",
+    fieldWindow: "Pencere (dakika)",
+    suppressionHint: "Hâlâ tetiklenen bir uyarı, pencere başına en fazla bir kez zile iletilir.",
+    savingSuppression: "Kaydediliyor…",
+    saveSuppression: "Kaydet",
+    sectionWebhook: "Webhook",
+    fieldEndpoint: "Uç nokta",
+    fieldSecret: "Secret",
+    webhookSecretSet: "ayarlandı",
+    webhookSecretNotSet: "ayarlanmadı",
+    webhookSecretNote:
+      "Secret depolamada karma olarak tutulur ve yeniden görüntülenemez. İlk seferinde kopyalamayı kaçırdıysanız yeni bir tane oluşturun, yeni değer bir kez gösterilir.",
+    rotateWebhookSecret: "Webhook secret'ını yenile…",
+    rotateTokenTitle: "API token'ını yenile",
+    rotateTokenDescription:
+      "Yeni bir Grafana servis hesabı token'ı yapıştırın. Önceki token, bu işlem doğrulanıp kaydedildiği anda kullanılmayı bırakır.",
+    fieldNewServiceAccountToken: "Yeni servis hesabı token'ı",
+    cancel: "İptal",
+    validating: "Doğrulanıyor…",
+    rotateButton: "Yenile",
+    editDatasourcesTitle: "Veri kaynaklarını düzenle",
+    probingGrafana: "Grafana test ediliyor…",
+    saving: "Kaydediliyor…",
+    save: "Kaydet",
+    confirmRotateWebhookTitle: "Webhook secret'ı yenilensin mi?",
+    confirmRotateWebhookMessage:
+      "Mevcut secret, bu işlem tamamlandığında çalışmayı durduracak. Eski taşıyıcıya gönderilen uyarılar, Grafana Contact Point yeni değerle güncellenene kadar 401 hatası alır.",
+    confirmRotateLabel: "Yenile",
+    newWebhookSecretTitle: "Yeni webhook secret'ı",
+    newWebhookSecretDescription:
+      "Secret'ı şimdi kopyalayın, yalnızca bir kez gösterilir. Grafana Contact Point Authorization başlığına yapıştırın.",
+    webhookUrlLabel: "Webhook URL:",
+    authHeaderLabel: "Authorization başlığı:",
+    done: "Tamam",
+  },
+  githubConnect: {
+    title: "GitHub'a Bağlan",
+    description:
+      "Platformun Uygulamasını bir organizasyona kurmak için GitHub'a yönlendirileceksiniz. Kurulumun ardından GitHub sizi geri getirir ve platform içe aktarmaya başlar:",
+    itemRepositories: "Depolar",
+    itemRepositoriesDetail:
+      "kurulumun görebildiği her depo, catalog-info.yaml otomatik olarak keşfedilir.",
+    itemTeams: "Takımlar ve üyeler",
+    itemTeamsDetail:
+      "organizasyon takımları platform Takımları olarak içe aktarılır (üyeler GitHub kimliğiyle mevcut kullanıcılarla eşleştirilir, diğerleri oturum açana kadar 7 günlük TTL ile kuyruğa alınır).",
+    ongoingNote:
+      "Devam eden değişiklikler webhook'lar aracılığıyla aktarılır. Haftalık bir cron görevi kaçırılan teslimatları yakalamak için fark mutabakatı yapar. Entegrasyonun Yapılandır panelinden de manuel olarak Yeniden Senkronize edebilirsiniz.",
+    cancel: "İptal",
+    redirecting: "Yönlendiriliyor…",
+    installButton: "GitHub'a Kur",
+  },
+  githubManage: {
+    sectionInstallation: "Kurulum",
+    fieldOrg: "Organizasyon",
+    fieldInstallationId: "Kurulum kimliği",
+    sectionSync: "Senkronizasyon",
+    syncHint: "Şimdi manuel bir mutabakat çalıştırın.",
+    syncing: "Senkronize ediliyor…",
+    resyncNow: "Şimdi yeniden senkronize et",
+    resyncStatusTemplate:
+      "Yeniden senkronizasyon tamam, takımlar {{teamsCreated}}+/{{teamsUpdated}}~/{{teamsDeleted}}-, üyeler {{membersAdded}}+/{{membersRemoved}}-",
+  },
+  drift: {
+    staleTeams: "eski takım",
+    lastReconciliation: "Son mutabakat:",
+    never: "hiç",
+    pendingMemberships_one: "{{count}} takım üyeliği SSO girişi bekleniyor.",
+    pendingMemberships_other: "{{count}} takım üyeliği SSO girişi bekleniyor.",
+    resyncing: "Yeniden senkronize ediliyor…",
+    resyncNow: "Şimdi yeniden senkronize et",
+  },
+  datasource: {
+    noneOption: "(hiçbiri)",
+    defaultSuffix: " (varsayılan)",
+    noDataRequired:
+      "Grafana'da bu türde veri kaynağı yapılandırılmamış, devam etmek için bir tane gerekli.",
+    noDataOptional:
+      "Grafana'da bu türde veri kaynağı yapılandırılmamış, bu özellik devre dışı bırakılacak.",
+  },
+};

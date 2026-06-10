@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type { TeamRequestDto } from "@internal/shared-types";
 import { RequestEditForm, toEditError, type RequestEdit } from "./RequestEditForm";
 
@@ -16,6 +17,7 @@ export function RespondToProposalDialog({
   onResponded,
 }: RespondToProposalDialogProps) {
   const api = useApi();
+  const { t } = useTranslation("teams");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ReturnType<typeof toEditError> | null>(null);
 
@@ -33,7 +35,7 @@ export function RespondToProposalDialog({
       onResponded(next);
       onClose();
     } catch (err) {
-      setError(toEditError(err));
+      setError(toEditError(err, t));
     } finally {
       setBusy(false);
     }
@@ -46,18 +48,15 @@ export function RespondToProposalDialog({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
     >
       <div className="w-full max-w-md rounded-lg border border-app-border bg-app-surface p-5 shadow-lg">
-        <h2 className="text-lg font-semibold text-app-text">Counter-propose</h2>
-        <p className="mt-1 text-xs text-app-text-muted">
-          Edit the admin's proposal and send it back. The admin will see your changes and can
-          approve, propose more changes, or reject.
-        </p>
+        <h2 className="text-lg font-semibold text-app-text">{t("dialogs.counterProposeTitle")}</h2>
+        <p className="mt-1 text-xs text-app-text-muted">{t("dialogs.counterProposeDescription")}</p>
         <RequestEditForm
           request={request}
           busy={busy}
           nextRound={request.roundCount + 1}
           onSubmit={submit}
           onCancel={onClose}
-          submitLabel="Send counter-proposal"
+          submitLabel={t("actions.sendCounterProposal")}
           error={error}
         />
       </div>

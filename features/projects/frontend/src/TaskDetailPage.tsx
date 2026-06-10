@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { PageLayout } from "@internal/shared-ui";
+import { useTranslation } from "@internal/i18n";
 import {
   useTask,
   useUpdateTask,
@@ -17,13 +18,13 @@ import {
 } from "./api";
 import { UserAutocomplete } from "./components/UserAutocomplete";
 
-const PRIORITIES = [
-  { value: 0, label: "None" },
-  { value: 1, label: "Low" },
-  { value: 2, label: "Medium" },
-  { value: 3, label: "High" },
-  { value: 4, label: "Urgent" },
-];
+const PRIORITY_KEYS: Record<number, string> = {
+  0: "priority.none",
+  1: "priority.low",
+  2: "priority.medium",
+  3: "priority.high",
+  4: "priority.urgent",
+};
 
 function toInputDate(iso: string | null | undefined): string {
   if (!iso) return "";
@@ -41,6 +42,7 @@ function fromInputDate(value: string): string | null {
 }
 
 export function TaskDetailPage() {
+  const { t } = useTranslation("projects");
   const { id = "" } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { task, loading, error, refetch } = useTask(id);
@@ -143,7 +145,7 @@ export function TaskDetailPage() {
   }
 
   async function handleDelete() {
-    if (!confirm("Delete this task? This cannot be undone.")) return;
+    if (!confirm(t("confirm.deleteTask"))) return;
     try {
       await removeTask(id);
       navigate(task?.projectId ? `/projects/${task.projectId}` : "/projects");
@@ -173,7 +175,7 @@ export function TaskDetailPage() {
       setNewAssignee("");
       refetch();
     } catch (err) {
-      setAssigneeError(err instanceof Error ? err.message : "Failed");
+      setAssigneeError(err instanceof Error ? err.message : t("info.failed"));
     }
   }
 
@@ -227,13 +229,13 @@ export function TaskDetailPage() {
 
   if (loading)
     return (
-      <PageLayout title="Task">
-        <p className="text-sm text-app-text-muted">Loading...</p>
+      <PageLayout title={t("page.taskTitle")}>
+        <p className="text-sm text-app-text-muted">{t("loading.generic")}</p>
       </PageLayout>
     );
   if (error) {
     return (
-      <PageLayout title="Task">
+      <PageLayout title={t("page.taskTitle")}>
         <div className="rounded-md border border-app-danger bg-app-surface px-3 py-2 text-sm text-app-danger">
           {error}
         </div>
@@ -246,9 +248,14 @@ export function TaskDetailPage() {
 
   const backHref = task?.projectId ? `/projects/${task.projectId}` : "/projects";
 
+  const priorityOptions = [0, 1, 2, 3, 4].map((v) => ({
+    value: v,
+    label: t(PRIORITY_KEYS[v] ?? "priority.none"),
+  }));
+
   return (
     <PageLayout
-      title={task?.title ?? "Task"}
+      title={task?.title ?? t("page.taskTitle")}
       actions={
         canEdit ? (
           <div className="flex items-center gap-2">
@@ -256,16 +263,16 @@ export function TaskDetailPage() {
               type="button"
               onClick={() => void handleToggleFavorite()}
               className={`rounded-md border border-app-border px-3 py-1.5 text-sm ${isFavorite ? "bg-yellow-500/20 text-yellow-400" : "bg-app-surface text-app-text hover:bg-app-surface-hover"}`}
-              title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+              title={isFavorite ? t("info.removeFromFavorites") : t("info.addToFavorites")}
             >
-              {isFavorite ? "★ Favorited" : "☆ Favorite"}
+              {isFavorite ? t("actions.favorited") : t("actions.favorite")}
             </button>
             <button
               type="button"
               onClick={() => void handleQuickDone()}
               className={`rounded-md px-3 py-1.5 text-sm font-medium ${done ? "bg-green-900/40 text-green-400" : "bg-app-primary text-app-primary-on hover:opacity-90"}`}
             >
-              {done ? "✓ Done" : "Mark Done"}
+              {done ? t("actions.doneBadge") : t("actions.markDone")}
             </button>
             <button
               type="button"
@@ -273,7 +280,7 @@ export function TaskDetailPage() {
               disabled={saving || !dirty}
               className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on hover:opacity-90 disabled:opacity-60"
             >
-              {saving ? "Saving..." : "Save"}
+              {saving ? t("actions.saving") : t("actions.save")}
             </button>
             <button
               type="button"
@@ -281,12 +288,12 @@ export function TaskDetailPage() {
               disabled={deleting}
               className="rounded-md border border-app-danger px-3 py-1.5 text-sm text-app-danger hover:bg-app-danger/10 disabled:opacity-60"
             >
-              {deleting ? "Deleting..." : "Delete"}
+              {deleting ? t("actions.deleting") : t("actions.delete")}
             </button>
           </div>
         ) : (
           <span className="rounded-md border border-app-border bg-app-surface px-3 py-1.5 text-xs text-app-text-muted">
-            Read-only
+            {t("status.readOnly")}
           </span>
         )
       }
@@ -295,11 +302,11 @@ export function TaskDetailPage() {
         to={backHref}
         className="mb-4 inline-flex items-center gap-1 text-xs text-app-text-muted hover:text-app-text"
       >
-        ← Back to project
+        {t("actions.backToProject")}
       </Link>
       {!canEdit && (
         <div className="mb-4 rounded-md border border-app-border bg-app-surface px-3 py-2 text-sm text-app-text-muted">
-          You have read-only access to this task. Editing is disabled.
+          {t("info.readOnlyTask")}
         </div>
       )}
       <div className="flex flex-col gap-6 lg:flex-row">
@@ -322,15 +329,15 @@ export function TaskDetailPage() {
               setDescription(e.target.value);
               markDirty();
             }}
-            placeholder="Add a description..."
+            placeholder={t("form.descriptionPlaceholderTask")}
             rows={8}
             className="w-full rounded-md border border-app-border bg-app-surface px-3 py-2 text-sm text-app-text placeholder:text-app-text-muted focus:outline-none focus:ring-2 focus:ring-app-primary disabled:opacity-70"
           />
 
           <div className="space-y-3">
-            <h3 className="text-sm font-medium text-app-text">Comments</h3>
+            <h3 className="text-sm font-medium text-app-text">{t("fields.comments")}</h3>
             {comments.length === 0 && (
-              <p className="text-xs text-app-text-muted">No comments yet.</p>
+              <p className="text-xs text-app-text-muted">{t("empty.noComments")}</p>
             )}
             <div className="space-y-2">
               {comments.map((c) => (
@@ -340,7 +347,7 @@ export function TaskDetailPage() {
                 >
                   <div className="flex items-center gap-2 text-xs text-app-text-muted">
                     <span className="font-medium text-app-text">
-                      {c.author?.name || c.author?.username || "Unknown"}
+                      {c.author?.name || c.author?.username || t("info.unknownAuthor")}
                     </span>
                     <span>{new Date(c.createdAt).toLocaleString()}</span>
                   </div>
@@ -353,7 +360,7 @@ export function TaskDetailPage() {
                 type="text"
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Add a comment..."
+                placeholder={t("form.commentPlaceholder")}
                 className="flex-1 rounded-md border border-app-border bg-app-surface px-3 py-1.5 text-sm text-app-text placeholder:text-app-text-muted focus:outline-none focus:ring-2 focus:ring-app-primary"
               />
               <button
@@ -361,7 +368,7 @@ export function TaskDetailPage() {
                 disabled={commenting || !newComment.trim()}
                 className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on hover:opacity-90 disabled:opacity-60"
               >
-                {commenting ? "Posting..." : "Comment"}
+                {commenting ? t("actions.posting") : t("actions.comment")}
               </button>
             </form>
           </div>
@@ -370,7 +377,9 @@ export function TaskDetailPage() {
         <div className="w-full shrink-0 space-y-4 lg:w-80">
           <div className="space-y-4 rounded-lg border border-app-border bg-app-surface p-4">
             <div>
-              <label className="text-xs font-medium text-app-text-muted">Priority</label>
+              <label className="text-xs font-medium text-app-text-muted">
+                {t("fields.priority")}
+              </label>
               <select
                 value={priority}
                 onChange={(e) => {
@@ -379,7 +388,7 @@ export function TaskDetailPage() {
                 }}
                 className="mt-1 w-full rounded-md border border-app-border bg-app-surface px-3 py-1.5 text-sm text-app-text"
               >
-                {PRIORITIES.map((p) => (
+                {priorityOptions.map((p) => (
                   <option key={p.value} value={p.value}>
                     {p.label}
                   </option>
@@ -389,7 +398,7 @@ export function TaskDetailPage() {
 
             <div>
               <label className="text-xs font-medium text-app-text-muted">
-                Progress ({percentDone}%)
+                {t("fields.progress", { percent: percentDone })}
               </label>
               <input
                 type="range"
@@ -406,7 +415,9 @@ export function TaskDetailPage() {
             </div>
 
             <div>
-              <label className="text-xs font-medium text-app-text-muted">Due Date</label>
+              <label className="text-xs font-medium text-app-text-muted">
+                {t("fields.dueDate")}
+              </label>
               <input
                 type="date"
                 value={dueDate}
@@ -419,7 +430,9 @@ export function TaskDetailPage() {
             </div>
 
             <div>
-              <label className="text-xs font-medium text-app-text-muted">Start Date</label>
+              <label className="text-xs font-medium text-app-text-muted">
+                {t("fields.startDate")}
+              </label>
               <input
                 type="date"
                 value={startDate}
@@ -432,7 +445,9 @@ export function TaskDetailPage() {
             </div>
 
             <div>
-              <label className="text-xs font-medium text-app-text-muted">End Date</label>
+              <label className="text-xs font-medium text-app-text-muted">
+                {t("fields.endDate")}
+              </label>
               <input
                 type="date"
                 value={endDate}
@@ -446,7 +461,9 @@ export function TaskDetailPage() {
           </div>
 
           <div className="space-y-2 rounded-lg border border-app-border bg-app-surface p-4">
-            <label className="text-xs font-medium text-app-text-muted">Assignees</label>
+            <label className="text-xs font-medium text-app-text-muted">
+              {t("fields.assignees")}
+            </label>
             <div className="flex flex-wrap gap-1">
               {(task?.assignees ?? []).map((a) => (
                 <span
@@ -464,14 +481,14 @@ export function TaskDetailPage() {
                 </span>
               ))}
               {(task?.assignees ?? []).length === 0 && (
-                <span className="text-xs text-app-text-muted">No assignees yet.</span>
+                <span className="text-xs text-app-text-muted">{t("empty.noAssignees")}</span>
               )}
             </div>
             <form onSubmit={handleAddAssignee} className="flex gap-2">
               <UserAutocomplete
                 value={newAssignee}
                 onChange={setNewAssignee}
-                placeholder="Type a username..."
+                placeholder={t("form.usernamePlaceholder")}
                 className="w-full rounded-md border border-app-border bg-app-surface px-2 py-1 text-xs text-app-text placeholder:text-app-text-muted"
               />
               <button
@@ -479,14 +496,14 @@ export function TaskDetailPage() {
                 disabled={!newAssignee.trim()}
                 className="rounded-md bg-app-primary px-2 py-1 text-xs text-app-primary-on hover:opacity-90 disabled:opacity-60"
               >
-                Add
+                {t("actions.add")}
               </button>
             </form>
             {assigneeError && <p className="text-xs text-app-danger">{assigneeError}</p>}
           </div>
 
           <div className="space-y-2 rounded-lg border border-app-border bg-app-surface p-4">
-            <label className="text-xs font-medium text-app-text-muted">Labels</label>
+            <label className="text-xs font-medium text-app-text-muted">{t("fields.labels")}</label>
             <div className="flex flex-wrap gap-1">
               {(task?.labels ?? []).map((l) => (
                 <span
@@ -505,7 +522,7 @@ export function TaskDetailPage() {
                 </span>
               ))}
               {(task?.labels ?? []).length === 0 && (
-                <span className="text-xs text-app-text-muted">No labels.</span>
+                <span className="text-xs text-app-text-muted">{t("empty.noLabels")}</span>
               )}
             </div>
             {availableLabels.length > 0 && (
@@ -518,7 +535,7 @@ export function TaskDetailPage() {
                 defaultValue=""
                 className="w-full rounded-md border border-app-border bg-app-surface px-2 py-1 text-xs text-app-text"
               >
-                <option value="">Attach existing label...</option>
+                <option value="">{t("form.attachLabelPlaceholder")}</option>
                 {availableLabels.map((l) => (
                   <option key={l.id} value={l.id}>
                     {l.title}
@@ -531,7 +548,7 @@ export function TaskDetailPage() {
                 type="text"
                 value={newLabelTitle}
                 onChange={(e) => setNewLabelTitle(e.target.value)}
-                placeholder="New label name"
+                placeholder={t("form.newLabelPlaceholder")}
                 className="flex-1 rounded-md border border-app-border bg-app-surface px-2 py-1 text-xs text-app-text"
               />
               <button
@@ -539,7 +556,7 @@ export function TaskDetailPage() {
                 disabled={!newLabelTitle.trim() || !task?.projectId}
                 className="rounded-md bg-app-primary px-2 py-1 text-xs text-app-primary-on hover:opacity-90 disabled:opacity-60"
               >
-                Create
+                {t("actions.create")}
               </button>
             </form>
           </div>

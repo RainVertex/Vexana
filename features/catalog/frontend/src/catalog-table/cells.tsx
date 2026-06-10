@@ -1,22 +1,25 @@
 // Cell renderers for the catalog table (badges, owner/tags/repo/date/name cells).
 import { Link } from "react-router-dom";
+import { useTranslation } from "@internal/i18n";
 import type { CatalogEntityKind, Lifecycle, Team } from "@internal/shared-types";
 
 export function KindBadge({ value }: { value: CatalogEntityKind }) {
+  const { t } = useTranslation("catalog");
   return (
     <span className="inline-flex items-center rounded bg-app-surface-hover px-1.5 py-0.5 font-mono text-[11px] text-app-text-muted">
-      {value}
+      {t(`kind.${value}`)}
     </span>
   );
 }
 
 export function LifecycleBadge({ value }: { value: Lifecycle }) {
+  const { t } = useTranslation("catalog");
   const cls = lifecycleStyle(value);
   return (
     <span
       className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${cls}`}
     >
-      {value}
+      {t(`lifecycle.${value}`)}
     </span>
   );
 }
@@ -97,6 +100,7 @@ export function NameCell({
   description: string | null | undefined;
   staleSince?: string | null;
 }) {
+  const { t } = useTranslation("catalog");
   return (
     <div className="min-w-0">
       <div className="flex items-center gap-2">
@@ -113,9 +117,9 @@ export function NameCell({
         {staleSince && (
           <span
             className="inline-flex items-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
-            title={`Not seen since ${new Date(staleSince).toLocaleString()}`}
+            title={t("cell.staleTitle", { date: new Date(staleSince).toLocaleString() })}
           >
-            stale
+            {t("cell.staleLabel")}
           </span>
         )}
       </div>

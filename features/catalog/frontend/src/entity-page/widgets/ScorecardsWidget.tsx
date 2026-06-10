@@ -1,13 +1,15 @@
 import { useState } from "react";
+import { useTranslation } from "@internal/i18n";
 import type { ScorecardSummary } from "@internal/shared-types";
 import { TierPill } from "../TierPill";
 import { useEntityOverviewContext } from "../EntityOverviewContext";
 
 export function ScorecardsWidget() {
   const { data } = useEntityOverviewContext();
+  const { t } = useTranslation("catalog");
   const items = data.scorecards;
   if (items.length === 0) {
-    return <p className="text-sm text-app-text-muted">No scorecards apply to this entity yet.</p>;
+    return <p className="text-sm text-app-text-muted">{t("scorecards.widgetNoScorecards")}</p>;
   }
   return (
     <ul className="flex flex-col gap-2">
@@ -20,6 +22,7 @@ export function ScorecardsWidget() {
 
 function ScorecardRow({ summary }: { summary: ScorecardSummary }) {
   const [expanded, setExpanded] = useState(false);
+  const { t } = useTranslation("catalog");
   return (
     <li className="rounded border border-app-border">
       <button
@@ -30,7 +33,7 @@ function ScorecardRow({ summary }: { summary: ScorecardSummary }) {
         <span className="text-sm font-medium text-app-text">{summary.scorecard.name}</span>
         <span className="flex items-center gap-3">
           <span className="text-xs text-app-text-muted">
-            {summary.rulesPassed}/{summary.rulesTotal} passing
+            {t("scorecards.passing", { passed: summary.rulesPassed, total: summary.rulesTotal })}
           </span>
           <TierPill tier={summary.tier} tierStyle={summary.scorecard.tierStyle} />
         </span>
@@ -45,10 +48,10 @@ function ScorecardRow({ summary }: { summary: ScorecardSummary }) {
                   <span className="text-app-text">{rule.label}</span>
                 </div>
                 <div className="text-app-text-muted truncate">
-                  {result?.reason ?? "Not evaluated"}
+                  {result?.reason ?? t("scorecards.widgetNotEvaluated")}
                 </div>
               </div>
-              <span className="text-app-text-muted capitalize">{rule.tier}</span>
+              <span className="text-app-text-muted">{t(`scorecardTier.${rule.tier}`)}</span>
             </li>
           ))}
         </ul>

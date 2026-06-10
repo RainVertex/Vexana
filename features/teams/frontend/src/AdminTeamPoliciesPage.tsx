@@ -2,10 +2,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { PageLayout } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type { TeamPolicyDto, TeamPolicyKind } from "@internal/shared-types";
 
 export function AdminTeamPoliciesPage() {
   const api = useApi();
+  const { t } = useTranslation("teams");
   const [items, setItems] = useState<TeamPolicyDto[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyKind, setBusyKind] = useState<TeamPolicyKind | null>(null);
@@ -16,9 +18,9 @@ export function AdminTeamPoliciesPage() {
       const res = await api.teamPolicies.list();
       setItems(res.items);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load");
+      setError(err instanceof Error ? err.message : t("errors.failedToLoad"));
     }
-  }, [api]);
+  }, [api, t]);
 
   useEffect(() => {
     void load();
@@ -34,19 +36,16 @@ export function AdminTeamPoliciesPage() {
       const next = await api.teamPolicies.update(kind, body);
       setItems((prev) => (prev ? prev.map((p) => (p.kind === kind ? next : p)) : prev));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Update failed");
+      setError(err instanceof Error ? err.message : t("errors.updateFailed"));
     } finally {
       setBusyKind(null);
     }
   }
 
   return (
-    <PageLayout
-      title="Team policies"
-      description="Hard rules enforced on every team request at submission. Adding a new policy requires a code change; this page toggles and configures the existing ones."
-    >
+    <PageLayout title={t("page.teamPoliciesTitle")} description={t("page.teamPoliciesDescription")}>
       {error && <p className="mb-3 text-sm text-app-danger">{error}</p>}
-      {!items && !error && <p className="text-sm text-app-text-muted">Loading…</p>}
+      {!items && !error && <p className="text-sm text-app-text-muted">{t("status.loading")}</p>}
       {items && items.length > 0 && (
         <ul className="space-y-3">
           {items.map((p) => (
@@ -71,7 +70,7 @@ export function AdminTeamPoliciesPage() {
                     disabled={busyKind === p.kind}
                     onChange={(e) => void update(p.kind, { enabled: e.target.checked })}
                   />
-                  <span className="text-app-text-muted">Enabled</span>
+                  <span className="text-app-text-muted">{t("policy.enabledLabel")}</span>
                 </label>
               </div>
               <PolicyConfigEditor policy={p} busy={busyKind === p.kind} onSave={update} />
@@ -97,6 +96,7 @@ function PolicyConfigEditor({ policy, busy, onSave }: PolicyConfigEditorProps) {
 }
 
 function NamePatternEditor({ policy, busy, onSave }: PolicyConfigEditorProps) {
+  const { t } = useTranslation("teams");
   const initialSuffix = String(policy.config.requireSuffix ?? "");
   const initialHyphen = Boolean(policy.config.requireHyphenSeparation);
   const [requireSuffix, setRequireSuffix] = useState(initialSuffix);
@@ -107,7 +107,7 @@ function NamePatternEditor({ policy, busy, onSave }: PolicyConfigEditorProps) {
   return (
     <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
       <label className="flex flex-col">
-        <span className="text-app-text-muted">Required suffix</span>
+        <span className="text-app-text-muted">{t("policy.requiredSuffixLabel")}</span>
         <input
           type="text"
           value={requireSuffix}
@@ -123,7 +123,7 @@ function NamePatternEditor({ policy, busy, onSave }: PolicyConfigEditorProps) {
           disabled={busy}
           onChange={(e) => setRequireHyphenSeparation(e.target.checked)}
         />
-        <span className="text-app-text-muted">Require hyphen between words</span>
+        <span className="text-app-text-muted">{t("policy.requireHyphenLabel")}</span>
       </label>
       <div className="col-span-2 flex justify-end">
         <button
@@ -136,7 +136,7 @@ function NamePatternEditor({ policy, busy, onSave }: PolicyConfigEditorProps) {
           }
           className="rounded-md bg-app-primary px-3 py-1 text-app-primary-on disabled:opacity-50"
         >
-          Save config
+          {t("actions.saveConfig")}
         </button>
       </div>
     </div>

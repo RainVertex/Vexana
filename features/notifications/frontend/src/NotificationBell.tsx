@@ -2,7 +2,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type { NotificationDto } from "@internal/shared-types";
+import type { TFunction } from "i18next";
 
 const POLL_INTERVAL_MS = 30_000;
 
@@ -22,59 +24,63 @@ function notificationHref(n: NotificationDto): string | null {
   return null;
 }
 
-function notificationSummary(n: NotificationDto): string {
+function notificationSummary(n: NotificationDto, t: TFunction): string {
   switch (n.kind) {
     case "team.request.submitted": {
       const name = (n.payload as Record<string, unknown>).requestedByDisplayName;
       return typeof name === "string"
-        ? `${name} requested a new team.`
-        : "New team request awaiting review.";
+        ? t("bellSummary.teamRequestSubmittedBy", { name })
+        : t("bellSummary.teamRequestSubmitted");
     }
     case "team.request.approved":
-      return "Your team request was approved.";
+      return t("bellSummary.teamRequestApproved");
     case "team.request.rejected": {
       const reason = (n.payload as Record<string, unknown>).reason;
-      return `Your team request was rejected${typeof reason === "string" ? `: ${reason}` : ""}.`;
+      return typeof reason === "string"
+        ? t("bellSummary.teamRequestRejectedWithReason", { reason })
+        : t("bellSummary.teamRequestRejected");
     }
     case "team.request.changes_proposed":
-      return "An admin proposed changes to your team request.";
+      return t("bellSummary.teamRequestChangesProposed");
     case "team.request.counter_proposed": {
       const name = (n.payload as Record<string, unknown>).requestedByDisplayName;
       return typeof name === "string"
-        ? `${name} counter-proposed changes.`
-        : "Requester counter-proposed changes.";
+        ? t("bellSummary.teamRequestCounterProposedBy", { name })
+        : t("bellSummary.teamRequestCounterProposed");
     }
     case "team.request.auto_cancelled":
-      return "Team request auto-cancelled after 3 negotiation rounds.";
+      return t("bellSummary.teamRequestAutoCancelled");
     case "team.request.expired":
-      return "Your team request expired.";
+      return t("bellSummary.teamRequestExpired");
     case "team.maintainer_request.submitted": {
       const name = (n.payload as Record<string, unknown>).requestedByDisplayName;
       const teamName = (n.payload as Record<string, unknown>).teamName;
       return typeof name === "string" && typeof teamName === "string"
-        ? `${name} requested to become a maintainer of ${teamName}.`
-        : "New maintainer request awaiting review.";
+        ? t("bellSummary.maintainerRequestSubmittedBy", { name, teamName })
+        : t("bellSummary.maintainerRequestSubmitted");
     }
     case "team.maintainer_request.approved":
-      return "Your maintainer request was approved.";
+      return t("bellSummary.maintainerRequestApproved");
     case "team.maintainer_request.rejected": {
       const reason = (n.payload as Record<string, unknown>).reason;
-      return `Your maintainer request was rejected${typeof reason === "string" ? `: ${reason}` : ""}.`;
+      return typeof reason === "string"
+        ? t("bellSummary.maintainerRequestRejectedWithReason", { reason })
+        : t("bellSummary.maintainerRequestRejected");
     }
     case "team.member.added":
-      return "You were added to a team.";
+      return t("bellSummary.memberAdded");
     case "team.member.removed":
-      return "You were removed from a team.";
+      return t("bellSummary.memberRemoved");
     case "projects.task.assigned": {
       const p = n.payload as Record<string, unknown>;
-      const title = typeof p.taskTitle === "string" ? p.taskTitle : "a task";
-      return `Assigned to: ${title}`;
+      const title = typeof p.taskTitle === "string" ? p.taskTitle : t("fallback.aTask");
+      return t("bellSummary.taskAssigned", { title });
     }
     case "projects.task.commentAdded": {
       const p = n.payload as Record<string, unknown>;
-      const title = typeof p.taskTitle === "string" ? p.taskTitle : "a task";
-      const author = typeof p.authorName === "string" ? p.authorName : "Someone";
-      return `${author} commented on: ${title}`;
+      const title = typeof p.taskTitle === "string" ? p.taskTitle : t("fallback.aTask");
+      const author = typeof p.authorName === "string" ? p.authorName : t("fallback.someone");
+      return t("bellSummary.taskCommented", { author, title });
     }
     default:
       return n.kind;
@@ -83,6 +89,7 @@ function notificationSummary(n: NotificationDto): string {
 
 export function NotificationBell() {
   const api = useApi();
+  const { t } = useTranslation("notifications");
   const [unread, setUnread] = useState<number>(0);
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<NotificationDto[] | null>(null);
@@ -99,8 +106,8 @@ export function NotificationBell() {
 
   useEffect(() => {
     void refreshCount();
-    const t = setInterval(refreshCount, POLL_INTERVAL_MS);
-    return () => clearInterval(t);
+    const timer = setInterval(refreshCount, POLL_INTERVAL_MS);
+    return () => clearInterval(timer);
   }, [refreshCount]);
 
   useEffect(() => {
@@ -156,15 +163,18 @@ export function NotificationBell() {
     }
   }
 
+  const ariaLabel =
+    unread > 0 ? t("bell.ariaLabelWithCount", { count: unread }) : t("bell.ariaLabel");
+
   return (
     <div ref={containerRef} className="relative">
       <button
         type="button"
         onClick={() => void handleOpen()}
-        aria-label={`Notifications${unread > 0 ? ` (${unread} unread)` : ""}`}
+        aria-label={ariaLabel}
         className="relative rounded-full border border-app-border bg-app-surface px-3 py-1 text-sm text-app-text hover:bg-app-surface-hover"
       >
-        Inbox
+        {t("bell.buttonLabel")}
         {unread > 0 && (
           <span className="absolute -right-1 -top-1 rounded-full bg-app-primary px-1.5 py-0.5 text-[10px] font-medium leading-none text-app-primary-on">
             {unread > 99 ? "99+" : unread}
@@ -175,23 +185,25 @@ export function NotificationBell() {
       {open && (
         <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-lg border border-app-border bg-app-surface shadow-lg">
           <div className="flex items-center justify-between border-b border-app-border px-3 py-2 text-xs">
-            <span className="font-semibold text-app-text">Notifications</span>
+            <span className="font-semibold text-app-text">{t("bell.heading")}</span>
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => void markAllRead()}
                 className="text-app-text-muted hover:text-app-text"
               >
-                Mark all read
+                {t("bell.markAllRead")}
               </button>
               <Link to="/notifications" className="text-app-primary">
-                View all
+                {t("bell.viewAll")}
               </Link>
             </div>
           </div>
-          {items === null && <div className="px-3 py-4 text-xs text-app-text-muted">Loading…</div>}
+          {items === null && (
+            <div className="px-3 py-4 text-xs text-app-text-muted">{t("bell.loading")}</div>
+          )}
           {items && items.length === 0 && (
-            <div className="px-3 py-4 text-xs text-app-text-muted">You're all caught up.</div>
+            <div className="px-3 py-4 text-xs text-app-text-muted">{t("bell.empty")}</div>
           )}
           {items && items.length > 0 && (
             <ul className="max-h-80 overflow-y-auto">
@@ -212,8 +224,8 @@ export function NotificationBell() {
                           isUnread ? "font-medium text-app-text" : "text-app-text-muted"
                         }`}
                       >
-                        {notificationSummary(n)}
-                        {isUnread && <span className="sr-only"> (unread)</span>}
+                        {notificationSummary(n, t)}
+                        {isUnread && <span className="sr-only"> {t("bell.unreadSrOnly")}</span>}
                       </div>
                       <div className="text-[10px] text-app-text-muted">
                         {new Date(n.createdAt).toLocaleString()}

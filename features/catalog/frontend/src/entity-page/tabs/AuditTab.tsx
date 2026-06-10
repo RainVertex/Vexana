@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type { AuditEventRow } from "@internal/shared-types";
 import { useEntityContext } from "../outletContext";
 
 export function AuditTab() {
   const { data } = useEntityContext();
   const api = useApi();
+  const { t } = useTranslation("catalog");
   const [rows, setRows] = useState<AuditEventRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,17 +19,17 @@ export function AuditTab() {
         if (!cancelled) setRows(res.items);
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Failed");
+        if (!cancelled) setError(err instanceof Error ? err.message : t("errors.generic"));
       });
     return () => {
       cancelled = true;
     };
-  }, [api, data.entity.id]);
+  }, [api, data.entity.id, t]);
 
   if (error) return <p className="text-sm text-app-danger">{error}</p>;
-  if (!rows) return <p className="text-sm text-app-text-muted">Loading…</p>;
+  if (!rows) return <p className="text-sm text-app-text-muted">{t("audit.loading")}</p>;
   if (rows.length === 0) {
-    return <p className="text-sm text-app-text-muted">No audit events for this entity.</p>;
+    return <p className="text-sm text-app-text-muted">{t("audit.noEvents")}</p>;
   }
 
   return (
@@ -35,10 +37,10 @@ export function AuditTab() {
       <table className="w-full text-sm">
         <thead className="border-b border-app-border">
           <tr className="text-left text-xs uppercase tracking-wide text-app-text-muted">
-            <th className="px-4 py-3">When</th>
-            <th className="px-4 py-3">Kind</th>
-            <th className="px-4 py-3">Actor</th>
-            <th className="px-4 py-3">Payload</th>
+            <th className="px-4 py-3">{t("audit.colWhen")}</th>
+            <th className="px-4 py-3">{t("audit.colKind")}</th>
+            <th className="px-4 py-3">{t("audit.colActor")}</th>
+            <th className="px-4 py-3">{t("audit.colPayload")}</th>
           </tr>
         </thead>
         <tbody>
@@ -47,7 +49,9 @@ export function AuditTab() {
               <td className="px-4 py-3 text-app-text-muted whitespace-nowrap">
                 {new Date(e.createdAt).toLocaleString()}
                 {e.requestId && (
-                  <div className="text-xs text-app-text-muted">req: {e.requestId}</div>
+                  <div className="text-xs text-app-text-muted">
+                    {t("audit.requestId", { id: e.requestId })}
+                  </div>
                 )}
               </td>
               <td className="px-4 py-3 font-mono text-xs">{e.kind}</td>
@@ -55,7 +59,7 @@ export function AuditTab() {
                 {e.actor ? (
                   e.actor.displayName
                 ) : (
-                  <span className="text-app-text-muted">system</span>
+                  <span className="text-app-text-muted">{t("audit.system")}</span>
                 )}
               </td>
               <td className="px-4 py-3">

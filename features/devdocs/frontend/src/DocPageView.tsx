@@ -5,6 +5,7 @@ import rehypeSlug from "rehype-slug";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypeHighlight from "rehype-highlight";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type { CurrentUser, DocPageDetail } from "@internal/shared-types";
 import { FreshnessBanner } from "./FreshnessBanner";
 import { ReportStaleDialog } from "./ReportStaleDialog";
@@ -19,6 +20,7 @@ export interface DocPageViewProps {
 
 export function DocPageView({ page, currentUser, onChanged }: DocPageViewProps) {
   const api = useApi();
+  const { t } = useTranslation("devdocs");
   const [verifying, setVerifying] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [submittingReport, setSubmittingReport] = useState(false);
@@ -32,7 +34,7 @@ export function DocPageView({ page, currentUser, onChanged }: DocPageViewProps) 
       await api.devdocs.verify(page.id);
       onChanged();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Failed to mark verified");
+      setActionError(err instanceof Error ? err.message : t("errors.failedVerify"));
     } finally {
       setVerifying(false);
     }
@@ -45,7 +47,7 @@ export function DocPageView({ page, currentUser, onChanged }: DocPageViewProps) 
       await api.devdocs.reportStale(page.id, reason || undefined);
       setReportOpen(false);
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Failed to submit report");
+      setActionError(err instanceof Error ? err.message : t("errors.failedReport"));
     } finally {
       setSubmittingReport(false);
     }

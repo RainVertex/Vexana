@@ -11,10 +11,12 @@ import {
   type GroupingState,
   type Row,
 } from "@tanstack/react-table";
+import { useTranslation } from "@internal/i18n";
 import {
   buildColumns,
   COLUMN_META,
   distinctValues,
+  useLocalizedColumnMeta,
   type CatalogColumnId,
   type CatalogRow,
 } from "./columns";
@@ -38,7 +40,24 @@ function globalFilterFn(row: Row<CatalogRow>, _columnId: string, filterValue: st
 }
 
 export function CatalogTable({ data, view, onFilteredCountChange }: Props) {
-  const columns = useMemo(() => buildColumns(), []);
+  const { t } = useTranslation("catalog");
+  const noOwnerLabel = t("placeholders.noOwner");
+  const noTagsLabel = t("placeholders.noTags");
+  const localizedMeta = useLocalizedColumnMeta();
+
+  const columnHeaders = useMemo(
+    () =>
+      Object.fromEntries(Object.entries(localizedMeta).map(([id, m]) => [id, m.label])) as Record<
+        CatalogColumnId,
+        string
+      >,
+    [localizedMeta],
+  );
+
+  const columns = useMemo(
+    () => buildColumns(noOwnerLabel, noTagsLabel, columnHeaders),
+    [noOwnerLabel, noTagsLabel, columnHeaders],
+  );
 
   // Status filters run before tag fan-out so a hidden entity does not ghost into multiple groups.
   const statusFiltered = useMemo<CatalogRow[]>(() => {
@@ -56,13 +75,13 @@ export function CatalogTable({ data, view, onFilteredCountChange }: Props) {
     const out: CatalogRow[] = [];
     for (const r of statusFiltered) {
       if (!r.tags || r.tags.length === 0) {
-        out.push({ ...r, tags: ["(no tags)"] });
+        out.push({ ...r, tags: [noTagsLabel] });
       } else {
-        for (const t of r.tags) out.push({ ...r, tags: [t] });
+        for (const tg of r.tags) out.push({ ...r, tags: [tg] });
       }
     }
     return out;
-  }, [statusFiltered, view.groupBy]);
+  }, [statusFiltered, view.groupBy, noTagsLabel]);
 
   const grouping = useMemo<GroupingState>(
     () => (view.groupBy ? [view.groupBy] : []),
@@ -104,11 +123,11 @@ export function CatalogTable({ data, view, onFilteredCountChange }: Props) {
     const m: Partial<Record<CatalogColumnId, string[]>> = {};
     for (const id of Object.keys(COLUMN_META) as CatalogColumnId[]) {
       if (COLUMN_META[id].filterKind === "facet") {
-        m[id] = distinctValues(data, id);
+        m[id] = distinctValues(data, id, noOwnerLabel, noTagsLabel);
       }
     }
     return m;
-  }, [data]);
+  }, [data, noOwnerLabel, noTagsLabel]);
 
   return (
     <div className="overflow-x-auto rounded-lg border border-app-border bg-app-surface">
@@ -121,7 +140,7 @@ export function CatalogTable({ data, view, onFilteredCountChange }: Props) {
             >
               {hg.headers.map((header) => {
                 const colId = header.column.id as CatalogColumnId;
-                const meta = COLUMN_META[colId];
+                const meta = localizedMeta[colId];
                 const canSort = header.column.getCanSort();
                 const sortDir = header.column.getIsSorted();
                 return (

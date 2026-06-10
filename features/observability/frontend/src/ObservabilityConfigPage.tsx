@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { PageLayout } from "@internal/shared-ui";
+import { useTranslation, Trans } from "@internal/i18n";
 import type {
   CatalogEntityWithOwners,
   EntityObservabilityConfigDto,
@@ -58,6 +59,7 @@ function placeholders(entityName: string) {
 
 export function ObservabilityConfigPage() {
   const api = useApi();
+  const { t } = useTranslation("observability");
   const [entities, setEntities] = useState<CatalogEntityWithOwners[]>([]);
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [rows, setRows] = useState<Record<string, RowDraft>>({});
@@ -92,7 +94,7 @@ export function ObservabilityConfigPage() {
         setRows(initial);
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load");
+        if (!cancelled) setError(err instanceof Error ? err.message : t("errors.failedLoad"));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -100,7 +102,7 @@ export function ObservabilityConfigPage() {
     return () => {
       cancelled = true;
     };
-  }, [api]);
+  }, [api, t]);
 
   function updateRow(entityId: string, patch: Partial<RowDraft>) {
     setRows((prev) => ({
@@ -112,7 +114,7 @@ export function ObservabilityConfigPage() {
   async function save(entityId: string) {
     const row = rows[entityId];
     if (!row || !row.integrationId) {
-      updateRow(entityId, { status: "error", error: "Pick a Grafana integration first" });
+      updateRow(entityId, { status: "error", error: t("errors.pickIntegration") });
       return;
     }
     setRows((prev) => ({ ...prev, [entityId]: { ...prev[entityId], status: "saving" } }));
@@ -133,26 +135,29 @@ export function ObservabilityConfigPage() {
         [entityId]: {
           ...prev[entityId],
           status: "error",
-          error: err instanceof Error ? err.message : "Save failed",
+          error: err instanceof Error ? err.message : t("errors.saveFailed"),
         },
       }));
     }
   }
 
   return (
-    <PageLayout
-      title="Observability configuration"
-      description="Per-entity PromQL / LogQL / dashboard wiring. Empty fields fall back to the default defaults shown as placeholder."
-    >
+    <PageLayout title={t("page.configTitle")} description={t("page.configDescription")}>
       {error && <p className="text-sm text-app-danger">{error}</p>}
-      {loading && <p className="text-sm text-app-text-muted">Loading…</p>}
+      {loading && <p className="text-sm text-app-text-muted">{t("errors.loading")}</p>}
       {!loading && grafanaIntegrations.length === 0 && (
         <p className="text-sm text-app-text-muted">
-          No enabled Grafana integration. Connect one from{" "}
-          <a href="/integrations" className="underline-offset-2 hover:underline">
-            Integrations
-          </a>{" "}
-          first.
+          <Trans
+            ns="observability"
+            i18nKey="empty.noGrafanaIntegration"
+            components={{
+              link: (
+                <a href="/integrations" className="underline-offset-2 hover:underline">
+                  {t("empty.noGrafanaIntegrationLinkText")}
+                </a>
+              ),
+            }}
+          />
         </p>
       )}
       {!loading && entities.length > 0 && grafanaIntegrations.length > 0 && (
@@ -168,50 +173,50 @@ export function ObservabilityConfigPage() {
                     {entity.name}
                     <span className="ml-2 text-xs text-app-text-muted">{entity.kind}</span>
                   </span>
-                  <StatusBadge row={row} />
+                  <StatusBadge row={row} t={t} />
                 </summary>
                 <div className="space-y-2 border-t border-app-border p-3">
                   <SelectField
-                    label="Grafana integration"
+                    label={t("fields.grafanaIntegration")}
                     value={row.integrationId}
                     onChange={(v) => updateRow(entity.id, { integrationId: v })}
                     options={grafanaIntegrations.map((i) => ({ value: i.id, label: i.name }))}
                   />
                   <Field
-                    label="upQuery"
+                    label={t("fields.upQuery")}
                     value={row.upQuery}
                     onChange={(v) => updateRow(entity.id, { upQuery: v })}
                     placeholder={ph.upQuery}
                   />
                   <Field
-                    label="latencyQuery"
+                    label={t("fields.latencyQuery")}
                     value={row.latencyQuery}
                     onChange={(v) => updateRow(entity.id, { latencyQuery: v })}
                     placeholder={ph.latencyQuery}
                   />
                   <Field
-                    label="errorQuery"
+                    label={t("fields.errorQuery")}
                     value={row.errorQuery}
                     onChange={(v) => updateRow(entity.id, { errorQuery: v })}
                     placeholder={ph.errorQuery}
                   />
                   <Field
-                    label="logsSelector"
+                    label={t("fields.logsSelector")}
                     value={row.logsSelector}
                     onChange={(v) => updateRow(entity.id, { logsSelector: v })}
                     placeholder={ph.logsSelector}
                   />
                   <Field
-                    label="dashboardUid"
+                    label={t("fields.dashboardUidField")}
                     value={row.dashboardUid}
                     onChange={(v) => updateRow(entity.id, { dashboardUid: v })}
-                    placeholder="grafana dashboard UID"
+                    placeholder={t("fields.dashboardUidPlaceholder")}
                   />
                   <Field
-                    label="traceIdRegex (optional override)"
+                    label={t("fields.traceIdRegex")}
                     value={row.traceIdRegex}
                     onChange={(v) => updateRow(entity.id, { traceIdRegex: v })}
-                    placeholder="leave empty to use defaults"
+                    placeholder={t("fields.traceIdRegexPlaceholder")}
                   />
                   {row.error && <p className="text-xs text-app-danger">{row.error}</p>}
                   <div className="flex justify-end">
@@ -221,7 +226,7 @@ export function ObservabilityConfigPage() {
                       disabled={row.status === "saving" || row.status === "clean"}
                       className="rounded bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on disabled:opacity-50"
                     >
-                      {row.status === "saving" ? "Saving…" : "Save"}
+                      {row.status === "saving" ? t("actions.saving") : t("actions.save")}
                     </button>
                   </div>
                 </div>
@@ -234,12 +239,15 @@ export function ObservabilityConfigPage() {
   );
 }
 
-function StatusBadge({ row }: { row: RowDraft }) {
+function StatusBadge({ row, t }: { row: RowDraft; t: (key: string) => string }) {
   if (row.status === "clean") return null;
-  if (row.status === "saved") return <span className="text-xs text-app-success">saved</span>;
-  if (row.status === "error") return <span className="text-xs text-app-danger">error</span>;
-  if (row.status === "saving") return <span className="text-xs text-app-text-muted">saving…</span>;
-  return <span className="text-xs text-app-warning">unsaved</span>;
+  if (row.status === "saved")
+    return <span className="text-xs text-app-success">{t("status.saved")}</span>;
+  if (row.status === "error")
+    return <span className="text-xs text-app-danger">{t("status.error")}</span>;
+  if (row.status === "saving")
+    return <span className="text-xs text-app-text-muted">{t("status.saving")}</span>;
+  return <span className="text-xs text-app-warning">{t("status.unsaved")}</span>;
 }
 
 function Field({

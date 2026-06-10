@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { PageLayout } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type {
   ScorecardReport,
   ScorecardTier,
@@ -26,13 +27,14 @@ const THRESHOLD_STYLES: Record<string, string> = {
 
 // Local badge so the scorecards feature does not import from catalog-frontend.
 function TierBadge({ tier, tierStyle }: { tier: ScorecardTier; tierStyle: ScorecardTierStyle }) {
+  const { t } = useTranslation("scorecards");
   const styles = tierStyle === "stage" ? STAGE_STYLES : THRESHOLD_STYLES;
   const cls = styles[tier] ?? styles.none;
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium capitalize ${cls}`}
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${cls}`}
     >
-      {tier === "none" ? "—" : tier}
+      {tier === "none" ? "—" : t(`tierLabel.${tier}` as Parameters<typeof t>[0])}
     </span>
   );
 }
@@ -41,6 +43,7 @@ const selectClass =
   "rounded-md border border-app-border bg-app-surface px-2 py-1.5 text-sm text-app-text focus:outline-none focus:ring-2 focus:ring-app-primary";
 
 export function ScorecardReportPage() {
+  const { t } = useTranslation("scorecards");
   const { id = "" } = useParams<{ id: string }>();
   const api = useApi();
   const [report, setReport] = useState<ScorecardReport | null>(null);
@@ -63,12 +66,12 @@ export function ScorecardReportPage() {
     api.scorecards
       .report(id, { kind: kind || undefined, ownerTeamId: ownerTeamId || undefined })
       .then((r) => setReport(r))
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed"))
+      .catch((err) => setError(err instanceof Error ? err.message : t("errors.loadFailed")))
       .finally(() => setLoading(false));
-  }, [api, id, kind, ownerTeamId]);
+  }, [api, id, kind, ownerTeamId, t]);
 
   const teamName = useMemo(() => {
-    const byId = new Map(teams.map((t) => [t.id, t.name]));
+    const byId = new Map(teams.map((tm) => [tm.id, tm.name]));
     return (tid: string) => byId.get(tid) ?? tid;
   }, [teams]);
 
@@ -76,14 +79,16 @@ export function ScorecardReportPage() {
 
   return (
     <PageLayout
-      title={report ? `${report.scorecard.name}: report` : "Scorecard report"}
-      description="Entities ranked by achieved tier, then by weighted score."
+      title={
+        report ? t("report.title", { name: report.scorecard.name }) : t("report.titleFallback")
+      }
+      description={t("report.description")}
       actions={
         <Link
           to={`/scorecards/${id}`}
           className="rounded-md border border-app-border bg-app-surface px-3 py-1.5 text-sm text-app-text hover:bg-app-surface-hover"
         >
-          Back to scorecard
+          {t("report.backToScorecard")}
         </Link>
       }
     >
@@ -95,27 +100,27 @@ export function ScorecardReportPage() {
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <label className="flex items-center gap-2 text-sm text-app-text-muted">
-          Kind
+          {t("report.filterKind")}
           <select value={kind} onChange={(e) => setKind(e.target.value)} className={selectClass}>
-            <option value="">All</option>
+            <option value="">{t("report.filterAll")}</option>
             {ENTITY_KINDS.map((k) => (
               <option key={k} value={k}>
-                {k}
+                {t(`entityKindLabel.${k}` as Parameters<typeof t>[0])}
               </option>
             ))}
           </select>
         </label>
         <label className="flex items-center gap-2 text-sm text-app-text-muted">
-          Owner team
+          {t("report.filterOwnerTeam")}
           <select
             value={ownerTeamId}
             onChange={(e) => setOwnerTeamId(e.target.value)}
             className={selectClass}
           >
-            <option value="">All</option>
-            {teams.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
+            <option value="">{t("report.filterAll")}</option>
+            {teams.map((tm) => (
+              <option key={tm.id} value={tm.id}>
+                {tm.name}
               </option>
             ))}
           </select>
@@ -123,21 +128,21 @@ export function ScorecardReportPage() {
       </div>
 
       {loading || !report ? (
-        <p className="text-sm text-app-text-muted">Loading…</p>
+        <p className="text-sm text-app-text-muted">{t("report.loading")}</p>
       ) : report.rows.length === 0 ? (
-        <p className="text-sm text-app-text-muted">No entities match these filters.</p>
+        <p className="text-sm text-app-text-muted">{t("report.noEntities")}</p>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-app-border bg-app-surface">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-app-border text-left text-xs text-app-text-muted">
-                <th className="px-3 py-2 w-10">#</th>
-                <th className="px-3 py-2">Entity</th>
-                <th className="px-3 py-2">Kind</th>
-                <th className="px-3 py-2">Tier</th>
-                <th className="px-3 py-2">Score</th>
-                <th className="px-3 py-2">Rules</th>
-                <th className="px-3 py-2">Owners</th>
+                <th className="px-3 py-2 w-10">{t("report.colNumber")}</th>
+                <th className="px-3 py-2">{t("report.colEntity")}</th>
+                <th className="px-3 py-2">{t("report.colKind")}</th>
+                <th className="px-3 py-2">{t("report.colTier")}</th>
+                <th className="px-3 py-2">{t("report.colScore")}</th>
+                <th className="px-3 py-2">{t("report.colRules")}</th>
+                <th className="px-3 py-2">{t("report.colOwners")}</th>
               </tr>
             </thead>
             <tbody>
@@ -152,7 +157,9 @@ export function ScorecardReportPage() {
                       {row.entity.name}
                     </Link>
                   </td>
-                  <td className="px-3 py-2 text-app-text-muted">{row.entity.kind}</td>
+                  <td className="px-3 py-2 text-app-text-muted">
+                    {t(`entityKindLabel.${row.entity.kind}` as Parameters<typeof t>[0])}
+                  </td>
                   <td className="px-3 py-2">
                     <TierBadge tier={row.tier} tierStyle={tierStyle} />
                   </td>

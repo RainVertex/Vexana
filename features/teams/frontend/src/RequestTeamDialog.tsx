@@ -1,3 +1,4 @@
+import { useTranslation } from "@internal/i18n";
 import { RequestTeamForm } from "./RequestTeamForm";
 
 interface RequestTeamDialogProps {
@@ -7,6 +8,8 @@ interface RequestTeamDialogProps {
 }
 
 export function RequestTeamDialog({ open, onClose, onSubmitted }: RequestTeamDialogProps) {
+  const { t } = useTranslation("teams");
+
   if (!open) return null;
 
   return (
@@ -16,11 +19,8 @@ export function RequestTeamDialog({ open, onClose, onSubmitted }: RequestTeamDia
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
     >
       <div className="w-full max-w-md rounded-lg border border-app-border bg-app-surface p-5 shadow-lg">
-        <h2 className="text-lg font-semibold text-app-text">Request a team</h2>
-        <p className="mt-1 text-xs text-app-text-muted">
-          Submit a request for an admin to review. You can also mirror the team to a connected
-          GitHub org.
-        </p>
+        <h2 className="text-lg font-semibold text-app-text">{t("dialogs.requestTeamTitle")}</h2>
+        <p className="mt-1 text-xs text-app-text-muted">{t("dialogs.requestTeamDescription")}</p>
         <div className="mt-4">
           <RequestTeamForm
             onCancel={onClose}

@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type { CurrentUser, DocResolvedSource } from "@internal/shared-types";
 import { useDocPage, useDocsList, useDocsSearch } from "./useDevDocs";
 import { DocsSidebar } from "./DocsSidebar";
@@ -12,6 +13,7 @@ import { DocsSearchBox } from "./DocsSearchBox";
 
 export function DocsTab() {
   const api = useApi();
+  const { t } = useTranslation("devdocs");
   const { id: entityId = "" } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const docs = useDocsList(entityId);
@@ -54,7 +56,7 @@ export function DocsTab() {
       await api.devdocs.sync(entityId);
       docs.reload();
     } catch (err) {
-      setSyncError(err instanceof Error ? err.message : "Sync failed");
+      setSyncError(err instanceof Error ? err.message : t("errors.syncFailed"));
     } finally {
       setSyncing(false);
     }
@@ -75,7 +77,7 @@ export function DocsTab() {
     );
   }
   if (!docs.data) {
-    return <p className="text-sm text-app-text-muted">Loading DevDocs…</p>;
+    return <p className="text-sm text-app-text-muted">{t("tab.loadingDocs")}</p>;
   }
 
   const { syncState, pages } = docs.data;
@@ -124,7 +126,7 @@ export function DocsTab() {
           disabled={syncing}
           className="w-full rounded border border-app-border px-2 py-1 text-[11px] text-app-text-muted hover:bg-app-surface-hover disabled:opacity-50"
         >
-          {syncing ? "Syncing…" : "Resync from repo"}
+          {syncing ? t("tab.resyncing") : t("tab.resync")}
         </button>
         {syncError && <p className="text-[11px] text-app-danger">{syncError}</p>}
       </aside>
@@ -135,7 +137,7 @@ export function DocsTab() {
           </div>
         )}
         {pageDetail.loading && !pageDetail.page && (
-          <p className="text-sm text-app-text-muted">Loading page…</p>
+          <p className="text-sm text-app-text-muted">{t("tab.loadingPage")}</p>
         )}
         {pageDetail.page && (
           <DocPageView

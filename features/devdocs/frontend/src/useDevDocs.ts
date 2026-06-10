@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "@internal/i18n";
 import { useApi } from "@internal/api-client/react";
 import type {
   DocCommentRow,
@@ -16,6 +17,7 @@ export interface UseDocsListResult {
 
 export function useDocsList(entityId: string): UseDocsListResult {
   const api = useApi();
+  const { t } = useTranslation("devdocs");
   const [data, setData] = useState<DocsTabResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,7 +34,7 @@ export function useDocsList(entityId: string): UseDocsListResult {
       })
       .catch((err) => {
         if (cancelled) return;
-        setError(err instanceof Error ? err.message : "Failed to load DevDocs");
+        setError(err instanceof Error ? err.message : t("errors.failedLoadDocs"));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -40,7 +42,7 @@ export function useDocsList(entityId: string): UseDocsListResult {
     return () => {
       cancelled = true;
     };
-  }, [api, entityId]);
+  }, [api, entityId, t]);
 
   useEffect(() => load(), [load]);
   return { data, error, loading, reload: load };
@@ -55,6 +57,7 @@ export interface UseDocPageResult {
 
 export function useDocPage(entityId: string, slug: string | null): UseDocPageResult {
   const api = useApi();
+  const { t } = useTranslation("devdocs");
   const [page, setPage] = useState<DocPageDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -77,7 +80,7 @@ export function useDocPage(entityId: string, slug: string | null): UseDocPageRes
       })
       .catch((err) => {
         if (cancelled) return;
-        setError(err instanceof Error ? err.message : "Failed to load page");
+        setError(err instanceof Error ? err.message : t("errors.failedLoadPage"));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -85,7 +88,7 @@ export function useDocPage(entityId: string, slug: string | null): UseDocPageRes
     return () => {
       cancelled = true;
     };
-  }, [api, entityId, slug]);
+  }, [api, entityId, slug, t]);
 
   useEffect(() => load(), [load]);
   return { page, error, loading, reload: load };
@@ -102,6 +105,7 @@ export interface UseCommentsResult {
 
 export function useComments(pageId: string | null): UseCommentsResult {
   const api = useApi();
+  const { t } = useTranslation("devdocs");
   const [items, setItems] = useState<DocCommentRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -118,9 +122,9 @@ export function useComments(pageId: string | null): UseCommentsResult {
         setItems(res.items);
         setError(null);
       })
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load comments"))
+      .catch((err) => setError(err instanceof Error ? err.message : t("errors.failedLoadComments")))
       .finally(() => setLoading(false));
-  }, [api, pageId]);
+  }, [api, pageId, t]);
 
   useEffect(() => load(), [load]);
 
@@ -154,6 +158,7 @@ export interface UseDocsSearchResult {
 
 export function useDocsSearch(entityId: string | undefined): UseDocsSearchResult {
   const api = useApi();
+  const { t } = useTranslation("devdocs");
   const [hits, setHits] = useState<DocSearchHit[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -171,12 +176,12 @@ export function useDocsSearch(entityId: string | undefined): UseDocsSearchResult
         setHits(res.hits);
         setError(null);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Search failed");
+        setError(err instanceof Error ? err.message : t("errors.searchFailed"));
       } finally {
         setLoading(false);
       }
     },
-    [api, entityId],
+    [api, entityId, t],
   );
 
   const clear = useCallback(() => {

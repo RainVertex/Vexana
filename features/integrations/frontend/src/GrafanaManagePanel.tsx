@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type { IntegrationDetail } from "@internal/shared-types";
 import { ConfirmDialog } from "@internal/shared-ui";
 import { DatasourceSelect, pickDefaultUid, type DatasourceCandidate } from "./DatasourceSelect";
@@ -22,6 +23,7 @@ interface ProbeResult {
 
 export function GrafanaManagePanel({ integration, onChanged }: GrafanaManagePanelProps) {
   const api = useApi();
+  const { t } = useTranslation("integrations");
   const [error, setError] = useState<string | null>(null);
   const [rotateTokenOpen, setRotateTokenOpen] = useState(false);
   const [editDsOpen, setEditDsOpen] = useState(false);
@@ -36,27 +38,42 @@ export function GrafanaManagePanel({ integration, onChanged }: GrafanaManagePane
     <div className="space-y-4">
       {error && <p className="text-sm text-app-danger">{error}</p>}
 
-      <Section title="Connection">
-        <Row label="Base URL" value={cfg.baseUrl} />
-        <Row label="API token" value={cfg.hasApiToken ? "set" : "not set"} />
+      <Section title={t("grafanaManage.sectionConnection")}>
+        <Row label={t("grafanaManage.fieldBaseUrl")} value={cfg.baseUrl} />
+        <Row
+          label={t("grafanaManage.fieldApiToken")}
+          value={
+            cfg.hasApiToken ? t("grafanaManage.apiTokenSet") : t("grafanaManage.apiTokenNotSet")
+          }
+        />
         <div>
           <button
             type="button"
             onClick={() => setRotateTokenOpen(true)}
             className="rounded border border-app-border px-2 py-1 text-xs text-app-text hover:bg-app-surface-hover"
           >
-            Rotate API token…
+            {t("grafanaManage.rotateApiToken")}
           </button>
         </div>
       </Section>
 
-      <Section title="Datasources">
-        <Row label="Prometheus UID" value={cfg.dsUid.prometheus || "—"} />
-        <Row label="Loki UID" value={cfg.dsUid.loki ?? "(none)"} />
-        <Row label="Tempo UID" value={cfg.dsUid.tempo ?? "(none)"} />
+      <Section title={t("grafanaManage.sectionDatasources")}>
+        <Row label={t("grafanaManage.fieldPrometheusUid")} value={cfg.dsUid.prometheus || "—"} />
         <Row
-          label="Image renderer"
-          value={cfg.imageRendererAvailable ? "available" : "not available"}
+          label={t("grafanaManage.fieldLokiUid")}
+          value={cfg.dsUid.loki ?? t("datasource.noneOption")}
+        />
+        <Row
+          label={t("grafanaManage.fieldTempoUid")}
+          value={cfg.dsUid.tempo ?? t("datasource.noneOption")}
+        />
+        <Row
+          label={t("grafanaManage.fieldImageRenderer")}
+          value={
+            cfg.imageRendererAvailable
+              ? t("grafanaManage.imageRendererAvailable")
+              : t("grafanaManage.imageRendererNotAvailable")
+          }
         />
         <div>
           <button
@@ -64,7 +81,7 @@ export function GrafanaManagePanel({ integration, onChanged }: GrafanaManagePane
             onClick={() => setEditDsOpen(true)}
             className="rounded border border-app-border px-2 py-1 text-xs text-app-text hover:bg-app-surface-hover"
           >
-            Edit datasources…
+            {t("grafanaManage.editDatasources")}
           </button>
         </div>
       </Section>
@@ -76,20 +93,27 @@ export function GrafanaManagePanel({ integration, onChanged }: GrafanaManagePane
         onError={setError}
       />
 
-      <Section title="Webhook">
-        <Row label="Endpoint" value={`/integrations/grafana/webhook/${integration.id}`} />
-        <Row label="Secret" value={cfg.hasWebhookSecret ? "set" : "not set"} />
-        <p className="text-xs text-app-text-muted">
-          The secret is hashed in storage and cannot be re-displayed. If you missed copying it the
-          first time, rotate to a fresh one — the new value is shown once.
-        </p>
+      <Section title={t("grafanaManage.sectionWebhook")}>
+        <Row
+          label={t("grafanaManage.fieldEndpoint")}
+          value={`/integrations/grafana/webhook/${integration.id}`}
+        />
+        <Row
+          label={t("grafanaManage.fieldSecret")}
+          value={
+            cfg.hasWebhookSecret
+              ? t("grafanaManage.webhookSecretSet")
+              : t("grafanaManage.webhookSecretNotSet")
+          }
+        />
+        <p className="text-xs text-app-text-muted">{t("grafanaManage.webhookSecretNote")}</p>
         <div>
           <button
             type="button"
             onClick={() => setConfirmRotateWebhook(true)}
             className="rounded border border-app-border px-2 py-1 text-xs text-app-text hover:bg-app-surface-hover"
           >
-            Rotate webhook secret…
+            {t("grafanaManage.rotateWebhookSecret")}
           </button>
         </div>
       </Section>
@@ -119,9 +143,9 @@ export function GrafanaManagePanel({ integration, onChanged }: GrafanaManagePane
 
       <ConfirmDialog
         open={confirmRotateWebhook}
-        title="Rotate webhook secret?"
-        message="The current secret stops working as soon as this completes. Alerts delivered to the old bearer will 401 until Grafana's Contact Point is updated with the new value."
-        confirmLabel="Rotate"
+        title={t("grafanaManage.confirmRotateWebhookTitle")}
+        message={t("grafanaManage.confirmRotateWebhookMessage")}
+        confirmLabel={t("grafanaManage.confirmRotateLabel")}
         destructive
         onConfirm={async () => {
           setConfirmRotateWebhook(false);
@@ -131,7 +155,7 @@ export function GrafanaManagePanel({ integration, onChanged }: GrafanaManagePane
             setNewWebhookSecret(res.webhookSecret);
             onChanged();
           } catch (err) {
-            setError(err instanceof Error ? err.message : "Rotate failed");
+            setError(err instanceof Error ? err.message : t("errors.rotateFailed"));
           }
         }}
         onClose={() => setConfirmRotateWebhook(false)}
@@ -178,6 +202,7 @@ function SuppressionSection({
   onError: (msg: string | null) => void;
 }) {
   const api = useApi();
+  const { t } = useTranslation("integrations");
   const [minutes, setMinutes] = useState<string>(() => String(Math.round(initialMs / 60_000)));
   const [busy, setBusy] = useState(false);
   const initialMinutes = Math.round(initialMs / 60_000);
@@ -194,16 +219,16 @@ function SuppressionSection({
       });
       onSaved();
     } catch (err) {
-      onError(err instanceof Error ? err.message : "Save failed");
+      onError(err instanceof Error ? err.message : t("errors.saveFailed"));
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <Section title="Alert re-notify suppression">
+    <Section title={t("grafanaManage.sectionSuppression")}>
       <label className="block text-xs">
-        <span className="text-app-text-muted">Window (minutes)</span>
+        <span className="text-app-text-muted">{t("grafanaManage.fieldWindow")}</span>
         <input
           type="text"
           value={minutes}
@@ -211,9 +236,7 @@ function SuppressionSection({
           className="mt-1 block w-full rounded border border-app-border bg-app-bg px-2 py-1.5 text-sm text-app-text"
         />
       </label>
-      <p className="text-xs text-app-text-muted">
-        A still-firing alert is delivered to the bell at most once per window.
-      </p>
+      <p className="text-xs text-app-text-muted">{t("grafanaManage.suppressionHint")}</p>
       <div>
         <button
           type="button"
@@ -221,7 +244,7 @@ function SuppressionSection({
           onClick={save}
           className="rounded bg-app-primary px-2.5 py-1 text-xs font-medium text-app-primary-on disabled:opacity-50"
         >
-          {busy ? "Saving…" : "Save"}
+          {busy ? t("grafanaManage.savingSuppression") : t("grafanaManage.saveSuppression")}
         </button>
       </div>
     </Section>
@@ -238,6 +261,7 @@ function RotateTokenDialog({
   onRotated: () => void;
 }) {
   const api = useApi();
+  const { t } = useTranslation("integrations");
   const [apiToken, setApiToken] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -250,7 +274,7 @@ function RotateTokenDialog({
       await api.integrations.rotateGrafanaToken(integrationId, { apiToken: apiToken.trim() });
       onRotated();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Rotate failed");
+      setError(err instanceof Error ? err.message : t("errors.rotateFailed"));
     } finally {
       setBusy(false);
     }
@@ -259,13 +283,14 @@ function RotateTokenDialog({
   return (
     <Modal onClose={onClose}>
       <form onSubmit={submit} className="space-y-3">
-        <h3 className="text-sm font-semibold text-app-text">Rotate API token</h3>
-        <p className="text-xs text-app-text-muted">
-          Paste a new Grafana service account token. The previous token stops being used as soon as
-          this validates and saves.
-        </p>
+        <h3 className="text-sm font-semibold text-app-text">
+          {t("grafanaManage.rotateTokenTitle")}
+        </h3>
+        <p className="text-xs text-app-text-muted">{t("grafanaManage.rotateTokenDescription")}</p>
         <label className="block text-xs">
-          <span className="text-app-text-muted">New service account token</span>
+          <span className="text-app-text-muted">
+            {t("grafanaManage.fieldNewServiceAccountToken")}
+          </span>
           <input
             type="password"
             value={apiToken}
@@ -281,14 +306,14 @@ function RotateTokenDialog({
             onClick={onClose}
             className="rounded px-3 py-1.5 text-sm text-app-text-muted hover:bg-app-surface-hover"
           >
-            Cancel
+            {t("grafanaManage.cancel")}
           </button>
           <button
             type="submit"
             disabled={busy || !apiToken.trim()}
             className="rounded bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on disabled:opacity-50"
           >
-            {busy ? "Validating…" : "Rotate"}
+            {busy ? t("grafanaManage.validating") : t("grafanaManage.rotateButton")}
           </button>
         </div>
       </form>
@@ -308,6 +333,7 @@ function EditDatasourcesDialog({
   onSaved: () => void;
 }) {
   const api = useApi();
+  const { t } = useTranslation("integrations");
   const [probe, setProbe] = useState<ProbeResult | null>(null);
   const [promUid, setPromUid] = useState(currentDsUid.prometheus);
   const [lokiUid, setLokiUid] = useState(currentDsUid.loki ?? "");
@@ -329,7 +355,7 @@ function EditDatasourcesDialog({
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        setError(err instanceof Error ? err.message : "Probe failed");
+        setError(err instanceof Error ? err.message : t("errors.probeFailed"));
       })
       .finally(() => {
         if (!cancelled) setBusy(false);
@@ -354,7 +380,7 @@ function EditDatasourcesDialog({
       });
       onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Save failed");
+      setError(err instanceof Error ? err.message : t("errors.saveFailed"));
     } finally {
       setBusy(false);
     }
@@ -363,25 +389,29 @@ function EditDatasourcesDialog({
   return (
     <Modal onClose={onClose}>
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-app-text">Edit datasources</h3>
-        {!probe && !error && <p className="text-xs text-app-text-muted">Probing Grafana…</p>}
+        <h3 className="text-sm font-semibold text-app-text">
+          {t("grafanaManage.editDatasourcesTitle")}
+        </h3>
+        {!probe && !error && (
+          <p className="text-xs text-app-text-muted">{t("grafanaManage.probingGrafana")}</p>
+        )}
         {probe && (
           <>
             <DatasourceSelect
-              label="Prometheus (required for the scrape job)"
+              label={t("grafanaConnect.dsPrometheus")}
               value={promUid}
               onChange={setPromUid}
               candidates={probe.datasources.prometheus}
               required
             />
             <DatasourceSelect
-              label="Loki (optional; enables the logs panel)"
+              label={t("grafanaConnect.dsLoki")}
               value={lokiUid}
               onChange={setLokiUid}
               candidates={probe.datasources.loki}
             />
             <DatasourceSelect
-              label="Tempo (optional; enables trace drill-down)"
+              label={t("grafanaConnect.dsTempo")}
               value={tempoUid}
               onChange={setTempoUid}
               candidates={probe.datasources.tempo}
@@ -395,7 +425,7 @@ function EditDatasourcesDialog({
             onClick={onClose}
             className="rounded px-3 py-1.5 text-sm text-app-text-muted hover:bg-app-surface-hover"
           >
-            Cancel
+            {t("grafanaManage.cancel")}
           </button>
           <button
             type="button"
@@ -403,7 +433,7 @@ function EditDatasourcesDialog({
             disabled={busy || !probe || !promUid}
             className="rounded bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on disabled:opacity-50"
           >
-            {busy ? "Saving…" : "Save"}
+            {busy ? t("grafanaManage.saving") : t("grafanaManage.save")}
           </button>
         </div>
       </div>
@@ -420,20 +450,22 @@ function NewWebhookSecretDialog({
   webhookSecret: string;
   onClose: () => void;
 }) {
+  const { t } = useTranslation("integrations");
   const webhookUrl = `/integrations/grafana/webhook/${integrationId}`;
   return (
     <Modal onClose={onClose}>
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-app-text">New webhook secret</h3>
+        <h3 className="text-sm font-semibold text-app-text">
+          {t("grafanaManage.newWebhookSecretTitle")}
+        </h3>
         <p className="text-xs text-app-text-muted">
-          Copy the secret <strong>now</strong> — it is shown exactly once. Paste it into Grafana's
-          Contact Point Authorization header.
+          {t("grafanaManage.newWebhookSecretDescription")}
         </p>
-        <div className="text-xs text-app-text-muted">Webhook URL:</div>
+        <div className="text-xs text-app-text-muted">{t("grafanaManage.webhookUrlLabel")}</div>
         <code className="block break-all rounded bg-app-bg p-2 text-xs text-app-text">
           {webhookUrl}
         </code>
-        <div className="text-xs text-app-text-muted">Authorization header:</div>
+        <div className="text-xs text-app-text-muted">{t("grafanaManage.authHeaderLabel")}</div>
         <code className="block break-all rounded bg-app-bg p-2 text-xs text-app-text">
           Authorization: Bearer {webhookSecret}
         </code>
@@ -443,7 +475,7 @@ function NewWebhookSecretDialog({
             onClick={onClose}
             className="rounded bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on"
           >
-            Done
+            {t("grafanaManage.done")}
           </button>
         </div>
       </div>

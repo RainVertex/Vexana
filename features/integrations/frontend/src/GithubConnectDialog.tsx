@@ -1,6 +1,7 @@
 // GitHub App connect dialog: a redirect flow to GitHub, not a form (callback records the Integration).
 
 import { useState } from "react";
+import { useTranslation } from "@internal/i18n";
 
 export interface GithubConnectDialogProps {
   open: boolean;
@@ -11,6 +12,7 @@ export interface GithubConnectDialogProps {
 const INSTALL_URL = "/api/integrations/github/install";
 
 export function GithubConnectDialog({ open, onClose }: GithubConnectDialogProps) {
+  const { t } = useTranslation("integrations");
   const [redirecting, setRedirecting] = useState(false);
 
   if (!open) return null;
@@ -31,34 +33,26 @@ export function GithubConnectDialog({ open, onClose }: GithubConnectDialogProps)
         className="w-full max-w-lg rounded-lg border border-app-border bg-app-surface p-4 shadow-lg"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="text-sm font-semibold text-app-text">Connect GitHub</h3>
-        <p className="mt-2 text-xs text-app-text-muted">
-          You&rsquo;ll be redirected to GitHub to install the platform&rsquo;s App on an
-          organization. After install, GitHub returns you here and the platform starts importing:
-        </p>
+        <h3 className="text-sm font-semibold text-app-text">{t("githubConnect.title")}</h3>
+        <p className="mt-2 text-xs text-app-text-muted">{t("githubConnect.description")}</p>
         <ul className="mt-3 space-y-1 text-xs text-app-text-muted">
           <li>
-            <span className="font-medium text-app-text">Repositories</span> &mdash; every repo the
-            installation can see, with <code>catalog-info.yaml</code> auto-discovered.
+            <span className="font-medium text-app-text">{t("githubConnect.itemRepositories")}</span>{" "}
+            &mdash; {t("githubConnect.itemRepositoriesDetail")}
           </li>
           <li>
-            <span className="font-medium text-app-text">Teams &amp; members</span> &mdash; org teams
-            imported as platform Teams (members matched to existing users by GitHub id; others queue
-            with a 7-day TTL until they sign in).
+            <span className="font-medium text-app-text">{t("githubConnect.itemTeams")}</span>{" "}
+            &mdash; {t("githubConnect.itemTeamsDetail")}
           </li>
         </ul>
-        <p className="mt-3 text-xs text-app-text-muted">
-          Ongoing changes flow in via webhooks; a weekly cron does a differential reconciliation to
-          catch missed deliveries. You can also Resync manually from the integration's Configure
-          panel.
-        </p>
+        <p className="mt-3 text-xs text-app-text-muted">{t("githubConnect.ongoingNote")}</p>
         <div className="mt-4 flex justify-end gap-2">
           <button
             type="button"
             onClick={onClose}
             className="rounded px-3 py-1.5 text-sm text-app-text-muted hover:bg-app-surface-hover"
           >
-            Cancel
+            {t("githubConnect.cancel")}
           </button>
           <button
             type="button"
@@ -66,7 +60,7 @@ export function GithubConnectDialog({ open, onClose }: GithubConnectDialogProps)
             disabled={redirecting}
             className="rounded bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on disabled:opacity-50"
           >
-            {redirecting ? "Redirecting…" : "Install on GitHub"}
+            {redirecting ? t("githubConnect.redirecting") : t("githubConnect.installButton")}
           </button>
         </div>
       </div>

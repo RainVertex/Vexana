@@ -87,6 +87,54 @@ export const en = {
     jobsEmpty: "No jobs registered.",
     mcpTokensEmpty: "No MCP tokens issued yet.",
   },
+  dashboard: {
+    loadingBody: "Loading dashboard…",
+    notFoundTitle: "Page not found",
+    notFoundBody: "This dashboard doesn't exist or you don't have access to it.",
+    sharedDescription: "Shared with everyone in the organization.",
+    emptyTitle: "Empty dashboard",
+    emptyHintEdit: 'Click "Customize" then "Add widget" to fill this dashboard.',
+    emptyHintReadonly: "This dashboard has no widgets yet.",
+  },
+  widgets: {
+    categories: {
+      Discovery: "Discovery",
+      Work: "Work",
+      Observability: "Observability",
+      Content: "Content",
+      General: "General",
+    },
+    search: { title: "Search", description: "Quick search across the platform." },
+    onboarding: { title: "Get started", description: "Onboarding tasks for new developers." },
+    starred: { title: "Your Starred Entities", description: "Catalog entities you've starred." },
+    toolkit: { title: "Toolkit", description: "Shortcuts to your most-used tools." },
+    "recently-visited": {
+      title: "Recently Visited",
+      description: "Pages you opened most recently.",
+    },
+    "top-visited": { title: "Top Visited", description: "Pages you open most often." },
+    "chat-assistant": {
+      title: "Platform Assistant",
+      description: "Chat with the assistant without leaving the page.",
+    },
+    "service-health": {
+      title: "Service Health",
+      description: "Latest health samples written by the Prometheus scrape job.",
+    },
+    "my-tasks": { title: "My Tasks", description: "Open tasks assigned to you." },
+    "grafana-alerts": {
+      title: "Grafana Alerts",
+      description: "Recent firing and resolved alerts from Grafana Alertmanager.",
+    },
+    markdown: {
+      title: "Markdown",
+      description: "Rich text block. Supports GitHub-flavored markdown.",
+    },
+    iframe: {
+      title: "Embed",
+      description: "Embed an external https:// page (Grafana, dashboards, docs).",
+    },
+  },
   themes: {
     light: { label: "Light", description: "Clean and bright default." },
     ocean: { label: "Ocean", description: "Cool blues and teal highlights." },

@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { PageLayout } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type { Scorecard, ScorecardRuleKind, ScorecardTierStyle } from "@internal/shared-types";
 import {
   DORA_METRICS,
@@ -70,6 +71,7 @@ function toPayload(draft: Draft): Partial<Scorecard> {
 }
 
 export function ScorecardEditPage() {
+  const { t } = useTranslation("scorecards");
   const { id = "" } = useParams<{ id: string }>();
   const api = useApi();
   const nav = useNavigate();
@@ -82,8 +84,8 @@ export function ScorecardEditPage() {
     api.scorecards
       .get(id)
       .then((sc) => setDraft(toDraft(sc)))
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed"));
-  }, [api, id]);
+      .catch((err) => setError(err instanceof Error ? err.message : t("errors.loadFailed")));
+  }, [api, id, t]);
 
   function patchDraft(patch: Partial<Draft>) {
     setDraft((d) => (d ? { ...d, ...patch } : d));
@@ -118,7 +120,7 @@ export function ScorecardEditPage() {
       if (!d) return d;
       const rule: DraftRule = {
         key: `rule-${d.rules.length + 1}`,
-        label: "New rule",
+        label: t("edit.newRuleLabel"),
         kind: "has_owner",
         config: {},
         weight: 1,
@@ -150,7 +152,7 @@ export function ScorecardEditPage() {
       const updated = await api.scorecards.update(id, toPayload(draft));
       setDraft(toDraft(updated));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Save failed");
+      setError(err instanceof Error ? err.message : t("errors.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -160,25 +162,25 @@ export function ScorecardEditPage() {
     setEvalResult(null);
     try {
       const res = await api.scorecards.evaluate(id);
-      setEvalResult(`Evaluated ${res.entities} entities, wrote ${res.results} new results.`);
+      setEvalResult(t("edit.evalResult", { entities: res.entities, results: res.results }));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Evaluate failed");
+      setError(err instanceof Error ? err.message : t("errors.evaluateFailed"));
     }
   }
 
   async function destroy() {
-    if (!confirm("Delete this scorecard and all of its results?")) return;
+    if (!confirm(t("edit.deleteConfirm"))) return;
     try {
       await api.scorecards.delete(id);
       nav("/scorecards");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Delete failed");
+      setError(err instanceof Error ? err.message : t("errors.deleteFailed"));
     }
   }
 
   if (!draft) {
     return (
-      <PageLayout title="Scorecard" description="Loading…">
+      <PageLayout title={t("edit.titleFallback")} description={t("edit.loadingDescription")}>
         {error && (
           <div className="rounded-md border border-app-danger bg-app-surface px-3 py-2 text-sm text-app-danger">
             {error}
@@ -192,29 +194,29 @@ export function ScorecardEditPage() {
 
   return (
     <PageLayout
-      title={draft.name || "Scorecard"}
-      description="Define the rules that grade catalog entities."
+      title={draft.name || t("edit.titleFallback")}
+      description={t("edit.description")}
       actions={
         <div className="flex items-center gap-2">
           <Link
             to={`/scorecards/${id}/report`}
             className="rounded-md border border-app-border bg-app-surface px-3 py-1.5 text-sm text-app-text hover:bg-app-surface-hover"
           >
-            View report
+            {t("edit.viewReport")}
           </Link>
           <button
             type="button"
             onClick={evaluate}
             className="rounded-md border border-app-border bg-app-surface px-3 py-1.5 text-sm text-app-text hover:bg-app-surface-hover"
           >
-            Evaluate now
+            {t("edit.evaluateNow")}
           </button>
           <button
             type="button"
             onClick={destroy}
             className="rounded-md border border-app-danger px-3 py-1.5 text-sm text-app-danger hover:opacity-90"
           >
-            Delete
+            {t("edit.delete")}
           </button>
           <button
             type="button"
@@ -222,7 +224,7 @@ export function ScorecardEditPage() {
             disabled={saving}
             className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on hover:opacity-90 disabled:opacity-60"
           >
-            {saving ? "Saving…" : "Save"}
+            {saving ? t("edit.saving") : t("edit.save")}
           </button>
         </div>
       }
@@ -240,31 +242,31 @@ export function ScorecardEditPage() {
 
       <div className="space-y-6">
         <section className="rounded-lg border border-app-border bg-app-surface p-4 space-y-4">
-          <Field label="Name">
+          <Field label={t("form.name")}>
             <input
               value={draft.name}
               onChange={(e) => patchDraft({ name: e.target.value })}
               className={inputClass}
             />
           </Field>
-          <Field label="Description">
+          <Field label={t("form.description")}>
             <input
               value={draft.description}
               onChange={(e) => patchDraft({ description: e.target.value })}
               className={inputClass}
             />
           </Field>
-          <Field label="Tier style">
+          <Field label={t("form.tierStyle")}>
             <select
               value={draft.tierStyle}
               onChange={(e) => changeTierStyle(e.target.value as ScorecardTierStyle)}
               className={inputClass}
             >
-              <option value="stage">stage (bronze / silver / gold)</option>
-              <option value="threshold">threshold (red / orange / yellow / green)</option>
+              <option value="stage">{t("form.tierStyleStage")}</option>
+              <option value="threshold">{t("form.tierStyleThreshold")}</option>
             </select>
           </Field>
-          <Field label="Applies to">
+          <Field label={t("form.appliesTo")}>
             <div className="flex flex-wrap gap-2">
               {ENTITY_KINDS.map((k) => (
                 <label key={k} className="flex items-center gap-1 text-sm text-app-text">
@@ -273,15 +275,15 @@ export function ScorecardEditPage() {
                     checked={draft.appliesTo.includes(k)}
                     onChange={() => toggleAppliesTo(k)}
                   />
-                  {k}
+                  {t(`entityKindLabel.${k}` as Parameters<typeof t>[0])}
                 </label>
               ))}
               <span className="text-xs text-app-text-muted self-center">
-                {draft.appliesTo.length === 0 ? "(empty = all kinds)" : ""}
+                {draft.appliesTo.length === 0 ? t("edit.emptyAppliesToHint") : ""}
               </span>
             </div>
           </Field>
-          <Field label="Enabled">
+          <Field label={t("form.enabled")}>
             <input
               type="checkbox"
               checked={draft.enabled}
@@ -292,17 +294,17 @@ export function ScorecardEditPage() {
 
         <section className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-app-text">Rules</h2>
+            <h2 className="text-sm font-semibold text-app-text">{t("edit.rulesHeading")}</h2>
             <button
               type="button"
               onClick={addRule}
               className="rounded-md border border-app-border bg-app-surface px-3 py-1.5 text-sm text-app-text hover:bg-app-surface-hover"
             >
-              Add rule
+              {t("edit.addRule")}
             </button>
           </div>
           {draft.rules.length === 0 && (
-            <p className="text-sm text-app-text-muted">No rules yet. Add one to start grading.</p>
+            <p className="text-sm text-app-text-muted">{t("edit.noRules")}</p>
           )}
           {draft.rules.map((rule, i) => (
             <div
@@ -310,21 +312,21 @@ export function ScorecardEditPage() {
               className="rounded-lg border border-app-border bg-app-surface p-4 space-y-3"
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Field label="Label">
+                <Field label={t("form.label")}>
                   <input
                     value={rule.label}
                     onChange={(e) => patchRule(i, { label: e.target.value })}
                     className={inputClass}
                   />
                 </Field>
-                <Field label="Key">
+                <Field label={t("form.key")}>
                   <input
                     value={rule.key}
                     onChange={(e) => patchRule(i, { key: e.target.value })}
                     className={inputClass}
                   />
                 </Field>
-                <Field label="Kind">
+                <Field label={t("form.kind")}>
                   <select
                     value={rule.kind}
                     onChange={(e) => changeKind(i, e.target.value as ScorecardRuleKind)}
@@ -332,25 +334,25 @@ export function ScorecardEditPage() {
                   >
                     {RULE_KINDS.map((k) => (
                       <option key={k.kind} value={k.kind}>
-                        {k.label}
+                        {t(`ruleKind.${k.kind}` as Parameters<typeof t>[0])}
                       </option>
                     ))}
                   </select>
                 </Field>
-                <Field label="Tier">
+                <Field label={t("form.tier")}>
                   <select
                     value={rule.tier}
                     onChange={(e) => patchRule(i, { tier: e.target.value })}
                     className={inputClass}
                   >
-                    {tiers.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
+                    {tiers.map((tier) => (
+                      <option key={tier} value={tier}>
+                        {t(`tierLabel.${tier}` as Parameters<typeof t>[0])}
                       </option>
                     ))}
                   </select>
                 </Field>
-                <Field label="Weight">
+                <Field label={t("form.weight")}>
                   <input
                     type="number"
                     min={1}
@@ -383,7 +385,7 @@ export function ScorecardEditPage() {
                   onClick={() => removeRule(i)}
                   className="text-xs text-app-danger hover:underline"
                 >
-                  Remove rule
+                  {t("edit.removeRule")}
                 </button>
               </div>
             </div>
@@ -392,7 +394,7 @@ export function ScorecardEditPage() {
 
         <details className="rounded-lg border border-app-border bg-app-surface p-4">
           <summary className="cursor-pointer text-sm text-app-text-muted">
-            Advanced: view JSON
+            {t("edit.advancedJson")}
           </summary>
           <pre className="mt-2 overflow-x-auto rounded bg-app-surface-hover p-3 text-[11px] text-app-text">
             {JSON.stringify(toPayload(draft), null, 2)}
@@ -424,10 +426,18 @@ function ConfigField({
   value: unknown;
   onChange: (value: unknown) => void;
 }) {
+  const { t } = useTranslation("scorecards");
+
+  const fieldLabel = t(
+    `ruleField.${field.key === "field" ? "entityField" : field.key === "values" ? "allowedLifecycles" : field.key === "tag" ? "requiredTag" : field.key}` as Parameters<
+      typeof t
+    >[0],
+  );
+
   if (field.type === "lifecycles") {
     const selected = Array.isArray(value) ? (value as string[]) : [];
     return (
-      <Field label={field.label}>
+      <Field label={fieldLabel}>
         <div className="flex flex-wrap gap-2">
           {LIFECYCLES.map((l) => (
             <label key={l} className="flex items-center gap-1 text-sm text-app-text">
@@ -440,7 +450,7 @@ function ConfigField({
                   )
                 }
               />
-              {l}
+              {t(`lifecycleLabel.${l}` as Parameters<typeof t>[0])}
             </label>
           ))}
         </div>
@@ -449,7 +459,7 @@ function ConfigField({
   }
   if (field.type === "doraMetric") {
     return (
-      <Field label={field.label}>
+      <Field label={fieldLabel}>
         <select
           value={String(value ?? "")}
           onChange={(e) => onChange(e.target.value)}
@@ -457,7 +467,7 @@ function ConfigField({
         >
           {DORA_METRICS.map((m) => (
             <option key={m} value={m}>
-              {m}
+              {t(`doraMetricLabel.${m}` as Parameters<typeof t>[0])}
             </option>
           ))}
         </select>
@@ -466,7 +476,7 @@ function ConfigField({
   }
   if (field.type === "op") {
     return (
-      <Field label={field.label}>
+      <Field label={fieldLabel}>
         <select
           value={String(value ?? "")}
           onChange={(e) => onChange(e.target.value)}
@@ -474,7 +484,7 @@ function ConfigField({
         >
           {DORA_OPS.map((o) => (
             <option key={o} value={o}>
-              {o === "gte" ? "at least (>=)" : "at most (<=)"}
+              {o === "gte" ? t("ruleField.opGte") : t("ruleField.opLte")}
             </option>
           ))}
         </select>
@@ -483,7 +493,7 @@ function ConfigField({
   }
   if (field.type === "window") {
     return (
-      <Field label={field.label}>
+      <Field label={fieldLabel}>
         <select
           value={String(value ?? "")}
           onChange={(e) => onChange(e.target.value)}
@@ -491,7 +501,7 @@ function ConfigField({
         >
           {DORA_WINDOWS.map((w) => (
             <option key={w} value={w}>
-              {w === "latest" ? "latest snapshot" : "30 day average"}
+              {w === "latest" ? t("ruleField.windowLatest") : t("ruleField.window30d")}
             </option>
           ))}
         </select>
@@ -500,7 +510,7 @@ function ConfigField({
   }
   if (field.type === "number") {
     return (
-      <Field label={field.label}>
+      <Field label={fieldLabel}>
         <input
           type="number"
           value={value === undefined || value === null ? "" : Number(value)}
@@ -510,9 +520,8 @@ function ConfigField({
       </Field>
     );
   }
-  // text and tag
   return (
-    <Field label={field.label}>
+    <Field label={fieldLabel}>
       <input
         value={String(value ?? "")}
         onChange={(e) => onChange(e.target.value)}

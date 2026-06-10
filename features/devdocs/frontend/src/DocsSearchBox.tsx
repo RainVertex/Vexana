@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "@internal/i18n";
 import type { DocSearchHit } from "@internal/shared-types";
 
 export interface DocsSearchBoxProps {
@@ -19,6 +20,7 @@ export function DocsSearchBox({
   onClear,
   onSelect,
 }: DocsSearchBoxProps) {
+  const { t } = useTranslation("devdocs");
   const [q, setQ] = useState("");
 
   function submit(e: FormEvent) {
@@ -36,7 +38,7 @@ export function DocsSearchBox({
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search this entity&rsquo;s docs…"
+          placeholder={t("search.placeholder")}
           className="flex-1 rounded border border-app-border bg-app-surface px-2 py-1 text-sm"
         />
         <button
@@ -44,13 +46,13 @@ export function DocsSearchBox({
           disabled={loading}
           className="rounded-md bg-app-primary px-3 py-1 text-xs font-medium text-app-primary-on hover:opacity-90 disabled:opacity-50"
         >
-          {loading ? "…" : "Search"}
+          {loading ? t("search.searching") : t("search.button")}
         </button>
         <Link
           to={`/search?q=${encodeURIComponent(q)}`}
           className="self-center text-[11px] text-app-text-muted hover:underline"
         >
-          Search all DevDocs ↗
+          {t("search.searchAll")}
         </Link>
       </form>
       {error && <p className="text-xs text-app-danger">{error}</p>}

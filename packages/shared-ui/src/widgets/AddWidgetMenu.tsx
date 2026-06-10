@@ -1,5 +1,6 @@
 import { Component, type ReactNode, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "@internal/i18n";
 import type { WidgetDefinition } from "./types";
 import { WidgetFrame } from "./WidgetFrame";
 import "./widgetPicker.css";
@@ -10,6 +11,7 @@ interface AddWidgetMenuProps<TId extends string> {
 }
 
 export function AddWidgetMenu<TId extends string>({ widgets, onAdd }: AddWidgetMenuProps<TId>) {
+  const { t } = useTranslation("ui");
   const [open, setOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<TId | null>(null);
 
@@ -46,7 +48,7 @@ export function AddWidgetMenu<TId extends string>({ widgets, onAdd }: AddWidgetM
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-app-border bg-app-surface text-sm text-app-text hover:bg-app-surface-hover transition-colors"
       >
         <PlusIcon />
-        Add widget
+        {t("addWidget")}
       </button>
       {open &&
         typeof document !== "undefined" &&
@@ -62,11 +64,11 @@ export function AddWidgetMenu<TId extends string>({ widgets, onAdd }: AddWidgetM
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between border-b border-app-border px-4 py-3">
-                <h3 className="text-sm font-semibold text-app-text">Add widget</h3>
+                <h3 className="text-sm font-semibold text-app-text">{t("addWidget")}</h3>
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  aria-label="Close"
+                  aria-label={t("close")}
                   className="text-app-text-muted hover:text-app-text"
                 >
                   ×
@@ -118,12 +120,12 @@ export function AddWidgetMenu<TId extends string>({ widgets, onAdd }: AddWidgetM
                           onClick={() => addWidget(selected.id)}
                           className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-app-primary-hover transition-colors"
                         >
-                          Add to dashboard
+                          {t("addToDashboard")}
                         </button>
                       </div>
                     </>
                   ) : (
-                    <div className="text-sm text-app-text-muted">No widgets available.</div>
+                    <div className="text-sm text-app-text-muted">{t("noWidgetsAvailable")}</div>
                   )}
                 </div>
               </div>
@@ -151,9 +153,10 @@ function WidgetPreview({ widget }: { widget: WidgetDefinition }) {
 }
 
 function PreviewFallback() {
+  const { t } = useTranslation("ui");
   return (
     <div className="flex h-full min-h-[12rem] items-center justify-center rounded-xl border border-dashed border-app-border text-sm text-app-text-muted">
-      Preview unavailable
+      {t("previewUnavailable")}
     </div>
   );
 }

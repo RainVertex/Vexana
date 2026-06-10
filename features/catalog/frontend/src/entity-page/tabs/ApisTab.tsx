@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type { CatalogRelation, CatalogRelationsResponse } from "@internal/shared-types";
 import { useEntityContext } from "../outletContext";
 import { LifecycleBadge } from "../../catalog-table/cells";
@@ -10,6 +11,7 @@ const API_TYPES = new Set(["consumesApi", "providesApi", "apiConsumedBy", "apiPr
 export function ApisTab() {
   const { data } = useEntityContext();
   const api = useApi();
+  const { t } = useTranslation("catalog");
   const [rels, setRels] = useState<CatalogRelationsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,34 +23,33 @@ export function ApisTab() {
         if (!cancelled) setRels(res);
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Failed");
+        if (!cancelled) setError(err instanceof Error ? err.message : t("errors.generic"));
       });
     return () => {
       cancelled = true;
     };
-  }, [api, data.entity.id]);
+  }, [api, data.entity.id, t]);
 
   if (error) return <p className="text-sm text-app-danger">{error}</p>;
-  if (!rels) return <p className="text-sm text-app-text-muted">Loading…</p>;
+  if (!rels) return <p className="text-sm text-app-text-muted">{t("apis.loading")}</p>;
 
-  const apis: Array<CatalogRelation & { direction: "Consumes" | "Provides" }> = [];
+  const apis: Array<CatalogRelation & { direction: string }> = [];
   for (const r of rels.outgoing) {
     if (r.target?.kind !== "api") continue;
-    if (r.type === "consumesApi") apis.push({ ...r, direction: "Consumes" });
-    if (r.type === "providesApi") apis.push({ ...r, direction: "Provides" });
+    if (r.type === "consumesApi") apis.push({ ...r, direction: t("apis.directionConsumes") });
+    if (r.type === "providesApi") apis.push({ ...r, direction: t("apis.directionProvides") });
   }
   for (const r of rels.incoming) {
     if (r.target?.kind !== "api" || !API_TYPES.has(r.type as string)) continue;
-    apis.push({ ...r, direction: r.type === "apiConsumedBy" ? "Consumes" : "Provides" });
+    apis.push({
+      ...r,
+      direction:
+        r.type === "apiConsumedBy" ? t("apis.directionConsumes") : t("apis.directionProvides"),
+    });
   }
 
   if (apis.length === 0) {
-    return (
-      <p className="text-sm text-app-text-muted">
-        No APIs linked. Use <code>spec.consumesApis</code> or <code>spec.providesApis</code> in
-        <code> catalog-info.yaml</code>.
-      </p>
-    );
+    return <p className="text-sm text-app-text-muted">{t("apis.noApis")}</p>;
   }
 
   return (
@@ -56,9 +57,9 @@ export function ApisTab() {
       <table className="w-full text-sm">
         <thead>
           <tr className="text-left text-xs uppercase tracking-wide text-app-text-muted">
-            <th className="px-4 py-2 font-medium">Direction</th>
-            <th className="px-4 py-2 font-medium">API</th>
-            <th className="px-4 py-2 font-medium">Lifecycle</th>
+            <th className="px-4 py-2 font-medium">{t("apis.colDirection")}</th>
+            <th className="px-4 py-2 font-medium">{t("apis.colApi")}</th>
+            <th className="px-4 py-2 font-medium">{t("apis.colLifecycle")}</th>
           </tr>
         </thead>
         <tbody>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { ServiceHealthSample } from "@internal/shared-types";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 
 export interface ServiceHealthPanelProps {
   entityId?: string;
@@ -17,6 +18,7 @@ const STATUS_STYLE: Record<ServiceHealthSample["status"], string> = {
 
 export function ServiceHealthPanel({ entityId, limit = 50 }: ServiceHealthPanelProps) {
   const api = useApi();
+  const { t } = useTranslation("observability");
   const [items, setItems] = useState<ServiceHealthSample[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,21 +34,17 @@ export function ServiceHealthPanel({ entityId, limit = 50 }: ServiceHealthPanelP
         if (!cancelled) setItems(res.items.slice(0, limit));
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load samples");
+        if (!cancelled) setError(err instanceof Error ? err.message : t("errors.failedSamples"));
       });
     return () => {
       cancelled = true;
     };
-  }, [api, entityId, limit]);
+  }, [api, entityId, limit, t]);
 
   if (error) return <p className="text-xs text-app-danger">{error}</p>;
-  if (items === null) return <p className="text-xs text-app-text-muted">Loading…</p>;
+  if (items === null) return <p className="text-xs text-app-text-muted">{t("errors.loading")}</p>;
   if (items.length === 0)
-    return (
-      <p className="text-xs text-app-text-muted">
-        No samples yet — wire up a Grafana integration to populate.
-      </p>
-    );
+    return <p className="text-xs text-app-text-muted">{t("empty.noSamples")}</p>;
 
   return (
     <ul className="divide-y divide-app-border">
@@ -55,15 +53,17 @@ export function ServiceHealthPanel({ entityId, limit = 50 }: ServiceHealthPanelP
           <span
             className={`rounded px-1.5 py-0.5 text-[10px] font-medium uppercase ${STATUS_STYLE[sample.status]}`}
           >
-            {sample.status}
+            {t(`health.status.${sample.status}`)}
           </span>
           <span className="grow truncate text-app-text-muted">{sample.entityId}</span>
           {sample.latencyMs != null && (
-            <span className="shrink-0 text-app-text-muted">{sample.latencyMs}ms</span>
+            <span className="shrink-0 text-app-text-muted">
+              {t("health.latency", { ms: sample.latencyMs })}
+            </span>
           )}
           {sample.errorRate != null && (
             <span className="shrink-0 text-app-text-muted">
-              err {(sample.errorRate * 100).toFixed(2)}%
+              {t("health.errorRate", { rate: (sample.errorRate * 100).toFixed(2) })}
             </span>
           )}
         </li>

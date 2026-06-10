@@ -1,3 +1,4 @@
+import "./i18n";
 export { TeamsPage } from "./TeamsPage";
 export { TeamDetailPage } from "./TeamDetailPage";
 export { AdminTeamRequestsPage } from "./AdminTeamRequestsPage";

@@ -1,6 +1,7 @@
 // Modal dialog for manually registering an existing service into the catalog.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type { CatalogEntityKind, TeamSummary } from "@internal/shared-types";
 
 interface OrgOption {
@@ -25,6 +26,7 @@ interface Props {
 
 export function RegisterEntityDialog({ open, onClose, onCreated }: Props) {
   const api = useApi();
+  const { t } = useTranslation("catalog");
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [kind, setKind] = useState<CatalogEntityKind>("service");
   const [name, setName] = useState("");
@@ -92,7 +94,7 @@ export function RegisterEntityDialog({ open, onClose, onCreated }: Props) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!accountLogin) {
-      setError("Pick an organization for this entity.");
+      setError(t("register.errorPickOrg"));
       return;
     }
     setSubmitting(true);
@@ -115,7 +117,7 @@ export function RegisterEntityDialog({ open, onClose, onCreated }: Props) {
       onCreated();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to register entity");
+      setError(err instanceof Error ? err.message : t("register.errorRegister"));
       setSubmitting(false);
     }
   }
@@ -127,16 +129,16 @@ export function RegisterEntityDialog({ open, onClose, onCreated }: Props) {
       className="rounded-lg border border-app-border bg-app-surface p-0 text-app-text backdrop:bg-black/40"
     >
       <form onSubmit={handleSubmit} className="w-[480px] max-w-[90vw] p-5">
-        <h2 className="mb-4 text-lg font-semibold">Register existing service</h2>
+        <h2 className="mb-4 text-lg font-semibold">{t("register.dialogTitle")}</h2>
 
-        <Field label="Organization" required>
+        <Field label={t("register.fieldOrg")} required>
           <select
             value={accountLogin}
             onChange={(e) => setAccountLogin(e.target.value)}
             required
             className={inputClass}
           >
-            {orgs.length === 0 && <option value="">No GitHub integrations connected</option>}
+            {orgs.length === 0 && <option value="">{t("register.noGithubIntegrations")}</option>}
             {orgs.map((o) => (
               <option key={o.accountLogin} value={o.accountLogin}>
                 {o.accountLogin}
@@ -145,7 +147,7 @@ export function RegisterEntityDialog({ open, onClose, onCreated }: Props) {
           </select>
         </Field>
 
-        <Field label="Kind">
+        <Field label={t("register.fieldKind")}>
           <select
             value={kind}
             onChange={(e) => setKind(e.target.value as CatalogEntityKind)}
@@ -153,44 +155,44 @@ export function RegisterEntityDialog({ open, onClose, onCreated }: Props) {
           >
             {KINDS.map((k) => (
               <option key={k} value={k}>
-                {k}
+                {t(`kind.${k}`)}
               </option>
             ))}
           </select>
         </Field>
 
-        <Field label="Name" required>
+        <Field label={t("register.fieldName")} required>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
-            placeholder="e.g. payments-svc"
+            placeholder={t("register.namePlaceholder")}
             className={inputClass}
           />
         </Field>
 
-        <Field label="Description">
+        <Field label={t("register.fieldDescription")}>
           <input
             type="text"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="What does this do?"
+            placeholder={t("register.descriptionPlaceholder")}
             className={inputClass}
           />
         </Field>
 
-        <Field label="Repository URL">
+        <Field label={t("register.fieldRepoUrl")}>
           <input
             type="url"
             value={repoUrl}
             onChange={(e) => setRepoUrl(e.target.value)}
-            placeholder="https://github.com/org/repo"
+            placeholder={t("register.repoUrlPlaceholder")}
             className={inputClass}
           />
         </Field>
 
-        <Field label="Owner teams (cmd/ctrl-click for multiple)">
+        <Field label={t("register.fieldOwnerTeams")}>
           <select
             multiple
             value={ownerTeamIds}
@@ -207,12 +209,12 @@ export function RegisterEntityDialog({ open, onClose, onCreated }: Props) {
           </select>
         </Field>
 
-        <Field label="Tags (comma-separated)">
+        <Field label={t("register.fieldTags")}>
           <input
             type="text"
             value={tags}
             onChange={(e) => setTags(e.target.value)}
-            placeholder="rest, typescript"
+            placeholder={t("register.tagsPlaceholder")}
             className={inputClass}
           />
         </Field>
@@ -226,14 +228,14 @@ export function RegisterEntityDialog({ open, onClose, onCreated }: Props) {
             disabled={submitting}
             className="rounded-md border border-app-border px-3 py-1.5 text-sm text-app-text-muted hover:bg-app-surface-hover disabled:opacity-50"
           >
-            Cancel
+            {t("register.cancel")}
           </button>
           <button
             type="submit"
             disabled={submitting || !name.trim()}
             className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on disabled:opacity-50"
           >
-            {submitting ? "Registering…" : "Register"}
+            {submitting ? t("register.registering") : t("register.register")}
           </button>
         </div>
       </form>

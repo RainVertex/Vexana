@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type { UserTaskDto } from "@internal/shared-types";
 
 interface TaskPresenter {
@@ -12,40 +13,51 @@ interface TaskPresenter {
   autoCompletes: boolean;
 }
 
-const PRESENTERS: Record<string, TaskPresenter> = {
-  "request-tool-access": {
-    title: "Request access to your tools",
-    description:
-      "Get the credentials you need for GitHub, observability, and the rest of your toolchain.",
-    ctaHref: "/integrations",
-    ctaLabel: "Browse integrations",
-    autoCompletes: false,
-  },
-  "team-join": {
-    title: "Join or create a team",
-    description: "Find your team or request a new one if it doesn't exist yet.",
-    ctaHref: "/teams",
-    ctaLabel: "Find a team",
-    autoCompletes: true,
-  },
-};
+type PresenterMap = Record<
+  string,
+  Omit<TaskPresenter, "title" | "description" | "ctaLabel"> & {
+    title: string;
+    description: string;
+    ctaLabel: string;
+  }
+>;
 
-function presenterFor(kind: string): TaskPresenter {
-  return (
-    PRESENTERS[kind] ?? {
+function usePresenters(): (kind: string) => TaskPresenter {
+  const { t } = useTranslation("onboarding");
+
+  const map: PresenterMap = {
+    "request-tool-access": {
+      title: t("tasks.request-tool-access.title"),
+      description: t("tasks.request-tool-access.description"),
+      ctaHref: "/integrations",
+      ctaLabel: t("tasks.request-tool-access.ctaLabel"),
+      autoCompletes: false,
+    },
+    "team-join": {
+      title: t("tasks.team-join.title"),
+      description: t("tasks.team-join.description"),
+      ctaHref: "/teams",
+      ctaLabel: t("tasks.team-join.ctaLabel"),
+      autoCompletes: true,
+    },
+  };
+
+  return (kind: string) =>
+    map[kind] ?? {
       title: kind,
       description: "",
       ctaHref: "/",
-      ctaLabel: "Open",
+      ctaLabel: t("tasks.fallbackCtaLabel"),
       autoCompletes: false,
-    }
-  );
+    };
 }
 
 export function OnboardingWidget() {
+  const { t } = useTranslation("onboarding");
   const api = useApi();
   const [tasks, setTasks] = useState<UserTaskDto[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const presenterFor = usePresenters();
 
   useEffect(() => {
     let cancelled = false;
@@ -55,19 +67,21 @@ export function OnboardingWidget() {
         if (!cancelled) setTasks(res.items);
       })
       .catch((err) => {
-        if (!cancelled) setError(err?.message ?? "Failed to load onboarding.");
+        if (!cancelled) setError(err?.message ?? t("errors.loadFailed"));
       });
     return () => {
       cancelled = true;
     };
-  }, [api]);
+  }, [api, t]);
 
   const markComplete = async (id: string) => {
     const previous = tasks;
     setTasks((prev) =>
       prev
-        ? prev.map((t) =>
-            t.id === id ? { ...t, status: "completed", completedAt: new Date().toISOString() } : t,
+        ? prev.map((task) =>
+            task.id === id
+              ? { ...task, status: "completed", completedAt: new Date().toISOString() }
+              : task,
           )
         : prev,
     );
@@ -82,7 +96,7 @@ export function OnboardingWidget() {
   const dismiss = async (id: string) => {
     const previous = tasks;
     setTasks((prev) =>
-      prev ? prev.map((t) => (t.id === id ? { ...t, status: "dismissed" } : t)) : prev,
+      prev ? prev.map((task) => (task.id === id ? { ...task, status: "dismissed" } : task)) : prev,
     );
     try {
       await api.onboarding.dismissTask(id);
@@ -95,16 +109,16 @@ export function OnboardingWidget() {
   if (error) return <Empty message={error} />;
   if (tasks === null) return <Loading />;
 
-  const visible = tasks.filter((t) => t.status !== "dismissed");
+  const visible = tasks.filter((task) => task.status !== "dismissed");
   if (visible.length === 0) {
-    return <Empty message="You're all caught up." />;
+    return <Empty message={t("empty.allCaughtUp")} />;
   }
-  const remaining = visible.filter((t) => t.status === "pending").length;
+  const remaining = visible.filter((task) => task.status === "pending").length;
 
   return (
     <div className="flex h-full flex-col">
       <div className="mb-3 text-xs text-app-text-muted">
-        {remaining} of {visible.length} remaining
+        {t("progress.remaining", { remaining, total: visible.length })}
       </div>
       <ul className="flex flex-col divide-y divide-app-border">
         {visible.map((task) => {
@@ -147,7 +161,7 @@ export function OnboardingWidget() {
                         onClick={() => markComplete(task.id)}
                         className="text-xs text-app-text-muted hover:text-app-text"
                       >
-                        Mark done
+                        {t("actions.markDone")}
                       </button>
                     )}
                     <button
@@ -155,7 +169,7 @@ export function OnboardingWidget() {
                       onClick={() => dismiss(task.id)}
                       className="text-xs text-app-text-muted hover:text-app-text"
                     >
-                      Dismiss
+                      {t("actions.dismiss")}
                     </button>
                   </div>
                 )}

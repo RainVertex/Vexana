@@ -1,6 +1,7 @@
 // Renders one chat message (user or assistant), wiring up reasoning, tool calls, and avatars.
 import type { ChatMessageDto } from "@internal/shared-types";
 import { ProfileAvatar, AgentAvatar } from "@internal/shared-ui";
+import { useTranslation } from "@internal/i18n";
 import { ToolCallChip } from "./ToolCallChip";
 import { ReasoningSection } from "./ReasoningSection";
 import type { ChatToolCallView } from "./chatStream";
@@ -38,6 +39,7 @@ export function MessageBubble({
   assistantName,
   assistantAvatarUrl,
 }: Props) {
+  const { t } = useTranslation("chat");
   const isUser = message.role === "user";
 
   // Assistant reasoning comes from the live shape when present, else the persisted DTO.
@@ -59,10 +61,14 @@ export function MessageBubble({
     <div className={`flex gap-2 ${isUser ? "flex-row-reverse" : "flex-row"}`}>
       <div className="shrink-0 self-start pt-0.5">
         {isUser ? (
-          <ProfileAvatar name={userName ?? "You"} avatarUrl={userAvatarUrl} size="sm" />
+          <ProfileAvatar
+            name={userName ?? t("message.youFallback")}
+            avatarUrl={userAvatarUrl}
+            size="sm"
+          />
         ) : (
           <AgentAvatar
-            name={assistantName ?? "Assistant"}
+            name={assistantName ?? t("message.assistantFallback")}
             avatarUrl={assistantAvatarUrl}
             size={28}
           />

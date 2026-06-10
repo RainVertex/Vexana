@@ -1,5 +1,6 @@
 // Card chrome wrapping a single widget: title bar, drag handle, and edit-mode configure/remove buttons.
 import type { PropsWithChildren } from "react";
+import { useTranslation } from "@internal/i18n";
 
 interface WidgetFrameProps extends PropsWithChildren {
   title: string;
@@ -15,6 +16,7 @@ export function WidgetFrame({
   onConfigure,
   children,
 }: WidgetFrameProps) {
+  const { t } = useTranslation("ui");
   return (
     <div
       className={`h-full flex flex-col rounded-xl border bg-app-surface shadow-sm overflow-hidden ${
@@ -34,7 +36,7 @@ export function WidgetFrame({
                 type="button"
                 onMouseDown={(e) => e.stopPropagation()}
                 onClick={onConfigure}
-                aria-label={`Configure ${title}`}
+                aria-label={t("configure", { title })}
                 className="text-app-text-muted hover:text-app-primary transition-colors"
               >
                 <GearIcon />
@@ -45,7 +47,7 @@ export function WidgetFrame({
                 type="button"
                 onMouseDown={(e) => e.stopPropagation()}
                 onClick={onRemove}
-                aria-label={`Remove ${title}`}
+                aria-label={t("remove", { title })}
                 className="text-app-text-muted hover:text-app-danger transition-colors"
               >
                 <TrashIcon />

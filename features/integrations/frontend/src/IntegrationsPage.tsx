@@ -2,12 +2,14 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { PageLayout, ConfirmDialog } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type { Integration, IntegrationKind } from "@internal/shared-types";
 import { IntegrationDriftBadge } from "./IntegrationDriftBadge";
 import { PROVIDERS, findProvider } from "./providerRegistry";
 
 export function IntegrationsPage() {
   const api = useApi();
+  const { t } = useTranslation("integrations");
   const [items, setItems] = useState<Integration[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [connectKind, setConnectKind] = useState<IntegrationKind | null>(null);
@@ -19,9 +21,9 @@ export function IntegrationsPage() {
       setItems(res.items);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load integrations");
+      setError(err instanceof Error ? err.message : t("errors.loadIntegrations"));
     }
-  }, [api]);
+  }, [api, t]);
 
   useEffect(() => {
     void load();
@@ -30,16 +32,16 @@ export function IntegrationsPage() {
   const ActiveConnectDialog = connectKind ? findProvider(connectKind)?.ConnectDialog : undefined;
 
   return (
-    <PageLayout title="Integrations" description="External tools mirrored into the platform.">
+    <PageLayout title={t("page.title")} description={t("page.description")}>
       {error && <p className="mb-3 text-sm text-app-danger">{error}</p>}
 
       <section className="mb-8">
-        <h2 className="mb-2 text-sm font-semibold text-app-text">Connected</h2>
-        {!error && items === null && <p className="text-sm text-app-text-muted">Loading…</p>}
+        <h2 className="mb-2 text-sm font-semibold text-app-text">{t("connected.heading")}</h2>
+        {!error && items === null && (
+          <p className="text-sm text-app-text-muted">{t("connected.loading")}</p>
+        )}
         {items && items.length === 0 && (
-          <p className="text-sm text-app-text-muted">
-            Nothing connected yet. Pick a provider below to get started.
-          </p>
+          <p className="text-sm text-app-text-muted">{t("connected.empty")}</p>
         )}
         {items && items.length > 0 && (
           <ul className="divide-y divide-app-border rounded-md border border-app-border">
@@ -51,8 +53,8 @@ export function IntegrationsPage() {
                     <div>
                       <div className="font-medium text-app-text">{integration.name}</div>
                       <div className="text-xs text-app-text-muted">
-                        {provider?.label ?? integration.kind} ·{" "}
-                        {integration.enabled ? "enabled" : "disabled"}
+                        {provider ? t(provider.labelKey) : integration.kind} ·{" "}
+                        {integration.enabled ? t("connected.enabled") : t("connected.disabled")}
                       </div>
                     </div>
                     <IntegrationDriftBadge integrationId={integration.id} kind={integration.kind} />
@@ -62,14 +64,14 @@ export function IntegrationsPage() {
                       to={`/integrations/${integration.id}`}
                       className="rounded border border-app-border px-2 py-1 text-xs text-app-text hover:bg-app-surface-hover"
                     >
-                      Configure
+                      {t("connected.configure")}
                     </Link>
                     <button
                       type="button"
                       onClick={() => setPendingDelete(integration)}
                       className="rounded px-2 py-1 text-xs text-app-danger hover:bg-app-surface-hover"
                     >
-                      Disconnect
+                      {t("connected.disconnect")}
                     </button>
                   </div>
                 </li>
@@ -80,7 +82,7 @@ export function IntegrationsPage() {
       </section>
 
       <section>
-        <h2 className="mb-2 text-sm font-semibold text-app-text">Available providers</h2>
+        <h2 className="mb-2 text-sm font-semibold text-app-text">{t("providers.heading")}</h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {PROVIDERS.map((provider) => {
             const available = provider.ConnectDialog !== undefined;
@@ -90,21 +92,23 @@ export function IntegrationsPage() {
                 className="flex flex-col rounded-md border border-app-border bg-app-surface p-3"
               >
                 <div className="mb-1 flex items-center justify-between gap-2">
-                  <span className="font-medium text-app-text">{provider.label}</span>
+                  <span className="font-medium text-app-text">{t(provider.labelKey)}</span>
                   {!available && (
                     <span className="rounded bg-app-bg px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-app-text-muted">
-                      Coming soon
+                      {t("providers.comingSoon")}
                     </span>
                   )}
                 </div>
-                <p className="mb-3 flex-1 text-xs text-app-text-muted">{provider.description}</p>
+                <p className="mb-3 flex-1 text-xs text-app-text-muted">
+                  {t(provider.descriptionKey)}
+                </p>
                 <button
                   type="button"
                   disabled={!available}
                   onClick={() => setConnectKind(provider.kind)}
                   className="self-start rounded bg-app-primary px-2.5 py-1 text-xs font-medium text-app-primary-on disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Connect
+                  {t("providers.connect")}
                 </button>
               </div>
             );
@@ -122,9 +126,9 @@ export function IntegrationsPage() {
 
       <ConfirmDialog
         open={pendingDelete !== null}
-        title={`Disconnect ${pendingDelete?.name ?? "integration"}?`}
-        message="This deletes the local mirror data. The external tool itself is not affected."
-        confirmLabel="Disconnect"
+        title={t("confirm.disconnectTitle", { name: pendingDelete?.name ?? "integration" })}
+        message={t("confirm.disconnectMessage")}
+        confirmLabel={t("confirm.disconnectLabel")}
         destructive
         onConfirm={async () => {
           if (!pendingDelete) return;
@@ -133,7 +137,7 @@ export function IntegrationsPage() {
             setPendingDelete(null);
             await load();
           } catch (err) {
-            setError(err instanceof Error ? err.message : "Disconnect failed");
+            setError(err instanceof Error ? err.message : t("errors.disconnectFailed"));
             setPendingDelete(null);
           }
         }}

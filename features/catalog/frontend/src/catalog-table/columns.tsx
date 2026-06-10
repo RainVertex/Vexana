@@ -1,6 +1,7 @@
 // TanStack column defs and metadata for the catalog table.
 import type { ColumnDef } from "@tanstack/react-table";
 import type { CatalogEntity, Team } from "@internal/shared-types";
+import { useTranslation } from "@internal/i18n";
 import {
   DateCell,
   KindBadge,
@@ -68,18 +69,34 @@ export const COLUMN_ORDER: CatalogColumnId[] = [
   "createdAt",
 ];
 
+/** Returns COLUMN_META with labels resolved from the catalog namespace. */
+export function useLocalizedColumnMeta(): Record<CatalogColumnId, CatalogColumnMeta> {
+  const { t } = useTranslation("catalog");
+  const result = {} as Record<CatalogColumnId, CatalogColumnMeta>;
+  for (const id of COLUMN_ORDER) {
+    result[id] = {
+      ...COLUMN_META[id],
+      label: t(`columnMeta.${id}`),
+    };
+  }
+  return result;
+}
+
 const arrIncludesAny = (rowValue: unknown, _id: string, filterValue: unknown) => {
   if (!Array.isArray(filterValue) || filterValue.length === 0) return true;
   if (Array.isArray(rowValue)) return rowValue.some((v) => filterValue.includes(v));
   return filterValue.includes(rowValue);
 };
 
-const tagsGroupingFn = (originalRow: CatalogRow): string => {
-  const tags = originalRow.tags;
-  return tags && tags.length > 0 ? tags[0]! : "(no tags)";
-};
-
-export function buildColumns(): ColumnDef<CatalogRow>[] {
+export function buildColumns(
+  noOwnerLabel: string,
+  noTagsLabel: string,
+  headers: Record<CatalogColumnId, string>,
+): ColumnDef<CatalogRow>[] {
+  const tagsGroupingFn = (originalRow: CatalogRow): string => {
+    const tags = originalRow.tags;
+    return tags && tags.length > 0 ? tags[0]! : noTagsLabel;
+  };
   return [
     {
       id: "star",
@@ -96,7 +113,7 @@ export function buildColumns(): ColumnDef<CatalogRow>[] {
     {
       id: "name",
       accessorKey: "name",
-      header: "Name",
+      header: headers.name,
       enableGrouping: false,
       enableColumnFilter: true,
       enableSorting: true,
@@ -113,7 +130,7 @@ export function buildColumns(): ColumnDef<CatalogRow>[] {
     {
       id: "kind",
       accessorKey: "kind",
-      header: "Kind",
+      header: headers.kind,
       enableGrouping: true,
       enableColumnFilter: true,
       enableSorting: true,
@@ -126,7 +143,7 @@ export function buildColumns(): ColumnDef<CatalogRow>[] {
     {
       id: "lifecycle",
       accessorKey: "lifecycle",
-      header: "Lifecycle",
+      header: headers.lifecycle,
       enableGrouping: true,
       enableColumnFilter: true,
       enableSorting: true,
@@ -141,14 +158,14 @@ export function buildColumns(): ColumnDef<CatalogRow>[] {
       accessorFn: (row) =>
         row.ownerTeams && row.ownerTeams.length > 0
           ? row.ownerTeams.map((t) => t.name)
-          : ["(no owner)"],
-      header: "Owner",
+          : [noOwnerLabel],
+      header: headers.owner,
       enableGrouping: true,
       enableColumnFilter: true,
       enableSorting: true,
       filterFn: arrIncludesAny,
       getGroupingValue: (row) =>
-        row.ownerTeams && row.ownerTeams.length > 0 ? row.ownerTeams[0]!.name : "(no owner)",
+        row.ownerTeams && row.ownerTeams.length > 0 ? row.ownerTeams[0]!.name : noOwnerLabel,
       cell: ({ row }) => {
         if (row.getIsGrouped()) return null;
         return <OwnerCell teams={row.original.ownerTeams ?? []} />;
@@ -157,7 +174,7 @@ export function buildColumns(): ColumnDef<CatalogRow>[] {
     {
       id: "tags",
       accessorFn: (row) => row.tags ?? [],
-      header: "Tags",
+      header: headers.tags,
       enableGrouping: true,
       enableColumnFilter: true,
       enableSorting: true,
@@ -180,7 +197,7 @@ export function buildColumns(): ColumnDef<CatalogRow>[] {
     {
       id: "repoUrl",
       accessorKey: "repoUrl",
-      header: "Repository",
+      header: headers.repoUrl,
       enableGrouping: false,
       enableColumnFilter: true,
       enableSorting: false,
@@ -193,7 +210,7 @@ export function buildColumns(): ColumnDef<CatalogRow>[] {
     {
       id: "description",
       accessorKey: "description",
-      header: "Description",
+      header: headers.description,
       enableGrouping: false,
       enableColumnFilter: true,
       enableSorting: false,
@@ -213,7 +230,7 @@ export function buildColumns(): ColumnDef<CatalogRow>[] {
     {
       id: "updatedAt",
       accessorKey: "updatedAt",
-      header: "Updated",
+      header: headers.updatedAt,
       enableGrouping: false,
       enableColumnFilter: false,
       enableSorting: true,
@@ -225,7 +242,7 @@ export function buildColumns(): ColumnDef<CatalogRow>[] {
     {
       id: "createdAt",
       accessorKey: "createdAt",
-      header: "Created",
+      header: headers.createdAt,
       enableGrouping: false,
       enableColumnFilter: false,
       enableSorting: true,
@@ -237,7 +254,12 @@ export function buildColumns(): ColumnDef<CatalogRow>[] {
   ];
 }
 
-export function distinctValues(rows: CatalogRow[], columnId: CatalogColumnId): string[] {
+export function distinctValues(
+  rows: CatalogRow[],
+  columnId: CatalogColumnId,
+  noOwnerLabel: string,
+  noTagsLabel: string,
+): string[] {
   const set = new Set<string>();
   for (const r of rows) {
     switch (columnId) {
@@ -251,14 +273,14 @@ export function distinctValues(rows: CatalogRow[], columnId: CatalogColumnId): s
         if (r.ownerTeams && r.ownerTeams.length > 0) {
           for (const t of r.ownerTeams) set.add(t.name);
         } else {
-          set.add("(no owner)");
+          set.add(noOwnerLabel);
         }
         break;
       case "tags":
         if (r.tags && r.tags.length > 0) {
           for (const t of r.tags) set.add(t);
         } else {
-          set.add("(no tags)");
+          set.add(noTagsLabel);
         }
         break;
       default:

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ConfirmDialog, PageLayout } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import { ProposedMembersList } from "@feature/teams-frontend";
 import type {
   MaintainerRequestDto,
@@ -10,39 +11,23 @@ import type {
   TeamRequestStatus,
 } from "@internal/shared-types";
 
-const TEAM_STATUS_LABEL: Record<TeamRequestStatus, string> = {
-  pending: "Pending admin review",
-  awaiting_user_confirmation: "Awaiting your review",
-  approved: "Approved",
-  rejected: "Rejected",
-  expired: "Expired",
-  cancelled: "Cancelled",
-};
-
-const MAINTAINER_STATUS_LABEL: Record<MaintainerRequestStatus, string> = {
-  pending: "Pending review",
-  approved: "Approved",
-  rejected: "Rejected",
-  expired: "Expired",
-  cancelled: "Cancelled",
-};
-
 const PENDING_TEAM_STATUSES: ReadonlySet<TeamRequestStatus> = new Set([
   "pending",
   "awaiting_user_confirmation",
 ]);
 
-function timeRemaining(iso: string): string {
+function timeRemaining(iso: string, t: ReturnType<typeof useTranslation>["t"]): string {
   const ms = new Date(iso).getTime() - Date.now();
-  if (ms <= 0) return "expired";
+  if (ms <= 0) return t("time.expired");
   const days = Math.floor(ms / (24 * 60 * 60 * 1000));
-  if (days >= 1) return `${days}d remaining`;
+  if (days >= 1) return t("time.daysRemaining", { count: days });
   const hours = Math.floor(ms / (60 * 60 * 1000));
-  return `${hours}h remaining`;
+  return t("time.hoursRemaining", { count: hours });
 }
 
 // Combined "My Requests" page listing the user's team-creation and maintainer requests.
 export function MyRequestsTeamPage() {
+  const { t } = useTranslation("requests");
   const api = useApi();
   const [teamRequests, setTeamRequests] = useState<TeamRequestDto[] | null>(null);
   const [maintainerRequests, setMaintainerRequests] = useState<MaintainerRequestDto[] | null>(null);
@@ -60,8 +45,8 @@ export function MyRequestsTeamPage() {
         setTeamRequests(t.items);
         setMaintainerRequests(m.items);
       })
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load"));
-  }, [api]);
+      .catch((err) => setError(err instanceof Error ? err.message : t("errors.failedToLoad")));
+  }, [api, t]);
 
   useEffect(() => {
     load();
@@ -76,7 +61,7 @@ export function MyRequestsTeamPage() {
       setCancellingTeam(null);
       load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Cancel failed");
+      setError(err instanceof Error ? err.message : t("errors.cancelFailed"));
     } finally {
       setBusyId(null);
     }
@@ -91,7 +76,7 @@ export function MyRequestsTeamPage() {
       setCancellingMaintainer(null);
       load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Cancel failed");
+      setError(err instanceof Error ? err.message : t("errors.cancelFailed"));
     } finally {
       setBusyId(null);
     }
@@ -103,11 +88,28 @@ export function MyRequestsTeamPage() {
       await api.teamRequests.respond(request.id, { action: "confirm" });
       load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Confirm failed");
+      setError(err instanceof Error ? err.message : t("errors.confirmFailed"));
     } finally {
       setBusyId(null);
     }
   }
+
+  const teamStatusLabel: Record<TeamRequestStatus, string> = {
+    pending: t("status.teamPendingAdmin"),
+    awaiting_user_confirmation: t("status.teamAwaitingUser"),
+    approved: t("status.teamApproved"),
+    rejected: t("status.teamRejected"),
+    expired: t("status.teamExpired"),
+    cancelled: t("status.teamCancelled"),
+  };
+
+  const maintainerStatusLabel: Record<MaintainerRequestStatus, string> = {
+    pending: t("status.maintainerPending"),
+    approved: t("status.maintainerApproved"),
+    rejected: t("status.maintainerRejected"),
+    expired: t("status.maintainerExpired"),
+    cancelled: t("status.maintainerCancelled"),
+  };
 
   const loading = teamRequests === null || maintainerRequests === null;
   const teamPending = (teamRequests ?? []).filter((r) => PENDING_TEAM_STATUSES.has(r.status));
@@ -116,24 +118,19 @@ export function MyRequestsTeamPage() {
   const maintResolved = (maintainerRequests ?? []).filter((r) => r.status !== "pending");
 
   return (
-    <PageLayout
-      title="My Requests"
-      description="Team-creation and maintainer requests you've submitted. Pending first, history below."
-    >
+    <PageLayout title={t("page.myRequestsTitle")} description={t("page.myRequestsDescription")}>
       {error && <p className="mb-3 text-sm text-app-danger">{error}</p>}
-      {loading && <p className="text-sm text-app-text-muted">Loading…</p>}
+      {loading && <p className="text-sm text-app-text-muted">{t("loading")}</p>}
 
       {!loading && teamRequests!.length === 0 && maintainerRequests!.length === 0 && (
-        <p className="text-sm text-app-text-muted">
-          You haven&apos;t submitted any team or maintainer requests yet.
-        </p>
+        <p className="text-sm text-app-text-muted">{t("empty.noRequests")}</p>
       )}
 
       {!loading && teamRequests!.length > 0 && (
         <section className="mb-6">
           <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold text-app-text">
-            <TypeChip kind="team" />
-            <span>Team creation requests</span>
+            <TypeChip kind="team" t={t} />
+            <span>{t("sections.teamCreation")}</span>
             <span className="text-app-text-muted">· {teamPending.length}</span>
           </h2>
           <ul className="divide-y divide-app-border rounded-lg border border-app-border bg-app-surface">
@@ -142,22 +139,24 @@ export function MyRequestsTeamPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <TypeChip kind="team" />
+                      <TypeChip kind="team" t={t} />
                       <div className="text-sm font-medium text-app-text">{r.name}</div>
                     </div>
                     <div className="text-xs text-app-text-muted">{r.slug}</div>
                     {r.mirrorToGithub && r.githubOrgLogin && (
                       <div className="mt-0.5 text-xs text-app-text-muted">
-                        Mirror to GitHub org: {r.githubOrgLogin}
+                        {t("labels.mirrorGithub", { org: r.githubOrgLogin })}
                       </div>
                     )}
                     <ProposedMembersList request={r} />
                     {r.rejectionReason && (
-                      <p className="mt-1 text-xs text-app-danger">Rejected: {r.rejectionReason}</p>
+                      <p className="mt-1 text-xs text-app-danger">
+                        {t("labels.rejected", { reason: r.rejectionReason })}
+                      </p>
                     )}
                     {r.autoCancelReason === "round_limit" && (
                       <p className="mt-1 text-xs text-app-danger">
-                        Auto-cancelled after 3 rounds of negotiation.
+                        {t("labels.autoCancelledRounds")}
                       </p>
                     )}
                     {r.createdTeamSlug && (
@@ -165,17 +164,19 @@ export function MyRequestsTeamPage() {
                         to={`/teams/${r.createdTeamSlug}`}
                         className="mt-1 inline-block text-xs text-app-primary"
                       >
-                        Open team →
+                        {t("actions.openTeam")}
                       </Link>
                     )}
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1 text-right text-xs">
-                    <div className="text-app-text">{TEAM_STATUS_LABEL[r.status]}</div>
+                    <div className="text-app-text">{teamStatusLabel[r.status]}</div>
                     {PENDING_TEAM_STATUSES.has(r.status) && (
-                      <div className="text-app-text-muted">round {r.roundCount} of 3</div>
+                      <div className="text-app-text-muted">
+                        {t("labels.round", { current: r.roundCount, total: 3 })}
+                      </div>
                     )}
                     {PENDING_TEAM_STATUSES.has(r.status) && (
-                      <div className="text-app-text-muted">{timeRemaining(r.expiresAt)}</div>
+                      <div className="text-app-text-muted">{timeRemaining(r.expiresAt, t)}</div>
                     )}
                     {r.status === "awaiting_user_confirmation" && (
                       <button
@@ -184,7 +185,7 @@ export function MyRequestsTeamPage() {
                         onClick={() => void confirmTeamProposal(r)}
                         className="rounded-md bg-app-primary px-2 py-0.5 text-app-primary-on disabled:opacity-50"
                       >
-                        Confirm
+                        {t("actions.confirm")}
                       </button>
                     )}
                     {PENDING_TEAM_STATUSES.has(r.status) && (
@@ -194,7 +195,7 @@ export function MyRequestsTeamPage() {
                         onClick={() => setCancellingTeam(r)}
                         className="rounded-md border border-app-border px-2 py-0.5 text-app-text-muted hover:text-app-danger disabled:opacity-50"
                       >
-                        Cancel
+                        {t("actions.cancel")}
                       </button>
                     )}
                   </div>
@@ -208,8 +209,8 @@ export function MyRequestsTeamPage() {
       {!loading && maintainerRequests!.length > 0 && (
         <section className="mb-6">
           <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold text-app-text">
-            <TypeChip kind="maintainer" />
-            <span>Maintainer requests</span>
+            <TypeChip kind="maintainer" t={t} />
+            <span>{t("sections.maintainer")}</span>
             <span className="text-app-text-muted">· {maintPending.length}</span>
           </h2>
           <ul className="divide-y divide-app-border rounded-lg border border-app-border bg-app-surface">
@@ -218,7 +219,7 @@ export function MyRequestsTeamPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <TypeChip kind="maintainer" />
+                      <TypeChip kind="maintainer" t={t} />
                       <div className="text-sm font-medium text-app-text">{r.teamName}</div>
                     </div>
                     <Link
@@ -229,20 +230,24 @@ export function MyRequestsTeamPage() {
                     </Link>
                     {r.reason && (
                       <p className="mt-1 text-xs text-app-text-muted">
-                        <span className="font-medium">Reason:</span> {r.reason}
+                        <span className="font-medium">{t("labels.reason")}:</span> {r.reason}
                       </p>
                     )}
                     {r.rejectionReason && (
-                      <p className="mt-1 text-xs text-app-danger">Rejected: {r.rejectionReason}</p>
+                      <p className="mt-1 text-xs text-app-danger">
+                        {t("labels.rejected", { reason: r.rejectionReason })}
+                      </p>
                     )}
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1 text-right text-xs">
-                    <div className="text-app-text">{MAINTAINER_STATUS_LABEL[r.status]}</div>
+                    <div className="text-app-text">{maintainerStatusLabel[r.status]}</div>
                     {r.status === "pending" && (
-                      <div className="text-app-text-muted">{timeRemaining(r.expiresAt)}</div>
+                      <div className="text-app-text-muted">{timeRemaining(r.expiresAt, t)}</div>
                     )}
                     {r.reviewedBy && (
-                      <div className="text-app-text-muted">by {r.reviewedBy.displayName}</div>
+                      <div className="text-app-text-muted">
+                        {t("labels.reviewedBy", { name: r.reviewedBy.displayName })}
+                      </div>
                     )}
                     {r.status === "pending" && (
                       <button
@@ -251,7 +256,7 @@ export function MyRequestsTeamPage() {
                         onClick={() => setCancellingMaintainer(r)}
                         className="rounded-md border border-app-border px-2 py-0.5 text-app-text-muted hover:text-app-danger disabled:opacity-50"
                       >
-                        Cancel
+                        {t("actions.cancel")}
                       </button>
                     )}
                   </div>
@@ -264,14 +269,17 @@ export function MyRequestsTeamPage() {
 
       <ConfirmDialog
         open={cancellingTeam !== null}
-        title="Cancel team request?"
+        title={t("dialogs.cancelTeamTitle")}
         message={
           cancellingTeam
-            ? `"${cancellingTeam.name}" (${cancellingTeam.slug}) will no longer appear in the admin queue. You can re-submit later.`
+            ? t("dialogs.cancelTeamMessage", {
+                name: cancellingTeam.name,
+                slug: cancellingTeam.slug,
+              })
             : null
         }
-        confirmLabel="Cancel request"
-        cancelLabel="Keep it"
+        confirmLabel={t("dialogs.cancelRequestLabel")}
+        cancelLabel={t("dialogs.keepItLabel")}
         destructive
         busy={busyId !== null && busyId === cancellingTeam?.id}
         onConfirm={() => void confirmCancelTeam()}
@@ -279,14 +287,16 @@ export function MyRequestsTeamPage() {
       />
       <ConfirmDialog
         open={cancellingMaintainer !== null}
-        title="Cancel maintainer request?"
+        title={t("dialogs.cancelMaintainerTitle")}
         message={
           cancellingMaintainer
-            ? `Your request to become a maintainer of "${cancellingMaintainer.teamName}" will be withdrawn. You can re-submit later.`
+            ? t("dialogs.cancelMaintainerMessage", {
+                teamName: cancellingMaintainer.teamName,
+              })
             : null
         }
-        confirmLabel="Cancel request"
-        cancelLabel="Keep it"
+        confirmLabel={t("dialogs.cancelRequestLabel")}
+        cancelLabel={t("dialogs.keepItLabel")}
         destructive
         busy={busyId !== null && busyId === cancellingMaintainer?.id}
         onConfirm={() => void confirmCancelMaintainer()}
@@ -296,17 +306,23 @@ export function MyRequestsTeamPage() {
   );
 }
 
-function TypeChip({ kind }: { kind: "team" | "maintainer" }) {
+function TypeChip({
+  kind,
+  t,
+}: {
+  kind: "team" | "maintainer";
+  t: ReturnType<typeof useTranslation>["t"];
+}) {
   if (kind === "team") {
     return (
       <span className="inline-flex items-center rounded-full border border-app-primary/40 bg-app-primary-soft px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-app-primary">
-        Team
+        {t("chips.team")}
       </span>
     );
   }
   return (
     <span className="inline-flex items-center rounded-full border border-app-border bg-app-surface-hover px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-app-text-muted">
-      Maintainer
+      {t("chips.maintainer")}
     </span>
   );
 }

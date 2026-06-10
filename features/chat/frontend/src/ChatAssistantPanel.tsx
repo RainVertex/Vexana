@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApi } from "@internal/api-client/react";
 import type { ChatConversationDetailDto } from "@internal/shared-types";
+import { useTranslation } from "@internal/i18n";
 import { MessageList } from "./MessageList";
 import { Composer } from "./Composer";
 import { useChatStream } from "./chatStream";
@@ -18,6 +19,7 @@ interface Props {
 export function ChatAssistantPanel({ userId, userName, userAvatarUrl }: Props) {
   const api = useApi();
   const navigate = useNavigate();
+  const { t } = useTranslation("chat");
   const storageKey = KEY_CONV(userId);
 
   const [conversationId, setConversationId] = useState<string | null>(() =>
@@ -103,13 +105,15 @@ export function ChatAssistantPanel({ userId, userName, userAvatarUrl }: Props) {
     // -m-4 cancels WidgetFrame's inner padding so MessageList/Composer sit flush.
     <div className="-m-4 flex h-[calc(100%+2rem)] flex-col">
       <div className="flex items-center justify-between gap-2 border-b border-app-border bg-app-surface px-3 py-1.5">
-        <span className="truncate text-xs text-app-text-muted">{active?.title ?? "New chat"}</span>
+        <span className="truncate text-xs text-app-text-muted">
+          {active?.title ?? t("widget.newChat")}
+        </span>
         <div className="flex shrink-0 items-center gap-1">
           <button
             type="button"
             onClick={handleNewChat}
-            title="New chat"
-            aria-label="New chat"
+            title={t("widget.newChat")}
+            aria-label={t("widget.newChat")}
             className="flex h-8 min-w-8 items-center justify-center rounded-app-sm px-2 text-sm text-app-text-muted hover:bg-app-surface-hover sm:h-6 sm:min-w-0 sm:py-0.5 sm:text-xs"
           >
             +
@@ -117,8 +121,8 @@ export function ChatAssistantPanel({ userId, userName, userAvatarUrl }: Props) {
           <button
             type="button"
             onClick={() => navigate(conversationId ? `/chat/${conversationId}` : "/chat")}
-            title="Open in full view"
-            aria-label="Open in full view"
+            title={t("widget.openFullView")}
+            aria-label={t("widget.openFullView")}
             className="flex h-8 min-w-8 items-center justify-center rounded-app-sm px-2 text-sm text-app-text-muted hover:bg-app-surface-hover sm:h-6 sm:min-w-0 sm:py-0.5 sm:text-xs"
           >
             ↗
@@ -139,7 +143,7 @@ export function ChatAssistantPanel({ userId, userName, userAvatarUrl }: Props) {
           onStop={abort}
           streaming={stream.status === "streaming"}
           stopDisabled={stream.submitInFlight}
-          placeholder="Ask anything…"
+          placeholder={t("composer.widgetPlaceholder")}
         />
       </div>
     </div>

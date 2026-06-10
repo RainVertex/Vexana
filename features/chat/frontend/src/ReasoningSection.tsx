@@ -1,5 +1,6 @@
 // Collapsible panel showing the model's reasoning, with a live-ticking duration counter.
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "@internal/i18n";
 
 interface Props {
   reasoning: string;
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function ReasoningSection({ reasoning, startedAt, durationMs, isStreaming }: Props) {
+  const { t } = useTranslation("chat");
   const [expanded, setExpanded] = useState(isStreaming);
   const userToggled = useRef(false);
   const lastStreamingRef = useRef(isStreaming);
@@ -39,7 +41,9 @@ export function ReasoningSection({ reasoning, startedAt, durationMs, isStreaming
       : 0
     : (durationMs ?? 0);
   const seconds = Math.max(0, Math.round(elapsedMs / 1000));
-  const label = isStreaming ? `Reasoning - ${seconds}s` : `Reasoned - ${seconds}s`;
+  const label = isStreaming
+    ? t("reasoning.streaming", { seconds })
+    : t("reasoning.done", { seconds });
 
   const toggle = () => {
     userToggled.current = true;

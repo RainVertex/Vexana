@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "@internal/i18n";
 
 interface PlatformUser {
   id: string;
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export function UserAutocomplete({ value, onChange, placeholder, onSelect, className }: Props) {
+  const { t } = useTranslation("projects");
   const [suggestions, setSuggestions] = useState<PlatformUser[]>([]);
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -89,7 +91,7 @@ export function UserAutocomplete({ value, onChange, placeholder, onSelect, class
                   <>
                     <span className="font-medium">{u.name}</span>
                     <span className="ml-2 rounded bg-app-surface-hover px-1 text-[10px] uppercase tracking-wide text-app-text-muted">
-                      agent
+                      {t("userKind.agent")}
                     </span>
                   </>
                 ) : (

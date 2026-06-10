@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { PageLayout } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type { AgentRun } from "@internal/shared-types";
 
 interface RunToolCall {
@@ -72,6 +73,7 @@ function formatInput(input: unknown): string {
 
 export function AgentRunPage() {
   const api = useApi();
+  const { t } = useTranslation("agents");
   const { id = "", runId = "" } = useParams<{ id: string; runId: string }>();
   const [run, setRun] = useState<AgentRun | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -81,8 +83,8 @@ export function AgentRunPage() {
     return api.agents
       .getRun(id, runId)
       .then((r) => setRun(r))
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load run"));
-  }, [api, id, runId]);
+      .catch((err) => setError(err instanceof Error ? err.message : t("errors.failedToLoadRun")));
+  }, [api, id, runId, t]);
 
   useEffect(() => {
     void load();
@@ -100,24 +102,24 @@ export function AgentRunPage() {
     void api.agents
       .cancelRun(id, runId)
       .then(() => load())
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to cancel run"))
+      .catch((err) => setError(err instanceof Error ? err.message : t("errors.failedToCancelRun")))
       .finally(() => setStopping(false));
-  }, [api, id, runId, load]);
+  }, [api, id, runId, load, t]);
 
   if (error && !run) {
     return (
-      <PageLayout title="Run">
+      <PageLayout title={t("page.runTitle")}>
         <p className="text-sm text-app-danger">{error}</p>
         <Link to={`/agents/${id}`} className="text-sm text-app-primary hover:underline">
-          Back to agent
+          {t("actions.backToAgent")}
         </Link>
       </PageLayout>
     );
   }
   if (!run) {
     return (
-      <PageLayout title="Run">
-        <p className="text-sm text-app-text-muted">Loading…</p>
+      <PageLayout title={t("page.runTitle")}>
+        <p className="text-sm text-app-text-muted">{t("loading.run")}</p>
       </PageLayout>
     );
   }
@@ -134,8 +136,8 @@ export function AgentRunPage() {
 
   return (
     <PageLayout
-      title={`${run.agent?.name ?? "Agent"} run`}
-      description={`${run.trigger ?? "run"} · ${run.status}`}
+      title={t("page.runPageTitle", { name: run.agent?.name ?? t("page.agentTitle") })}
+      description={`${run.trigger ?? t("page.runTriggerFallback")} · ${t("status." + run.status)}`}
       actions={
         <div className="flex items-center gap-2">
           {isRunning && (
@@ -145,48 +147,54 @@ export function AgentRunPage() {
               disabled={stopping}
               className="rounded-md border border-app-danger px-3 py-1.5 text-sm text-app-danger hover:bg-app-surface-hover disabled:opacity-50"
             >
-              {stopping ? "Stopping…" : "Stop"}
+              {stopping ? t("actions.stopping") : t("actions.stop")}
             </button>
           )}
           <Link
             to={`/agents/${id}`}
             className="rounded-md border border-app-border bg-app-surface px-3 py-1.5 text-sm text-app-text hover:bg-app-surface-hover"
           >
-            Back to agent
+            {t("actions.backToAgent")}
           </Link>
         </div>
       }
     >
       <section className="mb-6 grid gap-3 rounded-lg border border-app-border bg-app-surface p-4 text-sm sm:grid-cols-3">
-        <Field label="Status" value={run.status} />
-        <Field label="Trigger" value={run.trigger ?? "-"} />
-        <Field label="Started" value={new Date(run.startedAt).toLocaleString()} />
+        <Field label={t("fields.status")} value={t(`status.${run.status}`)} />
+        <Field label={t("fields.trigger")} value={run.trigger ?? "-"} />
+        <Field label={t("fields.started")} value={new Date(run.startedAt).toLocaleString()} />
         <Field
-          label="Finished"
+          label={t("fields.finished")}
           value={run.finishedAt ? new Date(run.finishedAt).toLocaleString() : "-"}
         />
         <Field
-          label="Duration"
-          value={durationMs != null ? `${(durationMs / 1000).toFixed(1)}s` : "running…"}
+          label={t("fields.duration")}
+          value={
+            durationMs != null ? `${(durationMs / 1000).toFixed(1)}s` : t("run.durationRunning")
+          }
         />
         <Field
-          label="Tokens"
-          value={`${total} (in ${run.tokensInput ?? 0} / out ${run.tokensOutput ?? 0})`}
+          label={t("fields.tokens")}
+          value={t("run.stepTokens", {
+            total,
+            input: run.tokensInput ?? 0,
+            output: run.tokensOutput ?? 0,
+          })}
         />
         <Field
-          label="Cost"
+          label={t("fields.cost")}
           value={run.costUsd != null ? `$${Number(run.costUsd).toFixed(4)}` : "-"}
         />
-        <CopyableField label="Run ID" value={run.id} />
+        <CopyableField label={t("fields.runId")} value={run.id} />
       </section>
 
       {(run.task || run.conversation || entityId || prUrl) && (
         <section className="mb-6">
-          <h2 className="mb-2 text-sm font-semibold text-app-text">Context</h2>
+          <h2 className="mb-2 text-sm font-semibold text-app-text">{t("run.context")}</h2>
           <div className="flex flex-wrap gap-3 text-sm">
             {run.task && (
               <Link to={`/tasks/${run.task.id}`} className="text-app-primary hover:underline">
-                Task: {run.task.title}
+                {t("run.taskLink", { title: run.task.title })}
               </Link>
             )}
             {run.conversation && (
@@ -194,12 +202,12 @@ export function AgentRunPage() {
                 to={`/chat/${run.conversation.id}`}
                 className="text-app-primary hover:underline"
               >
-                Conversation: {run.conversation.title}
+                {t("run.conversationLink", { title: run.conversation.title })}
               </Link>
             )}
             {entityId && (
               <Link to={`/catalog/${entityId}`} className="text-app-primary hover:underline">
-                Catalog entity
+                {t("run.catalogEntity")}
               </Link>
             )}
             {prUrl && (
@@ -209,7 +217,7 @@ export function AgentRunPage() {
                 rel="noreferrer"
                 className="text-app-primary hover:underline"
               >
-                Pull request ↗
+                {t("run.pullRequest")}
               </a>
             )}
           </div>
@@ -217,7 +225,7 @@ export function AgentRunPage() {
       )}
 
       <section className="mb-6">
-        <h2 className="mb-2 text-sm font-semibold text-app-text">Input</h2>
+        <h2 className="mb-2 text-sm font-semibold text-app-text">{t("run.input")}</h2>
         <pre className="max-h-60 overflow-auto whitespace-pre-wrap rounded-md border border-app-border bg-app-bg-sunken p-3 text-xs text-app-text">
           {formatInput(run.input)}
         </pre>
@@ -225,7 +233,7 @@ export function AgentRunPage() {
 
       {run.error && (
         <section className="mb-6">
-          <h2 className="mb-2 text-sm font-semibold text-app-text">Error</h2>
+          <h2 className="mb-2 text-sm font-semibold text-app-text">{t("run.error")}</h2>
           <pre className="overflow-auto whitespace-pre-wrap rounded-md border border-app-danger bg-app-bg-sunken p-3 text-xs text-app-danger">
             {run.error}
           </pre>
@@ -235,9 +243,9 @@ export function AgentRunPage() {
       {steps && steps.length > 0 ? (
         <section className="mb-6">
           <h2 className="mb-2 text-sm font-semibold text-app-text">
-            Timeline
+            {t("run.timeline")}
             <span className="ml-1 text-xs font-normal text-app-text-muted">
-              {steps.length} step{steps.length === 1 ? "" : "s"}
+              {t("run.stepCount", { count: steps.length })}
             </span>
           </h2>
           <div className="grid gap-3">
@@ -249,11 +257,11 @@ export function AgentRunPage() {
       ) : (
         <section className="mb-6">
           <h2 className="mb-2 text-sm font-semibold text-app-text">
-            Tool calls
+            {t("run.toolCalls")}
             <span className="ml-1 text-xs font-normal text-app-text-muted">{calls.length}</span>
           </h2>
           {calls.length === 0 ? (
-            <p className="text-sm text-app-text-muted">No tool calls.</p>
+            <p className="text-sm text-app-text-muted">{t("empty.noToolCalls")}</p>
           ) : (
             <div className="grid gap-1">
               {calls.map((c, i) => (
@@ -265,9 +273,9 @@ export function AgentRunPage() {
       )}
 
       <section>
-        <h2 className="mb-2 text-sm font-semibold text-app-text">Final response</h2>
+        <h2 className="mb-2 text-sm font-semibold text-app-text">{t("run.finalResponse")}</h2>
         <pre className="max-h-80 overflow-auto whitespace-pre-wrap rounded-md border border-app-border bg-app-bg-sunken p-3 text-xs text-app-text">
-          {finalText ?? "(no text)"}
+          {finalText ?? t("empty.noText")}
         </pre>
       </section>
     </PageLayout>
@@ -275,13 +283,20 @@ export function AgentRunPage() {
 }
 
 function StepCard({ step }: { step: RunStep }) {
+  const { t } = useTranslation("agents");
   const stepTokens = step.tokensInput + step.tokensOutput;
   return (
     <div className="rounded-lg border border-app-border bg-app-surface p-3">
       <div className="mb-2 flex items-center justify-between text-xs text-app-text-muted">
-        <span className="font-semibold text-app-text">Step {step.index + 1}</span>
+        <span className="font-semibold text-app-text">
+          {t("run.step", { number: step.index + 1 })}
+        </span>
         <span>
-          {stepTokens} tokens (in {step.tokensInput} / out {step.tokensOutput})
+          {t("run.stepTokens", {
+            total: stepTokens,
+            input: step.tokensInput,
+            output: step.tokensOutput,
+          })}
         </span>
       </div>
       {step.reasoning && <Reasoning text={step.reasoning} />}
@@ -302,6 +317,7 @@ function StepCard({ step }: { step: RunStep }) {
 }
 
 function Reasoning({ text }: { text: string }) {
+  const { t } = useTranslation("agents");
   const [open, setOpen] = useState(false);
   return (
     <div className="mb-2">
@@ -310,7 +326,7 @@ function Reasoning({ text }: { text: string }) {
         onClick={() => setOpen((o) => !o)}
         className="text-xs text-app-text-muted hover:underline"
       >
-        {open ? "▾" : "▸"} Reasoning
+        {open ? "▾" : "▸"} {t("run.reasoning")}
       </button>
       {open && (
         <pre className="mt-1 max-h-60 overflow-auto whitespace-pre-wrap rounded-md border border-dashed border-app-border bg-app-bg-sunken p-2 text-[11px] italic text-app-text-muted">
@@ -322,6 +338,7 @@ function Reasoning({ text }: { text: string }) {
 }
 
 function ToolCallRow({ call }: { call: RunToolCall }) {
+  const { t } = useTranslation("agents");
   const [open, setOpen] = useState(false);
   return (
     <div className="rounded-md border border-app-border bg-app-surface">
@@ -336,11 +353,13 @@ function ToolCallRow({ call }: { call: RunToolCall }) {
       </button>
       {open && (
         <div className="border-t border-app-border px-2 py-2 text-[11px]">
-          <div className="font-mono text-app-text-muted">input:</div>
+          <div className="font-mono text-app-text-muted">{t("run.toolInput")}</div>
           <pre className="mb-2 overflow-x-auto whitespace-pre-wrap break-all text-app-text">
             {JSON.stringify(call.input, null, 2)}
           </pre>
-          <div className="font-mono text-app-text-muted">{call.isError ? "error:" : "output:"}</div>
+          <div className="font-mono text-app-text-muted">
+            {call.isError ? t("run.toolError") : t("run.toolOutput")}
+          </div>
           <pre className="overflow-x-auto whitespace-pre-wrap break-all text-app-text">
             {JSON.stringify(call.output, null, 2)}
           </pre>
@@ -360,6 +379,7 @@ function Field({ label, value }: { label: string; value: string }) {
 }
 
 function CopyableField({ label, value }: { label: string; value: string }) {
+  const { t } = useTranslation("agents");
   const [copied, setCopied] = useState(false);
   const copy = () => {
     void navigator.clipboard.writeText(value).then(() => {
@@ -374,9 +394,9 @@ function CopyableField({ label, value }: { label: string; value: string }) {
         type="button"
         onClick={copy}
         className="font-mono text-xs text-app-text hover:underline"
-        title="Copy"
+        title={t("run.copy")}
       >
-        {copied ? "Copied" : value}
+        {copied ? t("run.copied") : value}
       </button>
     </div>
   );

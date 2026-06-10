@@ -1,6 +1,7 @@
 // Scrollable message log: persisted messages, optimistic/live turn, errors, and autoscroll.
 import { useEffect, useRef } from "react";
 import type { ChatMessageDto } from "@internal/shared-types";
+import { useTranslation } from "@internal/i18n";
 import { MessageBubble } from "./MessageBubble";
 import type { ChatStreamState } from "./chatStream";
 
@@ -24,6 +25,7 @@ export function MessageList({
   assistantName,
   assistantAvatarUrl,
 }: Props) {
+  const { t } = useTranslation("chat");
   const containerRef = useRef<HTMLDivElement>(null);
   const didInitialScroll = useRef(false);
 
@@ -39,11 +41,8 @@ export function MessageList({
     <div ref={containerRef} className="flex-1 space-y-3 overflow-y-auto p-3 sm:p-4">
       {messages.length === 0 && stream.status === "idle" && (
         <div className="mx-auto max-w-md rounded-app-lg border border-app-border bg-app-surface p-4 text-center text-sm text-app-text-muted">
-          <p className="mb-1 font-medium text-app-text">Welcome to the Assistant</p>
-          <p>
-            Ask about your work, teams, catalog entities, requests, or anything readable in the app.
-            You can also start a team-creation request directly here.
-          </p>
+          <p className="mb-1 font-medium text-app-text">{t("welcome.title")}</p>
+          <p>{t("welcome.body")}</p>
         </div>
       )}
       {messages.map((m) => (

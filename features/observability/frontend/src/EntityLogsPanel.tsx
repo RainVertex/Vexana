@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { LokiLogLine } from "@internal/shared-types";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import { TraceDrawer } from "./TraceDrawer";
 
 export interface EntityLogsPanelProps {
@@ -24,6 +25,7 @@ export function EntityLogsPanel({
   limit,
 }: EntityLogsPanelProps) {
   const api = useApi();
+  const { t } = useTranslation("observability");
   const [minutes, setMinutes] = useState(initialMinutes ?? 15);
   const [items, setItems] = useState<LokiLogLine[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -40,12 +42,12 @@ export function EntityLogsPanel({
         if (!cancelled) setItems(res.items);
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load logs");
+        if (!cancelled) setError(err instanceof Error ? err.message : t("errors.failedLogs"));
       });
     return () => {
       cancelled = true;
     };
-  }, [api, entityId, minutes, limit, reloadKey]);
+  }, [api, entityId, minutes, limit, reloadKey, t]);
 
   return (
     <div className="flex flex-col gap-2">
@@ -71,19 +73,27 @@ export function EntityLogsPanel({
           onClick={() => setReloadKey((k) => k + 1)}
           className="rounded px-2 py-1 text-xs text-app-text-muted hover:bg-app-surface-hover"
         >
-          Refresh
+          {t("actions.refresh")}
         </button>
       </div>
 
       {error && <p className="text-xs text-app-danger">{error}</p>}
-      {!error && items === null && <p className="text-xs text-app-text-muted">Loading…</p>}
+      {!error && items === null && (
+        <p className="text-xs text-app-text-muted">{t("errors.loading")}</p>
+      )}
       {items && items.length === 0 && (
-        <p className="text-xs text-app-text-muted">No log lines in this window.</p>
+        <p className="text-xs text-app-text-muted">{t("empty.noLogs")}</p>
       )}
       {items && items.length > 0 && (
         <ul className="max-h-[60vh] overflow-y-auto rounded border border-app-border bg-app-bg font-mono text-xs">
           {items.map((line, idx) => (
-            <LogRow key={idx} line={line} onTraceClick={setOpenTrace} />
+            <LogRow
+              key={idx}
+              line={line}
+              onTraceClick={setOpenTrace}
+              openTraceLabel={t("trace.openTrace")}
+              traceButtonLabel={t("logs.traceLabel")}
+            />
           ))}
         </ul>
       )}
@@ -98,9 +108,13 @@ export function EntityLogsPanel({
 function LogRow({
   line,
   onTraceClick,
+  openTraceLabel,
+  traceButtonLabel,
 }: {
   line: LokiLogLine;
   onTraceClick: (traceId: string) => void;
+  openTraceLabel: string;
+  traceButtonLabel: string;
 }) {
   const ts = new Date(line.ts).toLocaleTimeString();
   return (
@@ -112,9 +126,9 @@ function LogRow({
           type="button"
           onClick={() => onTraceClick(line.traceId as string)}
           className="shrink-0 rounded bg-app-surface px-1.5 text-app-primary hover:bg-app-surface-hover"
-          title="Open trace"
+          title={openTraceLabel}
         >
-          trace
+          {traceButtonLabel}
         </button>
       )}
     </li>

@@ -3,8 +3,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { ApiError } from "@internal/api-client";
 import { PageLayout } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type {
   MaintainerRequestDto,
+  MaintainerRequestStatus,
   TeamRequestDto,
   TeamRequestStatus,
 } from "@internal/shared-types";
@@ -17,6 +19,7 @@ const PENDING_TEAM_STATUSES: ReadonlySet<TeamRequestStatus> = new Set([
 
 /** Combined "My Approvals" page, pending + history of requests where I'm authorized to act. */
 export function MyApprovalsTeamPage() {
+  const { t } = useTranslation("requests");
   const api = useApi();
   const navigate = useNavigate();
   const [maintainerRows, setMaintainerRows] = useState<MaintainerRequestDto[] | null>(null);
@@ -31,7 +34,7 @@ export function MyApprovalsTeamPage() {
     api.maintainerRequests
       .forMeAsApprover()
       .then((r) => setMaintainerRows(r.items))
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load"));
+      .catch((err) => setError(err instanceof Error ? err.message : t("errors.failedToLoad")));
     api.teamRequests
       .forMeAsApprover()
       .then((r) => setTeamRows(r.items))
@@ -41,10 +44,10 @@ export function MyApprovalsTeamPage() {
           setTeamRows([]);
           return;
         }
-        setError(err instanceof Error ? err.message : "Failed to load team requests");
+        setError(err instanceof Error ? err.message : t("errors.failedToLoadTeam"));
         setTeamRows([]);
       });
-  }, [api]);
+  }, [api, t]);
 
   useEffect(() => {
     load();
@@ -57,7 +60,7 @@ export function MyApprovalsTeamPage() {
       await api.maintainerRequests.approve(r.id);
       load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Approval failed");
+      setError(err instanceof Error ? err.message : t("errors.approvalFailed"));
     } finally {
       setBusyId(null);
     }
@@ -73,11 +76,28 @@ export function MyApprovalsTeamPage() {
       setRejecting(null);
       load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Rejection failed");
+      setError(err instanceof Error ? err.message : t("errors.rejectionFailed"));
     } finally {
       setBusyId(null);
     }
   }
+
+  const teamStatusLabel: Record<TeamRequestStatus, string> = {
+    pending: t("status.teamPendingAdmin"),
+    awaiting_user_confirmation: t("status.teamAwaitingUser"),
+    approved: t("status.teamApproved"),
+    rejected: t("status.teamRejected"),
+    expired: t("status.teamExpired"),
+    cancelled: t("status.teamCancelled"),
+  };
+
+  const maintainerStatusLabel: Record<MaintainerRequestStatus, string> = {
+    pending: t("status.maintainerPending"),
+    approved: t("status.maintainerApproved"),
+    rejected: t("status.maintainerRejected"),
+    expired: t("status.maintainerExpired"),
+    cancelled: t("status.maintainerCancelled"),
+  };
 
   const loading = maintainerRows === null || teamRows === null;
   const teamPending = (teamRows ?? []).filter((r) => PENDING_TEAM_STATUSES.has(r.status));
@@ -86,22 +106,19 @@ export function MyApprovalsTeamPage() {
   const maintResolved = (maintainerRows ?? []).filter((r) => r.status !== "pending");
 
   return (
-    <PageLayout
-      title="My Approvals"
-      description="Requests waiting on your decision, and the ones you've acted on. Pending first."
-    >
+    <PageLayout title={t("page.myApprovalsTitle")} description={t("page.myApprovalsDescription")}>
       {error && <p className="mb-3 text-sm text-app-danger">{error}</p>}
-      {loading && <p className="text-sm text-app-text-muted">Loading…</p>}
+      {loading && <p className="text-sm text-app-text-muted">{t("loading")}</p>}
 
       {!loading && maintainerRows!.length === 0 && teamRows!.length === 0 && (
-        <p className="text-sm text-app-text-muted">Nothing waiting on you.</p>
+        <p className="text-sm text-app-text-muted">{t("empty.nothingPending")}</p>
       )}
 
       {!loading && teamRows!.length > 0 && (
         <section className="mb-6">
           <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold text-app-text">
-            <TypeChip kind="team" />
-            <span>Team creation requests</span>
+            <TypeChip kind="team" t={t} />
+            <span>{t("sections.teamCreation")}</span>
             <span className="text-app-text-muted">· {teamPending.length}</span>
           </h2>
           <ul className="divide-y divide-app-border rounded-lg border border-app-border bg-app-surface">
@@ -110,7 +127,7 @@ export function MyApprovalsTeamPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <TypeChip kind="team" />
+                      <TypeChip kind="team" t={t} />
                       <div className="text-sm font-medium text-app-text">
                         {r.requestedBy.displayName} → {r.name}
                       </div>
@@ -118,21 +135,23 @@ export function MyApprovalsTeamPage() {
                     <div className="text-xs text-app-text-muted">{r.slug}</div>
                     <ProposedMembersList request={r} />
                     {r.rejectionReason && (
-                      <p className="mt-1 text-xs text-app-danger">Rejected: {r.rejectionReason}</p>
+                      <p className="mt-1 text-xs text-app-danger">
+                        {t("labels.rejected", { reason: r.rejectionReason })}
+                      </p>
                     )}
                     <div className="mt-1 text-xs text-app-text-muted">
-                      Submitted {new Date(r.createdAt).toLocaleString()}
+                      {t("labels.submitted", { date: new Date(r.createdAt).toLocaleString() })}
                     </div>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1 text-right text-xs">
-                    <div className="text-app-text">{r.status}</div>
+                    <div className="text-app-text">{teamStatusLabel[r.status]}</div>
                     {/* Negotiation UI lives on the deep admin page, keep this row a link only. */}
                     <button
                       type="button"
                       onClick={() => navigate(`/admin/team-requests`)}
                       className="rounded-md border border-app-border px-2 py-0.5 text-app-text-muted hover:text-app-text"
                     >
-                      Open in admin
+                      {t("actions.openInAdmin")}
                     </button>
                   </div>
                 </div>
@@ -145,8 +164,8 @@ export function MyApprovalsTeamPage() {
       {!loading && maintainerRows!.length > 0 && (
         <section className="mb-6">
           <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold text-app-text">
-            <TypeChip kind="maintainer" />
-            <span>Maintainer requests</span>
+            <TypeChip kind="maintainer" t={t} />
+            <span>{t("sections.maintainer")}</span>
             <span className="text-app-text-muted">· {maintPending.length}</span>
           </h2>
           <ul className="divide-y divide-app-border rounded-lg border border-app-border bg-app-surface">
@@ -155,7 +174,7 @@ export function MyApprovalsTeamPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <TypeChip kind="maintainer" />
+                      <TypeChip kind="maintainer" t={t} />
                       <div className="text-sm font-medium text-app-text">
                         {r.requestedBy.displayName} → {r.teamName}
                       </div>
@@ -168,14 +187,16 @@ export function MyApprovalsTeamPage() {
                     </Link>
                     {r.reason && (
                       <p className="mt-1 text-xs text-app-text-muted">
-                        <span className="font-medium">Reason:</span> {r.reason}
+                        <span className="font-medium">{t("labels.reason")}:</span> {r.reason}
                       </p>
                     )}
                     {r.rejectionReason && (
-                      <p className="mt-1 text-xs text-app-danger">Rejected: {r.rejectionReason}</p>
+                      <p className="mt-1 text-xs text-app-danger">
+                        {t("labels.rejected", { reason: r.rejectionReason })}
+                      </p>
                     )}
                     <div className="mt-1 text-xs text-app-text-muted">
-                      Submitted {new Date(r.createdAt).toLocaleString()}
+                      {t("labels.submitted", { date: new Date(r.createdAt).toLocaleString() })}
                     </div>
                   </div>
                   <div className="flex shrink-0 gap-2">
@@ -187,7 +208,7 @@ export function MyApprovalsTeamPage() {
                           onClick={() => setRejecting(r)}
                           className="rounded-md border border-app-border px-3 py-1 text-xs text-app-text-muted hover:text-app-danger disabled:opacity-50"
                         >
-                          Reject
+                          {t("actions.reject")}
                         </button>
                         <button
                           type="button"
@@ -195,12 +216,12 @@ export function MyApprovalsTeamPage() {
                           onClick={() => void handleApprove(r)}
                           className="rounded-md bg-app-primary px-3 py-1 text-xs text-app-primary-on disabled:opacity-50"
                         >
-                          Approve
+                          {t("actions.approve")}
                         </button>
                       </>
                     ) : (
                       <span className="rounded-md border border-app-border px-3 py-1 text-xs text-app-text-muted">
-                        {r.status}
+                        {maintainerStatusLabel[r.status]}
                       </span>
                     )}
                   </div>
@@ -222,17 +243,23 @@ export function MyApprovalsTeamPage() {
   );
 }
 
-function TypeChip({ kind }: { kind: "team" | "maintainer" }) {
+function TypeChip({
+  kind,
+  t,
+}: {
+  kind: "team" | "maintainer";
+  t: ReturnType<typeof useTranslation>["t"];
+}) {
   if (kind === "team") {
     return (
       <span className="inline-flex items-center rounded-full border border-app-primary/40 bg-app-primary-soft px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-app-primary">
-        Team
+        {t("chips.team")}
       </span>
     );
   }
   return (
     <span className="inline-flex items-center rounded-full border border-app-border bg-app-surface-hover px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-app-text-muted">
-      Maintainer
+      {t("chips.maintainer")}
     </span>
   );
 }

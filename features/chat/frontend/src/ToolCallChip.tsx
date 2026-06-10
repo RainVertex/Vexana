@@ -1,12 +1,14 @@
 // Compact, click-to-expand pill for one tool call; style and prefix vary by tool-name suffix.
 import { useState } from "react";
 import type { ChatToolCallView } from "./chatStream";
+import { useTranslation } from "@internal/i18n";
 
 interface Props {
   call: ChatToolCallView;
 }
 
 export function ToolCallChip({ call }: Props) {
+  const { t } = useTranslation("chat");
   const [open, setOpen] = useState(false);
   const isWrite = call.name.endsWith("_submit");
   const isPrepare = call.name.endsWith("_prepare");
@@ -39,14 +41,14 @@ export function ToolCallChip({ call }: Props) {
       </button>
       {open && (
         <div className="ml-2 mt-1 rounded-app-md border border-app-border bg-app-bg-sunken p-2 text-[11px]">
-          <div className="font-mono text-app-text-muted">args:</div>
+          <div className="font-mono text-app-text-muted">{t("toolCall.args")}</div>
           <pre className="overflow-x-auto whitespace-pre-wrap break-all text-app-text">
             {JSON.stringify(call.args, null, 2)}
           </pre>
           {call.done && (
             <>
               <div className="mt-2 font-mono text-app-text-muted">
-                {call.error ? "error:" : "result:"}
+                {call.error ? t("toolCall.error") : t("toolCall.result")}
               </div>
               <pre className="overflow-x-auto whitespace-pre-wrap break-all text-app-text">
                 {call.error ?? JSON.stringify(call.result, null, 2)}

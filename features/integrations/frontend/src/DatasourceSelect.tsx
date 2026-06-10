@@ -1,5 +1,7 @@
 // Datasource picker for the Grafana connect/configure flows (Prometheus required, Loki/Tempo optional).
 
+import { useTranslation } from "@internal/i18n";
+
 export interface DatasourceCandidate {
   uid: string;
   name: string;
@@ -25,13 +27,14 @@ export function DatasourceSelect({
   candidates: DatasourceCandidate[];
   required?: boolean;
 }) {
+  const { t } = useTranslation("integrations");
+
   if (candidates.length === 0) {
     return (
       <div className="text-xs">
         <span className="text-app-text-muted">{label}</span>
         <p className="mt-1 rounded border border-dashed border-app-border px-2 py-1.5 text-app-text-muted">
-          No datasource of this type configured in Grafana
-          {required ? " — cannot continue without one" : " — leaving this feature disabled"}.
+          {required ? t("datasource.noDataRequired") : t("datasource.noDataOptional")}
         </p>
       </div>
     );
@@ -44,11 +47,11 @@ export function DatasourceSelect({
         onChange={(e) => onChange(e.target.value)}
         className="mt-1 block w-full rounded border border-app-border bg-app-bg px-2 py-1.5 text-sm text-app-text"
       >
-        {!required && <option value="">(none)</option>}
+        {!required && <option value="">{t("datasource.noneOption")}</option>}
         {candidates.map((c) => (
           <option key={c.uid} value={c.uid}>
             {c.name}
-            {c.isDefault ? " (default)" : ""}
+            {c.isDefault ? t("datasource.defaultSuffix") : ""}
           </option>
         ))}
       </select>

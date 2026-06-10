@@ -13,6 +13,7 @@ import {
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 import "./grid.css";
+import { useTranslation } from "@internal/i18n";
 import type { WidgetInstance, WidgetRegistry } from "./types";
 import { WidgetFrame } from "./WidgetFrame";
 
@@ -36,6 +37,7 @@ export function WidgetGrid<TId extends string>({
   onConfigChange,
   emptyState,
 }: WidgetGridProps<TId>) {
+  const { t } = useTranslation("ui");
   const { width, containerRef, mounted } = useContainerWidth();
   const [configuringId, setConfiguringId] = useState<string | null>(null);
 
@@ -60,8 +62,8 @@ export function WidgetGrid<TId extends string>({
   const ConfigEditor = configuring ? registry[configuring.widgetId].configEditor : null;
 
   if (widgets.length === 0) {
-    const title = emptyState?.title ?? "No widgets";
-    const hint = emptyState?.hint ?? 'Enter edit mode and click "Add widget" to get started.';
+    const title = emptyState?.title ?? t("emptyTitle");
+    const hint = emptyState?.hint ?? t("emptyHint");
     return (
       <div className="rounded-xl border border-dashed border-app-border bg-app-surface/50 p-12 text-center">
         <div className="text-sm font-medium text-app-text">{title}</div>
@@ -106,7 +108,7 @@ export function WidgetGrid<TId extends string>({
 
       {ConfigEditor && configuring && onConfigChange && (
         <ConfigModal
-          title={`Configure ${registry[configuring.widgetId].title}`}
+          title={t("configure", { title: registry[configuring.widgetId].title })}
           onClose={() => setConfiguringId(null)}
         >
           <ConfigEditor
@@ -128,6 +130,7 @@ function ConfigModal({
   onClose: () => void;
   children: React.ReactNode;
 }) {
+  const { t } = useTranslation("ui");
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
@@ -142,7 +145,7 @@ function ConfigModal({
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close"
+            aria-label={t("close")}
             className="text-app-text-muted hover:text-app-text"
           >
             ×
@@ -155,7 +158,7 @@ function ConfigModal({
             onClick={onClose}
             className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-app-primary-hover"
           >
-            Done
+            {t("done")}
           </button>
         </div>
       </div>

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageLayout } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type {
   CurrentUser,
   MaintainerRequestDto,
@@ -14,6 +15,7 @@ import { RequestMaintainerDialog } from "./RequestMaintainerDialog";
 export function RequestMaintainerPickerPage() {
   const api = useApi();
   const navigate = useNavigate();
+  const { t } = useTranslation("teams");
   const [me, setMe] = useState<CurrentUser | null>(null);
   const [teams, setTeams] = useState<TeamSummary[] | null>(null);
   const [details, setDetails] = useState<Record<string, TeamDetail>>({});
@@ -49,9 +51,9 @@ export function RequestMaintainerPickerPage() {
       }
       setDetails(next);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load");
+      setError(err instanceof Error ? err.message : t("errors.failedToLoad"));
     }
-  }, [api]);
+  }, [api, t]);
 
   useEffect(() => {
     void load();
@@ -72,33 +74,31 @@ export function RequestMaintainerPickerPage() {
 
   return (
     <PageLayout
-      title="Request maintainership"
-      description="Pick a team where you're a member but not yet a lead, and submit a request to become a maintainer."
+      title={t("page.requestMaintainerTitle")}
+      description={t("page.requestMaintainerDescription")}
     >
       {error && <p className="mb-3 text-sm text-app-danger">{error}</p>}
-      {eligible === null && <p className="text-sm text-app-text-muted">Loading…</p>}
+      {eligible === null && <p className="text-sm text-app-text-muted">{t("status.loading")}</p>}
       {eligible !== null && eligible.length === 0 && (
-        <p className="text-sm text-app-text-muted">
-          You&apos;re either a lead, or have a pending request, on every team you belong to.
-        </p>
+        <p className="text-sm text-app-text-muted">{t("empty.alreadyLeadOrPending")}</p>
       )}
       {eligible !== null && eligible.length > 0 && (
         <ul className="divide-y divide-app-border rounded-lg border border-app-border bg-app-surface">
-          {eligible.map((t) => (
-            <li key={t.id} className="flex items-center justify-between gap-3 px-4 py-3">
+          {eligible.map((team) => (
+            <li key={team.id} className="flex items-center justify-between gap-3 px-4 py-3">
               <div className="min-w-0">
-                <div className="text-sm font-medium text-app-text">{t.name}</div>
-                <div className="text-xs text-app-text-muted">{t.slug}</div>
-                {t.description && (
-                  <p className="mt-1 text-xs text-app-text-muted">{t.description}</p>
+                <div className="text-sm font-medium text-app-text">{team.name}</div>
+                <div className="text-xs text-app-text-muted">{team.slug}</div>
+                {team.description && (
+                  <p className="mt-1 text-xs text-app-text-muted">{team.description}</p>
                 )}
               </div>
               <button
                 type="button"
-                onClick={() => setPicked({ slug: t.slug, name: t.name })}
+                onClick={() => setPicked({ slug: team.slug, name: team.name })}
                 className="shrink-0 rounded-md bg-app-primary px-3 py-1 text-xs text-app-primary-on"
               >
-                Request maintainership
+                {t("actions.requestMaintainership")}
               </button>
             </li>
           ))}

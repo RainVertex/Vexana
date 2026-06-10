@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "@internal/i18n";
 
 export interface RejectTeamRequestDialogProps {
   open: boolean;
@@ -15,6 +16,7 @@ export function RejectTeamRequestDialog({
   onSubmit,
   onClose,
 }: RejectTeamRequestDialogProps) {
+  const { t } = useTranslation("teams");
   const [reason, setReason] = useState("");
 
   useEffect(() => {
@@ -25,6 +27,10 @@ export function RejectTeamRequestDialog({
 
   const trimmed = reason.trim();
   const canSubmit = trimmed.length > 0 && !submitting;
+
+  const title = requestName
+    ? t("dialogs.rejectTeamRequestTitleWithName", { name: requestName })
+    : t("dialogs.rejectTeamRequestTitle");
 
   return (
     <div
@@ -37,19 +43,15 @@ export function RejectTeamRequestDialog({
         className="w-full max-w-md rounded-lg border border-app-border bg-app-surface p-4 shadow-lg"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="mb-2 text-sm font-semibold text-app-text">
-          Reject team request{requestName ? `: ${requestName}` : ""}
-        </h3>
-        <p className="mb-3 text-xs text-app-text-muted">
-          The requester will be notified with the reason you provide.
-        </p>
+        <h3 className="mb-2 text-sm font-semibold text-app-text">{title}</h3>
+        <p className="mb-3 text-xs text-app-text-muted">{t("dialogs.rejectNotification")}</p>
         <textarea
           autoFocus
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           rows={4}
           className="mb-3 w-full rounded border border-app-border bg-app-surface-hover px-2 py-1.5 text-sm"
-          placeholder="Why is this request being rejected?"
+          placeholder={t("form.reasonPlaceholder")}
         />
         <div className="flex justify-end gap-2">
           <button
@@ -57,7 +59,7 @@ export function RejectTeamRequestDialog({
             onClick={onClose}
             className="rounded px-3 py-1.5 text-sm text-app-text-muted hover:bg-app-surface-hover"
           >
-            Cancel
+            {t("actions.cancel")}
           </button>
           <button
             type="button"
@@ -65,7 +67,7 @@ export function RejectTeamRequestDialog({
             disabled={!canSubmit}
             className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on hover:opacity-90 disabled:opacity-50"
           >
-            {submitting ? "Rejecting…" : "Reject"}
+            {submitting ? t("actions.rejecting") : t("actions.reject")}
           </button>
         </div>
       </div>

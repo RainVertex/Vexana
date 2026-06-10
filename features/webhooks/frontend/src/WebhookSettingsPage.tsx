@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { PageLayout } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type { WebhookSubscriptionDto } from "@internal/shared-types";
 
 const KNOWN_EVENT_KINDS = [
@@ -24,6 +25,7 @@ interface WebhookSettingsPageProps {
 }
 
 export function WebhookSettingsPage({ scope = "user" }: WebhookSettingsPageProps) {
+  const { t } = useTranslation("webhooks");
   const params = useParams<{ slug?: string }>();
   const teamSlug = scope === "team" ? params.slug : undefined;
   const api = useApi();
@@ -40,9 +42,9 @@ export function WebhookSettingsPage({ scope = "user" }: WebhookSettingsPageProps
       const res = await api.webhooks.list({ teamSlug });
       setItems(res.items);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load");
+      setError(err instanceof Error ? err.message : t("errors.loadFailed"));
     }
-  }, [api, teamSlug]);
+  }, [api, teamSlug, t]);
 
   useEffect(() => {
     void load();
@@ -64,20 +66,20 @@ export function WebhookSettingsPage({ scope = "user" }: WebhookSettingsPageProps
       setSelectedKinds([]);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Create failed");
+      setError(err instanceof Error ? err.message : t("errors.createFailed"));
     } finally {
       setBusy(false);
     }
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this webhook subscription?")) return;
+    if (!confirm(t("alerts.deleteConfirm"))) return;
     setBusy(true);
     try {
       await api.webhooks.delete(id);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Delete failed");
+      setError(err instanceof Error ? err.message : t("errors.deleteFailed"));
     } finally {
       setBusy(false);
     }
@@ -87,9 +89,9 @@ export function WebhookSettingsPage({ scope = "user" }: WebhookSettingsPageProps
     setBusy(true);
     try {
       await api.webhooks.test(id);
-      alert("Ping enqueued — check delivery history shortly.");
+      alert(t("alerts.pingEnqueued"));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Test failed");
+      setError(err instanceof Error ? err.message : t("errors.testFailed"));
     } finally {
       setBusy(false);
     }
@@ -97,50 +99,41 @@ export function WebhookSettingsPage({ scope = "user" }: WebhookSettingsPageProps
 
   return (
     <PageLayout
-      title={teamSlug ? `Team webhooks · ${teamSlug}` : "My webhooks"}
-      description={
-        teamSlug
-          ? "Outbound webhooks for this team's events."
-          : "Outbound webhooks for events that target you."
-      }
+      title={teamSlug ? t("page.titleTeam", { slug: teamSlug }) : t("page.titleUser")}
+      description={teamSlug ? t("page.descriptionTeam") : t("page.descriptionUser")}
     >
       {error && <p className="mb-3 text-sm text-app-danger">{error}</p>}
 
-      <p className="mb-3 text-xs text-app-text-muted">
-        Each delivery is signed using <code>X-MEP-Signature: sha256=&lt;hex&gt;</code> over the raw
-        body, using the subscription secret. Slack-format payload (<code>text</code>,{" "}
-        <code>blocks</code>) is sent automatically when the URL is <code>hooks.slack.com</code>;
-        native JSON otherwise.
-      </p>
+      <p className="mb-3 text-xs text-app-text-muted">{t("page.signatureNote")}</p>
 
       {showSecret && (
         <div className="mb-4 rounded-md border border-app-success bg-app-surface p-3 text-sm">
-          <div className="font-semibold text-app-text">Webhook created. Save this secret now:</div>
+          <div className="font-semibold text-app-text">{t("secret.banner")}</div>
           <code className="mt-1 block break-all text-xs text-app-text">{showSecret.secret}</code>
           <button
             type="button"
             onClick={() => setShowSecret(null)}
             className="mt-2 text-xs text-app-text-muted hover:text-app-text"
           >
-            Dismiss
+            {t("secret.dismiss")}
           </button>
         </div>
       )}
 
       <section className="mb-6 rounded-lg border border-app-border bg-app-surface p-4">
-        <h2 className="mb-3 text-sm font-semibold text-app-text">New subscription</h2>
+        <h2 className="mb-3 text-sm font-semibold text-app-text">{t("form.sectionTitle")}</h2>
         <label className="block text-sm">
-          <span className="text-xs text-app-text-muted">URL</span>
+          <span className="text-xs text-app-text-muted">{t("form.urlLabel")}</span>
           <input
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://hooks.slack.com/services/…"
+            placeholder={t("form.urlPlaceholder")}
             disabled={busy}
             className="mt-1 w-full rounded-md border border-app-border bg-app-surface px-2 py-1"
           />
         </label>
         <fieldset className="mt-3">
-          <legend className="text-xs text-app-text-muted">Event kinds</legend>
+          <legend className="text-xs text-app-text-muted">{t("form.eventKindsLegend")}</legend>
           <div className="mt-2 grid grid-cols-2 gap-1 text-xs">
             {KNOWN_EVENT_KINDS.map((k) => (
               <label key={k} className="flex items-center gap-2">
@@ -161,14 +154,14 @@ export function WebhookSettingsPage({ scope = "user" }: WebhookSettingsPageProps
           disabled={busy || !url || selectedKinds.length === 0}
           className="mt-3 rounded-md bg-app-primary px-3 py-1 text-sm text-app-primary-on disabled:opacity-50"
         >
-          Create
+          {t("form.createButton")}
         </button>
       </section>
 
-      <h2 className="mb-2 text-sm font-semibold text-app-text">Existing subscriptions</h2>
-      {!items && <p className="text-sm text-app-text-muted">Loading…</p>}
+      <h2 className="mb-2 text-sm font-semibold text-app-text">{t("list.sectionTitle")}</h2>
+      {!items && <p className="text-sm text-app-text-muted">{t("list.loading")}</p>}
       {items && items.length === 0 && (
-        <p className="text-sm text-app-text-muted">No webhooks yet.</p>
+        <p className="text-sm text-app-text-muted">{t("list.empty")}</p>
       )}
       {items && items.length > 0 && (
         <ul className="divide-y divide-app-border rounded-lg border border-app-border bg-app-surface">
@@ -178,7 +171,9 @@ export function WebhookSettingsPage({ scope = "user" }: WebhookSettingsPageProps
                 <div className="min-w-0">
                   <div className="truncate text-app-text">{s.url}</div>
                   <div className="text-xs text-app-text-muted">{s.eventKinds.join(", ")}</div>
-                  {!s.active && <div className="text-xs text-app-text-muted">disabled</div>}
+                  {!s.active && (
+                    <div className="text-xs text-app-text-muted">{t("list.disabledLabel")}</div>
+                  )}
                 </div>
                 <div className="flex shrink-0 gap-2">
                   <button
@@ -187,7 +182,7 @@ export function WebhookSettingsPage({ scope = "user" }: WebhookSettingsPageProps
                     disabled={busy}
                     className="rounded-md border border-app-border px-2 py-1 text-xs text-app-text-muted hover:bg-app-surface-hover"
                   >
-                    Send ping
+                    {t("list.sendPing")}
                   </button>
                   <button
                     type="button"
@@ -195,7 +190,7 @@ export function WebhookSettingsPage({ scope = "user" }: WebhookSettingsPageProps
                     disabled={busy}
                     className="rounded-md border border-app-border px-2 py-1 text-xs text-app-text-muted hover:text-app-danger"
                   >
-                    Delete
+                    {t("list.delete")}
                   </button>
                 </div>
               </div>

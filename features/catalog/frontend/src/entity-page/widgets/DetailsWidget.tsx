@@ -1,5 +1,6 @@
 // Overview details panel: renders entity metadata, links, health, and DORA tier from the yamlSpec.
 import { Link } from "react-router-dom";
+import { useTranslation } from "@internal/i18n";
 import type { DoraMetricsSnapshot, ServiceHealthSample } from "@internal/shared-types";
 import { DateCell, KindBadge, LifecycleBadge, TagsCell } from "../../catalog-table/cells";
 import { TierPill } from "../TierPill";
@@ -154,6 +155,7 @@ function IconChipRow({ children }: { children: React.ReactNode }) {
 }
 
 function HealthPill({ status }: { status: ServiceHealthSample["status"] | "unknown" }) {
+  const { t } = useTranslation("catalog");
   const cls =
     status === "healthy"
       ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
@@ -164,9 +166,9 @@ function HealthPill({ status }: { status: ServiceHealthSample["status"] | "unkno
           : "bg-app-surface-hover text-app-text-muted";
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium capitalize ${cls}`}
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${cls}`}
     >
-      {status}
+      {t(`healthStatus.${status}`)}
     </span>
   );
 }
@@ -222,6 +224,7 @@ function computeDoraTier(
 
 export function DetailsWidget() {
   const { data } = useEntityOverviewContext();
+  const { t } = useTranslation("catalog");
   const { entity, health, scorecards, dora } = data;
   const language = readAnnotation(entity.yamlSpec, "github.com/language");
   const onCall = readAnnotation(entity.yamlSpec, "on-call");
@@ -244,7 +247,11 @@ export function DetailsWidget() {
   );
   const runbookAnnotation = readAnnotation(entity.yamlSpec, "runbook");
   if (runbookAnnotation && !runbookLinks.some((l) => l.url === runbookAnnotation)) {
-    runbookLinks.push({ url: runbookAnnotation, title: "Runbook", type: "runbook" });
+    runbookLinks.push({
+      url: runbookAnnotation,
+      title: t("details.runbookLabel"),
+      type: "runbook",
+    });
   }
 
   const dashboards: Array<{ url: string; icon: string; label: string }> = [];
@@ -274,15 +281,15 @@ export function DetailsWidget() {
   return (
     <>
       <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-2 text-sm">
-        <Field label="Title">{entity.name}</Field>
+        <Field label={t("details.fieldTitle")}>{entity.name}</Field>
 
         {language && (
-          <Field label="Language">
+          <Field label={t("details.fieldLanguage")}>
             <LanguageChip value={language} />
           </Field>
         )}
 
-        <Field label="Type">
+        <Field label={t("details.fieldType")}>
           <div className="flex items-center gap-2">
             <KindBadge value={entity.kind} />
             {specType && specType !== entity.kind && (
@@ -291,12 +298,12 @@ export function DetailsWidget() {
           </div>
         </Field>
 
-        <Field label="Lifecycle">
+        <Field label={t("details.fieldLifecycle")}>
           <LifecycleBadge value={entity.lifecycle} />
         </Field>
 
         {runbookLinks.length > 0 && (
-          <Field label="Runbooks">
+          <Field label={t("details.fieldRunbooks")}>
             <IconChipRow>
               {runbookLinks.map((l) => (
                 <IconLinkChip key={l.url} href={l.url} icon="runbook" label={l.title} />
@@ -306,7 +313,7 @@ export function DetailsWidget() {
         )}
 
         {dashboards.length > 0 && (
-          <Field label="Monitor Dashboards">
+          <Field label={t("details.fieldMonitorDashboards")}>
             <IconChipRow>
               {dashboards.map((d) => (
                 <IconLinkChip key={d.url} href={d.url} icon={d.icon} label={d.label} />
@@ -315,13 +322,17 @@ export function DetailsWidget() {
           </Field>
         )}
 
-        {onCall && <Field label="On Call">{onCall}</Field>}
+        {onCall && <Field label={t("details.fieldOnCall")}>{onCall}</Field>}
 
         {(entity.repoUrl || docsLinks.length > 0) && (
-          <Field label="URL">
+          <Field label={t("details.fieldUrl")}>
             <IconChipRow>
               {entity.repoUrl && (
-                <IconLinkChip href={entity.repoUrl} icon="github" label="Repository" />
+                <IconLinkChip
+                  href={entity.repoUrl}
+                  icon="github"
+                  label={t("details.repositoryLink")}
+                />
               )}
               {docsLinks.map((l) => (
                 <IconLinkChip key={l.url} href={l.url} icon="docs" label={l.title} />
@@ -331,14 +342,20 @@ export function DetailsWidget() {
         )}
 
         {health !== undefined && (
-          <Field label="Health Status in Prod">
+          <Field label={t("details.fieldHealth")}>
             <HealthPill status={latestHealth} />
           </Field>
         )}
 
-        {lastCommitter && <Field label="Last Committer">{lastCommitter}</Field>}
+        {lastCommitter && <Field label={t("details.fieldLastCommitter")}>{lastCommitter}</Field>}
 
-        <Field label={entity.ownerTeams.length > 1 ? "Owning Teams" : "Owning Team"}>
+        <Field
+          label={
+            entity.ownerTeams.length > 1
+              ? t("details.fieldOwningTeams")
+              : t("details.fieldOwningTeam")
+          }
+        >
           {entity.ownerTeams.length === 0 ? (
             <span className="text-app-text-muted">—</span>
           ) : (
@@ -358,10 +375,14 @@ export function DetailsWidget() {
         </Field>
 
         {(slackUrl || slackChannel) && (
-          <Field label="Slack">
+          <Field label={t("details.fieldSlack")}>
             {slackUrl ? (
               <IconChipRow>
-                <IconLinkChip href={slackUrl} icon="slack" label={slackChannel ?? "Slack"} />
+                <IconLinkChip
+                  href={slackUrl}
+                  icon="slack"
+                  label={slackChannel ?? t("details.slackLabel")}
+                />
                 {slackChannel && (
                   <span className="text-xs text-app-text-muted">{slackChannel}</span>
                 )}
@@ -373,13 +394,17 @@ export function DetailsWidget() {
         )}
 
         {pagerdutyUrl && (
-          <Field label="Pagerduty">
-            <IconLinkChip href={pagerdutyUrl} icon="pagerduty" label="Pagerduty service" />
+          <Field label={t("details.fieldPagerduty")}>
+            <IconLinkChip
+              href={pagerdutyUrl}
+              icon="pagerduty"
+              label={t("details.pagerdutyService")}
+            />
           </Field>
         )}
 
         {productionReadiness && (
-          <Field label="Production Readiness">
+          <Field label={t("details.fieldProductionReadiness")}>
             <TierPill
               tier={productionReadiness.tier}
               tierStyle={productionReadiness.scorecard.tierStyle}
@@ -388,28 +413,28 @@ export function DetailsWidget() {
         )}
 
         {dora !== undefined && (
-          <Field label="DORA Metrics">
+          <Field label={t("details.fieldDoraMetrics")}>
             <TierPill tier={doraTier} tierStyle="threshold" />
           </Field>
         )}
 
-        <Field label="Tags">
+        <Field label={t("details.fieldTags")}>
           <TagsCell tags={entity.tags} />
         </Field>
 
-        <Field label="Last Seen">
+        <Field label={t("details.fieldLastSeen")}>
           <DateCell value={entity.lastSeenAt} />
         </Field>
 
         {entity.staleSince && (
-          <Field label="Stale Since">
+          <Field label={t("details.fieldStaleSince")}>
             <DateCell value={entity.staleSince} />
           </Field>
         )}
 
-        <Field label="Source">
+        <Field label={t("details.fieldSource")}>
           <div>
-            <span className="capitalize">{entity.source}</span>
+            <span>{t(`entitySource.${entity.source}`)}</span>
             {entity.sourceRef && (
               <div className="text-xs text-app-text-muted truncate">{entity.sourceRef}</div>
             )}

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { TempoSpan, TempoTrace } from "@internal/shared-types";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 
 export interface TraceDrawerProps {
   traceId: string;
@@ -36,6 +37,7 @@ function withDepths(spans: TempoSpan[]): SpanWithDepth[] {
 
 export function TraceDrawer({ traceId, entityId, onClose }: TraceDrawerProps) {
   const api = useApi();
+  const { t } = useTranslation("observability");
   const [trace, setTrace] = useState<TempoTrace | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,12 +51,12 @@ export function TraceDrawer({ traceId, entityId, onClose }: TraceDrawerProps) {
         if (!cancelled) setTrace(res);
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load trace");
+        if (!cancelled) setError(err instanceof Error ? err.message : t("errors.failedTrace"));
       });
     return () => {
       cancelled = true;
     };
-  }, [api, traceId, entityId]);
+  }, [api, traceId, entityId, t]);
 
   const spans = useMemo(() => (trace ? withDepths(trace.spans) : []), [trace]);
   const traceStart = useMemo(
@@ -76,7 +78,7 @@ export function TraceDrawer({ traceId, entityId, onClose }: TraceDrawerProps) {
       >
         <header className="mb-3 flex items-start justify-between gap-2">
           <div>
-            <h3 className="text-sm font-semibold text-app-text">Trace</h3>
+            <h3 className="text-sm font-semibold text-app-text">{t("trace.title")}</h3>
             <p className="text-xs text-app-text-muted">
               {trace ? `${trace.rootService} · ${trace.rootName} · ${trace.durationMs}ms` : traceId}
             </p>
@@ -86,11 +88,13 @@ export function TraceDrawer({ traceId, entityId, onClose }: TraceDrawerProps) {
             onClick={onClose}
             className="rounded px-2 py-1 text-xs text-app-text-muted hover:bg-app-surface-hover"
           >
-            Close
+            {t("trace.close")}
           </button>
         </header>
         {error && <p className="text-xs text-app-danger">{error}</p>}
-        {!error && trace === null && <p className="text-xs text-app-text-muted">Loading…</p>}
+        {!error && trace === null && (
+          <p className="text-xs text-app-text-muted">{t("errors.loading")}</p>
+        )}
         {trace && (
           <ul className="space-y-0.5 text-xs">
             {spans.map((span) => {

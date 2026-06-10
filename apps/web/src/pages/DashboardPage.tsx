@@ -8,14 +8,12 @@ import {
   useRemoteGridLayout,
 } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type { PageDto, PageWidgetInstance } from "@internal/shared-types";
 import { useCurrentUser } from "../auth";
 import { useSidebar } from "../components/sidebar/SidebarContext";
-import {
-  DASHBOARD_WIDGETS,
-  DASHBOARD_WIDGET_LIST,
-  type DashboardWidgetId,
-} from "../widgets/dashboardRegistry";
+import { useLocalizedWidgets } from "../widgets";
+import { DASHBOARD_WIDGETS, type DashboardWidgetId } from "../widgets/dashboardRegistry";
 
 type LoadState =
   | { kind: "loading" }
@@ -26,6 +24,7 @@ export function DashboardPage() {
   const { pageId } = useParams<{ pageId: string }>();
   const api = useApi();
   const me = useCurrentUser();
+  const { t } = useTranslation();
   const [state, setState] = useState<LoadState>({ kind: "loading" });
 
   useEffect(() => {
@@ -49,17 +48,15 @@ export function DashboardPage() {
 
   if (state.kind === "loading") {
     return (
-      <PageLayout title="Loading…">
-        <div className="text-sm text-app-text-muted">Loading dashboard…</div>
+      <PageLayout title={t("common.loading")}>
+        <div className="text-sm text-app-text-muted">{t("dashboard.loadingBody")}</div>
       </PageLayout>
     );
   }
   if (state.kind === "error") {
     return (
-      <PageLayout title="Page not found">
-        <div className="text-sm text-app-text-muted">
-          This dashboard doesn&apos;t exist or you don&apos;t have access to it.
-        </div>
+      <PageLayout title={t("dashboard.notFoundTitle")}>
+        <div className="text-sm text-app-text-muted">{t("dashboard.notFoundBody")}</div>
       </PageLayout>
     );
   }
@@ -77,6 +74,8 @@ function DashboardView({
   currentUserRole: string;
 }) {
   const api = useApi();
+  const { t } = useTranslation();
+  const { registry, dashboardList } = useLocalizedWidgets();
   const { setRouteSection } = useSidebar();
 
   // Without this, deep-links to /p/:id would land with the default tree (or none).
@@ -109,27 +108,23 @@ function DashboardView({
   return (
     <PageLayout
       title={page.title}
-      description={
-        page.scope === "SHARED" ? "Shared with everyone in the organization." : undefined
-      }
+      description={page.scope === "SHARED" ? t("dashboard.sharedDescription") : undefined}
       actions={
         canEdit ? (
-          <WidgetEditToolbar layout={layout} availableWidgets={DASHBOARD_WIDGET_LIST} hideReset />
+          <WidgetEditToolbar layout={layout} availableWidgets={dashboardList} hideReset />
         ) : null
       }
     >
       <WidgetGrid
         widgets={layout.widgets}
         editMode={layout.editMode}
-        registry={DASHBOARD_WIDGETS}
+        registry={registry}
         onLayoutChange={layout.updateLayout}
         onRemove={layout.removeWidget}
         onConfigChange={layout.updateWidgetConfig}
         emptyState={{
-          title: "Empty dashboard",
-          hint: canEdit
-            ? 'Click "Customize" then "Add widget" to fill this dashboard.'
-            : "This dashboard has no widgets yet.",
+          title: t("dashboard.emptyTitle"),
+          hint: canEdit ? t("dashboard.emptyHintEdit") : t("dashboard.emptyHintReadonly"),
         }}
       />
     </PageLayout>

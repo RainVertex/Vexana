@@ -1,3 +1,4 @@
+import "./i18n";
 export { NotificationBell } from "./NotificationBell";
 export { NotificationsPage } from "./NotificationsPage";
 

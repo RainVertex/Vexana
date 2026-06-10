@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { PageLayout } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type { ScaffolderTask, ScaffolderTaskStatus } from "@internal/shared-types";
 
 type StepEvent =
@@ -46,6 +47,7 @@ interface LogView {
 export function TaskPage() {
   const { taskId } = useParams<{ taskId: string }>();
   const api = useApi();
+  const { t } = useTranslation("scaffolder");
   const [task, setTask] = useState<ScaffolderTask | null>(null);
   const [steps, setSteps] = useState<StepView[]>([]);
   const [logs, setLogs] = useState<LogView[]>([]);
@@ -57,10 +59,10 @@ export function TaskPage() {
     if (!taskId) return;
     api.scaffolder
       .getTask(taskId)
-      .then((t) => {
-        setTask(t);
+      .then((taskData) => {
+        setTask(taskData);
         setSteps(
-          (t.steps ?? []).map((s) => ({
+          (taskData.steps ?? []).map((s) => ({
             stepId: s.stepId,
             action: s.action,
             status: s.status as StepView["status"],
@@ -68,16 +70,16 @@ export function TaskPage() {
         );
         // Logs come back newest-first, reverse for display.
         setLogs(
-          [...(t.logs ?? [])].reverse().map((l) => ({
+          [...(taskData.logs ?? [])].reverse().map((l) => ({
             stepId: l.stepId,
             level: l.level,
             body: l.body,
           })),
         );
-        if (t.finishedAt) setTerminalStatus(t.status);
+        if (taskData.finishedAt) setTerminalStatus(taskData.status);
       })
-      .catch((err) => setError(err.message ?? "Failed to load task"));
-  }, [api, taskId]);
+      .catch((err) => setError(err.message ?? t("errors.loadTask")));
+  }, [api, taskId, t]);
 
   // Live stream only opens while the task is still running, skipped once finished.
   useEffect(() => {
@@ -125,22 +127,23 @@ export function TaskPage() {
 
   if (error && !task)
     return (
-      <PageLayout title="Task">
+      <PageLayout title={t("page.taskTitle")}>
         <p className="text-sm text-red-600">{error}</p>
       </PageLayout>
     );
 
+  const pageTitle = task
+    ? t("page.taskHeading", { shortId: task.id.slice(0, 8) })
+    : t("page.taskTitle");
+
+  const pageDescription = terminalStatus
+    ? t("page.taskDescriptionFinal", { status: terminalStatus })
+    : task?.status
+      ? t("page.taskDescriptionRunning", { status: task.status })
+      : t("page.taskConnecting");
+
   return (
-    <PageLayout
-      title={task ? `Task ${task.id.slice(0, 8)}…` : "Task"}
-      description={
-        terminalStatus
-          ? `Final status: ${terminalStatus}`
-          : task?.status
-            ? `Running… (${task.status})`
-            : "Connecting…"
-      }
-    >
+    <PageLayout title={pageTitle} description={pageDescription}>
       {error && terminalStatus && <p className="mb-3 text-sm text-red-600">{error}</p>}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[260px_1fr]">
@@ -152,7 +155,9 @@ export function TaskPage() {
               <span className="text-app-text-muted">· {s.stepId}</span>
             </li>
           ))}
-          {steps.length === 0 && <li className="text-xs text-app-text-muted">No steps.</li>}
+          {steps.length === 0 && (
+            <li className="text-xs text-app-text-muted">{t("task.noSteps")}</li>
+          )}
         </ol>
 
         <div className="rounded-md border border-app-border bg-app-surface-hover p-3">

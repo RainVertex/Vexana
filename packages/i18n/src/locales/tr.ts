@@ -91,6 +91,55 @@ export const tr: ShellResources = {
     jobsEmpty: "Kayıtlı iş yok.",
     mcpTokensEmpty: "Henüz MCP belirteci verilmedi.",
   },
+  dashboard: {
+    loadingBody: "Pano yükleniyor…",
+    notFoundTitle: "Sayfa bulunamadı",
+    notFoundBody: "Bu pano mevcut değil veya erişim yetkiniz yok.",
+    sharedDescription: "Organizasyondaki herkesle paylaşıldı.",
+    emptyTitle: "Boş pano",
+    emptyHintEdit:
+      'Bu panoyu doldurmak için "Özelleştir", ardından "Widget ekle" düğmesine tıklayın.',
+    emptyHintReadonly: "Bu panoda henüz widget yok.",
+  },
+  widgets: {
+    categories: {
+      Discovery: "Keşfet",
+      Work: "Çalışma",
+      Observability: "Gözlemlenebilirlik",
+      Content: "İçerik",
+      General: "Genel",
+    },
+    search: { title: "Arama", description: "Platform genelinde hızlı arama." },
+    onboarding: { title: "Başlayın", description: "Yeni geliştiriciler için başlangıç görevleri." },
+    starred: { title: "Yıldızladıklarınız", description: "Yıldızladığınız katalog varlıkları." },
+    toolkit: { title: "Araç kutusu", description: "En çok kullandığınız araçlara kısayollar." },
+    "recently-visited": {
+      title: "Son ziyaret edilenler",
+      description: "En son açtığınız sayfalar.",
+    },
+    "top-visited": { title: "En çok ziyaret edilenler", description: "En sık açtığınız sayfalar." },
+    "chat-assistant": {
+      title: "Platform asistanı",
+      description: "Sayfadan ayrılmadan asistanla sohbet edin.",
+    },
+    "service-health": {
+      title: "Servis sağlığı",
+      description: "Prometheus toplama işinin yazdığı en son sağlık örnekleri.",
+    },
+    "my-tasks": { title: "Görevlerim", description: "Size atanan açık görevler." },
+    "grafana-alerts": {
+      title: "Grafana uyarıları",
+      description: "Grafana Alertmanager'dan son tetiklenen ve çözülen uyarılar.",
+    },
+    markdown: {
+      title: "Markdown",
+      description: "Zengin metin bloğu. GitHub uyumlu markdown destekler.",
+    },
+    iframe: {
+      title: "Gömme",
+      description: "Harici bir https:// sayfası gömün (Grafana, panolar, dokümanlar).",
+    },
+  },
   themes: {
     light: { label: "Açık", description: "Temiz ve aydınlık varsayılan." },
     ocean: { label: "Okyanus", description: "Serin maviler ve turkuaz vurgular." },

@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { NavLink } from "react-router-dom";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type { PageDto, PageScope, PageSection, PageType } from "@internal/shared-types";
 import {
   ArrowDownIcon,
@@ -36,17 +37,6 @@ export interface PageTreeSidebarProps {
   currentUser: PageTreeCurrentUser;
   requestsSummary: PageTreeRequestsSummary | null;
 }
-
-const SECTION_TITLES: Record<PageSection, string> = {
-  catalog: "Catalog",
-  selfservice: "Self-service",
-  requests: "Requests",
-  workspace: "Project Management",
-  teams: "Teams",
-  observability: "Observability",
-  admin: "Admin",
-  agents: "Agents",
-};
 
 interface TreeNode {
   page: PageDto;
@@ -117,6 +107,7 @@ function SectionTree({
   currentUser: PageTreeCurrentUser;
   requestsSummary: PageTreeRequestsSummary | null;
 }) {
+  const { t } = useTranslation("pages");
   const api = useApi();
   const me = currentUser;
   const isAdmin = me.role === "admin";
@@ -224,7 +215,7 @@ function SectionTree({
   const deletePage = async (id: string) => {
     const target = pages.find((p) => p.id === id);
     if (!target) return;
-    if (!window.confirm(`Delete "${target.title}"? This also removes any nested pages.`)) return;
+    if (!window.confirm(t("confirm.delete", { title: target.title }))) return;
     const snapshot = pages;
     const toRemove = collectDescendants(pages, id);
     setPages((prev) => prev.filter((p) => !toRemove.has(p.id)));
@@ -259,13 +250,13 @@ function SectionTree({
   return (
     <aside className="w-full h-full border-r border-app-border bg-app-surface flex flex-col">
       <div className="flex items-center justify-between px-4 py-3 border-b border-app-border">
-        <h2 className="text-sm font-semibold text-app-text">{SECTION_TITLES[section]}</h2>
+        <h2 className="text-sm font-semibold text-app-text">{t(`section.${section}`)}</h2>
         <div className="flex items-center gap-1">
           <button
             type="button"
             onClick={() => setCreateReq({ parentId: null })}
-            title="New page"
-            aria-label="New page"
+            title={t("tree.newPage")}
+            aria-label={t("tree.newPage")}
             className="flex h-7 w-7 items-center justify-center rounded text-app-text-muted hover:bg-app-surface-hover hover:text-app-text"
           >
             <PlusIcon />
@@ -273,10 +264,13 @@ function SectionTree({
         </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-2 py-2 text-sm" aria-label={`${section} pages`}>
-        {loading && <div className="px-2 py-1 text-app-text-muted">Loading…</div>}
+      <nav
+        className="flex-1 overflow-y-auto px-2 py-2 text-sm"
+        aria-label={t("tree.navAriaLabel", { section })}
+      >
+        {loading && <div className="px-2 py-1 text-app-text-muted">{t("tree.loading")}</div>}
         {!loading && tree.length === 0 && (
-          <div className="px-2 py-1 text-app-text-muted">No pages yet.</div>
+          <div className="px-2 py-1 text-app-text-muted">{t("tree.empty")}</div>
         )}
         {!loading && (
           <ul className="space-y-0.5">
@@ -370,7 +364,11 @@ function pageHref(page: PageDto): string {
   return page.url ?? "/";
 }
 
+// Seeded system pages carry stable ids like __page_catalog__; their default titles are localizable.
+const SYSTEM_PAGE_RE = /^__page_(.+)__$/;
+
 function NodeRow(props: NodeRowProps) {
+  const { t } = useTranslation("pages");
   const {
     node,
     depth,
@@ -390,6 +388,13 @@ function NodeRow(props: NodeRowProps) {
     badgeForUrl,
   } = props;
   const { page } = node;
+  const systemMatch = SYSTEM_PAGE_RE.exec(page.id);
+  const systemKey = systemMatch
+    ? (`systemPages.${systemMatch[1]}` as Parameters<typeof t>[0])
+    : null;
+  // Localize a seeded page only while its title is still the original English, so user renames win.
+  const displayTitle =
+    systemKey && page.title === t(systemKey, { lng: "en" }) ? t(systemKey) : page.title;
   const badgeCount = badgeForUrl?.(page.url) ?? 0;
   const isFolder = page.isFolder;
   const isOpen = expanded.has(page.id);
@@ -403,7 +408,7 @@ function NodeRow(props: NodeRowProps) {
   const rowActive = "bg-app-primary-soft text-app-primary-soft-foreground font-medium";
 
   const ScopeBadge = page.scope === "SHARED" ? GlobeIcon : PersonIcon;
-  const scopeTitle = page.scope === "SHARED" ? "Shared with everyone" : "Personal";
+  const scopeTitle = page.scope === "SHARED" ? t("scope.shared") : t("scope.personal");
   const PageIcon = isFolder
     ? isOpen
       ? FolderOpenIcon
@@ -420,7 +425,7 @@ function NodeRow(props: NodeRowProps) {
             type="button"
             onClick={() => onToggle(page.id)}
             aria-expanded={isOpen}
-            aria-label={isOpen ? "Collapse" : "Expand"}
+            aria-label={isOpen ? t("node.collapse") : t("node.expand")}
             className="flex h-5 w-5 shrink-0 items-center justify-center text-app-text-muted hover:text-app-text"
           >
             <span
@@ -455,7 +460,7 @@ function NodeRow(props: NodeRowProps) {
             <span className="flex h-4 w-4 shrink-0 items-center justify-center text-app-text-muted">
               <PageIcon />
             </span>
-            <span className="truncate">{page.title}</span>
+            <span className="truncate">{displayTitle}</span>
           </button>
         ) : (
           <NavLink
@@ -475,7 +480,7 @@ function NodeRow(props: NodeRowProps) {
             <span className="flex h-4 w-4 shrink-0 items-center justify-center text-app-text-muted">
               <PageIcon />
             </span>
-            <span className="truncate">{page.title}</span>
+            <span className="truncate">{displayTitle}</span>
             {badgeCount > 0 && (
               <span className="ml-auto rounded-full bg-app-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-app-primary-on">
                 {badgeCount > 99 ? "99+" : badgeCount}
@@ -495,7 +500,7 @@ function NodeRow(props: NodeRowProps) {
                 e.stopPropagation();
                 onMenuToggle(page.id);
               }}
-              aria-label="Page actions"
+              aria-label={t("node.pageActions")}
               className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-app-text-muted hover:bg-app-surface-hover hover:text-app-text"
             >
               <EllipsisIcon />
@@ -580,6 +585,8 @@ function ActionMenu({
   onMoveUp: () => void;
   onMoveDown: () => void;
 }) {
+  const { t } = useTranslation("pages");
+
   useEffect(() => {
     function handler() {
       onClose();
@@ -593,15 +600,15 @@ function ActionMenu({
       onPointerDown={(e) => e.stopPropagation()}
       className="absolute right-0 top-full z-30 mt-1 w-44 rounded-md border border-app-border bg-app-surface py-1 shadow-lg"
     >
-      <MenuItem icon={<PencilIcon />} label="Rename" onClick={onRename} />
-      <MenuItem icon={<ArrowUpIcon />} label="Move up" onClick={onMoveUp} />
-      <MenuItem icon={<ArrowDownIcon />} label="Move down" onClick={onMoveDown} />
+      <MenuItem icon={<PencilIcon />} label={t("menu.rename")} onClick={onRename} />
+      <MenuItem icon={<ArrowUpIcon />} label={t("menu.moveUp")} onClick={onMoveUp} />
+      <MenuItem icon={<ArrowDownIcon />} label={t("menu.moveDown")} onClick={onMoveDown} />
       {page.isFolder && (
         <>
           <div className="my-1 border-t border-app-border" aria-hidden />
           <MenuItem
             icon={<PlusIcon />}
-            label="New page inside"
+            label={t("menu.newPageInside")}
             onClick={() => {
               onCreateInside(page.id, page.scope);
             }}
@@ -609,7 +616,7 @@ function ActionMenu({
         </>
       )}
       <div className="my-1 border-t border-app-border" aria-hidden />
-      <MenuItem icon={<TrashIcon />} label="Delete" onClick={onDelete} destructive />
+      <MenuItem icon={<TrashIcon />} label={t("menu.delete")} onClick={onDelete} destructive />
     </div>
   );
 }
@@ -660,6 +667,7 @@ function CreatePageModal({
   onCancel: () => void;
   onSubmit: (input: CreateModalSubmit) => void;
 }) {
+  const { t } = useTranslation("pages");
   const [kind, setKind] = useState<"DASHBOARD" | "LINK" | "FOLDER" | null>(null);
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
@@ -690,12 +698,12 @@ function CreatePageModal({
       >
         <div className="flex items-center justify-between border-b border-app-border px-4 py-3">
           <h3 className="text-sm font-semibold text-app-text">
-            {kind === null ? "What would you like to add?" : "New page"}
+            {kind === null ? t("modal.promptTitle") : t("modal.newPageTitle")}
           </h3>
           <button
             type="button"
             onClick={onCancel}
-            aria-label="Close"
+            aria-label={t("modal.close")}
             className="text-app-text-muted hover:text-app-text"
           >
             ×
@@ -706,20 +714,20 @@ function CreatePageModal({
           <div className="grid gap-2 p-4">
             <KindOption
               icon={<DashboardIcon />}
-              title="Dashboard"
-              description="Empty grid you fill with widgets (markdown, embeds, more soon)."
+              title={t("kind.dashboardTitle")}
+              description={t("kind.dashboardDescription")}
               onClick={() => setKind("DASHBOARD")}
             />
             <KindOption
               icon={<FilePageIcon />}
-              title="Link"
-              description="A sidebar entry that navigates to an existing route in the app."
+              title={t("kind.linkTitle")}
+              description={t("kind.linkDescription")}
               onClick={() => setKind("LINK")}
             />
             <KindOption
               icon={<FolderPlusIcon />}
-              title="Folder"
-              description="Group related pages together. Can contain pages of the same scope."
+              title={t("kind.folderTitle")}
+              description={t("kind.folderDescription")}
               onClick={() => setKind("FOLDER")}
             />
           </div>
@@ -729,7 +737,7 @@ function CreatePageModal({
           <div className="flex flex-col gap-3 p-4">
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-app-text-muted" htmlFor="page-title">
-                {kind === "FOLDER" ? "Folder name" : "Page title"}
+                {kind === "FOLDER" ? t("modal.labelFolderName") : t("modal.labelPageTitle")}
               </label>
               <input
                 id="page-title"
@@ -747,7 +755,7 @@ function CreatePageModal({
             {kind === "LINK" && (
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-medium text-app-text-muted" htmlFor="page-url">
-                  Target URL
+                  {t("modal.labelTargetUrl")}
                 </label>
                 <UrlCombobox
                   value={url}
@@ -755,7 +763,7 @@ function CreatePageModal({
                   isAdmin={isAdmin}
                   onPickSuggestion={(route) => {
                     setUrl(route.path);
-                    if (title.trim() === "") setTitle(route.label);
+                    if (title.trim() === "") setTitle(t(route.labelKey));
                   }}
                   onSubmit={() => {
                     if (canSubmit) submit();
@@ -767,20 +775,22 @@ function CreatePageModal({
 
             {isAdmin && !forceScope && (
               <div className="flex flex-col gap-1">
-                <span className="text-xs font-medium text-app-text-muted">Visibility</span>
+                <span className="text-xs font-medium text-app-text-muted">
+                  {t("modal.labelVisibility")}
+                </span>
                 <div className="flex gap-2">
                   <ScopeChoice
                     selected={scope === "SHARED"}
                     icon={<GlobeIcon />}
-                    label="Shared"
-                    hint="Everyone in the organization sees this."
+                    label={t("visibility.sharedLabel")}
+                    hint={t("visibility.sharedHint")}
                     onClick={() => setScope("SHARED")}
                   />
                   <ScopeChoice
                     selected={scope === "PERSONAL"}
                     icon={<PersonIcon />}
-                    label="Personal"
-                    hint="Only you see this."
+                    label={t("visibility.personalLabel")}
+                    hint={t("visibility.personalHint")}
                     onClick={() => setScope("PERSONAL")}
                   />
                 </div>
@@ -789,8 +799,9 @@ function CreatePageModal({
 
             {forceScope && (
               <p className="text-xs text-app-text-muted">
-                This page will be {forceScope === "SHARED" ? "shared" : "personal"} to match its
-                parent folder.
+                {forceScope === "SHARED"
+                  ? t("modal.forceScopeShared")
+                  : t("modal.forceScopePersonal")}
               </p>
             )}
           </div>
@@ -802,7 +813,7 @@ function CreatePageModal({
             onClick={onCancel}
             className="rounded-md border border-app-border bg-app-surface px-3 py-1.5 text-sm text-app-text hover:bg-app-surface-hover"
           >
-            Cancel
+            {t("modal.cancel")}
           </button>
           {kind !== null && (
             <button
@@ -811,7 +822,7 @@ function CreatePageModal({
               disabled={!canSubmit}
               className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-app-primary-hover disabled:opacity-50"
             >
-              Create
+              {t("modal.create")}
             </button>
           )}
         </div>
@@ -897,6 +908,7 @@ function UrlCombobox({
   onSubmit,
   onEscape,
 }: UrlComboboxProps) {
+  const { t } = useTranslation("pages");
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -966,7 +978,7 @@ function UrlCombobox({
         }}
         onFocus={() => setOpen(true)}
         onKeyDown={handleKeyDown}
-        placeholder="/catalog or /scaffolder/my-template"
+        placeholder={t("modal.urlPlaceholder")}
         className="w-full rounded-md border border-app-border bg-app-bg px-3 py-2 text-sm text-app-text focus:border-app-primary focus:outline-none"
       />
       {open && matches.length > 0 && (
@@ -987,12 +999,12 @@ function UrlCombobox({
                 }`}
               >
                 <span className="flex flex-col">
-                  <span className="font-medium">{route.label}</span>
+                  <span className="font-medium">{t(route.labelKey)}</span>
                   <span className="text-xs text-app-text-muted">{route.path}</span>
                 </span>
                 {route.adminOnly && (
                   <span className="text-[10px] uppercase tracking-wide text-app-text-muted">
-                    admin
+                    {t("badge.admin")}
                   </span>
                 )}
               </button>

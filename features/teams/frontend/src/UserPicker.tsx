@@ -1,6 +1,7 @@
 // Debounced user search picker backed by GET /api/users?query=.
 import { useEffect, useRef, useState } from "react";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type { UserSummary } from "@internal/shared-types";
 
 interface UserPickerProps {
@@ -10,13 +11,9 @@ interface UserPickerProps {
   disabled?: boolean;
 }
 
-export function UserPicker({
-  excludeIds = [],
-  onSelect,
-  placeholder = "Search by name or email…",
-  disabled,
-}: UserPickerProps) {
+export function UserPicker({ excludeIds = [], onSelect, placeholder, disabled }: UserPickerProps) {
   const api = useApi();
+  const { t } = useTranslation("teams");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<UserSummary[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -36,7 +33,7 @@ export function UserPicker({
         const res = await api.users.search(query.trim());
         setResults(res.items);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Search failed");
+        setError(err instanceof Error ? err.message : t("errors.searchFailed"));
       } finally {
         setLoading(false);
       }
@@ -44,7 +41,7 @@ export function UserPicker({
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [api, query]);
+  }, [api, query, t]);
 
   const excluded = new Set(excludeIds);
 
@@ -54,12 +51,12 @@ export function UserPicker({
         type="text"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder={placeholder}
+        placeholder={placeholder ?? t("userPicker.defaultPlaceholder")}
         disabled={disabled}
         className="w-full rounded-md border border-app-border bg-app-surface px-3 py-2 text-sm text-app-text focus:outline-none focus:ring-2 focus:ring-app-primary"
       />
       {error && <div className="text-xs text-app-danger">{error}</div>}
-      {loading && <div className="text-xs text-app-text-muted">Searching…</div>}
+      {loading && <div className="text-xs text-app-text-muted">{t("status.searching")}</div>}
       {results && results.length > 0 && (
         <ul className="max-h-60 overflow-y-auto rounded-md border border-app-border">
           {results.map((u) => {
@@ -80,7 +77,7 @@ export function UserPicker({
                     <span className="font-medium">{u.displayName}</span>
                     <span className="ml-2 text-xs text-app-text-muted">{u.email}</span>
                   </span>
-                  {isExcluded && <span className="text-xs">already added</span>}
+                  {isExcluded && <span className="text-xs">{t("members.alreadyAdded")}</span>}
                 </button>
               </li>
             );
@@ -88,7 +85,7 @@ export function UserPicker({
         </ul>
       )}
       {results && results.length === 0 && !loading && (
-        <div className="text-xs text-app-text-muted">No matches</div>
+        <div className="text-xs text-app-text-muted">{t("empty.noMatches")}</div>
       )}
     </div>
   );

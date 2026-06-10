@@ -2,12 +2,14 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { PageLayout } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type { CurrentUser, TeamSummary } from "@internal/shared-types";
 import { RequestTeamDialog } from "./RequestTeamDialog";
 
 export function TeamsPage() {
   const api = useApi();
   const navigate = useNavigate();
+  const { t } = useTranslation("teams");
   const [items, setItems] = useState<TeamSummary[] | null>(null);
   const [me, setMe] = useState<CurrentUser | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -20,9 +22,9 @@ export function TeamsPage() {
       setItems(res.items);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load teams");
+      setError(err instanceof Error ? err.message : t("errors.failedToLoadTeams"));
     }
-  }, [api, showAllOrgs]);
+  }, [api, showAllOrgs, t]);
 
   useEffect(() => {
     void load();
@@ -36,8 +38,8 @@ export function TeamsPage() {
 
   return (
     <PageLayout
-      title="Teams"
-      description="People, roles, ownership."
+      title={t("page.teamsTitle")}
+      description={t("page.teamsDescription")}
       actions={
         <>
           <button
@@ -45,14 +47,14 @@ export function TeamsPage() {
             onClick={() => setRequestOpen(true)}
             className="rounded-md border border-app-border px-3 py-1 text-sm text-app-text hover:bg-app-surface-hover"
           >
-            Request team
+            {t("actions.requestTeam")}
           </button>
           {isAdmin && (
             <Link
               to="/admin/team-requests"
               className="rounded-md bg-app-primary px-3 py-1 text-sm text-app-primary-on"
             >
-              Review requests
+              {t("actions.reviewRequests")}
             </Link>
           )}
         </>
@@ -65,12 +67,16 @@ export function TeamsPage() {
           onChange={(e) => setShowAllOrgs(e.target.checked)}
           className="h-3.5 w-3.5 rounded border-app-border accent-app-primary"
         />
-        Tüm organizasyonlardaki team'leri göster
+        {t("filter.showAllOrgs")}
       </label>
 
       {error && <p className="mb-3 text-sm text-app-danger">{error}</p>}
-      {!error && items === null && <p className="text-sm text-app-text-muted">Loading…</p>}
-      {items && items.length === 0 && <p className="text-sm text-app-text-muted">No teams yet.</p>}
+      {!error && items === null && (
+        <p className="text-sm text-app-text-muted">{t("status.loading")}</p>
+      )}
+      {items && items.length === 0 && (
+        <p className="text-sm text-app-text-muted">{t("empty.noTeams")}</p>
+      )}
       {items && items.length > 0 && (
         <ul className="divide-y divide-app-border rounded-lg border border-app-border bg-app-surface">
           {items.map((team) => (
@@ -90,15 +96,17 @@ export function TeamsPage() {
                 </div>
                 <div className="text-right text-xs text-app-text-muted">
                   <div>
-                    {team.memberCount} member{team.memberCount === 1 ? "" : "s"}
+                    {t(team.memberCount === 1 ? "teamMeta.member_one" : "teamMeta.member_other", {
+                      count: team.memberCount,
+                    })}
                   </div>
                   {team.leads.length > 0 ? (
                     <div className="mt-1">
-                      {team.leads.length === 1 ? "Lead" : "Leads"}:{" "}
+                      {t(team.leads.length === 1 ? "teamMeta.lead_one" : "teamMeta.lead_other")}:{" "}
                       {team.leads.map((l) => l.displayName).join(", ")}
                     </div>
                   ) : (
-                    <div className="mt-1 italic">no lead</div>
+                    <div className="mt-1 italic">{t("teamMeta.noLead")}</div>
                   )}
                 </div>
               </div>

@@ -1,5 +1,6 @@
 // Message input box: auto-growing textarea with a Send button that toggles to Stop while streaming.
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "@internal/i18n";
 
 interface Props {
   onSend: (text: string) => void;
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export function Composer({ onSend, onStop, streaming, stopDisabled, placeholder }: Props) {
+  const { t } = useTranslation("chat");
   const [text, setText] = useState("");
   const ref = useRef<HTMLTextAreaElement>(null);
 
@@ -40,7 +42,7 @@ export function Composer({ onSend, onStop, streaming, stopDisabled, placeholder 
               submit();
             }
           }}
-          placeholder={placeholder ?? "Ask about your work, teams, requests…"}
+          placeholder={placeholder ?? t("composer.placeholder")}
           rows={1}
           disabled={streaming}
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
@@ -52,14 +54,10 @@ export function Composer({ onSend, onStop, streaming, stopDisabled, placeholder 
             type="button"
             onClick={onStop}
             disabled={stopDisabled}
-            title={
-              stopDisabled
-                ? "submission in progress — wait for it to complete or roll back"
-                : "Stop"
-            }
+            title={stopDisabled ? t("composer.stopDisabledTooltip") : t("composer.stop")}
             className="h-10 shrink-0 rounded-app-md border border-app-border bg-app-surface px-3 text-sm text-app-text hover:bg-app-surface-hover disabled:cursor-not-allowed disabled:opacity-50 sm:h-9 sm:px-4"
           >
-            Stop
+            {t("composer.stop")}
           </button>
         ) : (
           <button
@@ -68,7 +66,7 @@ export function Composer({ onSend, onStop, streaming, stopDisabled, placeholder 
             disabled={!text.trim()}
             className="h-10 shrink-0 rounded-app-md bg-app-primary px-3 text-sm font-medium text-app-primary-foreground hover:bg-app-primary-hover disabled:opacity-50 sm:h-9 sm:px-4"
           >
-            Send
+            {t("composer.send")}
           </button>
         )}
       </div>

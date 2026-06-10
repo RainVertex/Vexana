@@ -1,3 +1,4 @@
+import { useTranslation } from "@internal/i18n";
 import { useEntityOverviewContext } from "../EntityOverviewContext";
 
 const ICON_MAP: Record<string, string> = {
@@ -10,13 +11,10 @@ const ICON_MAP: Record<string, string> = {
 
 export function LinksWidget() {
   const { data } = useEntityOverviewContext();
+  const { t } = useTranslation("catalog");
   const links = data.links;
   if (links.length === 0) {
-    return (
-      <p className="text-sm text-app-text-muted">
-        No links yet. Add to <code>metadata.links</code> in <code>catalog-info.yaml</code>.
-      </p>
-    );
+    return <p className="text-sm text-app-text-muted">{t("links.noLinks")}</p>;
   }
   return (
     <ul className="flex flex-col gap-1.5 text-sm">

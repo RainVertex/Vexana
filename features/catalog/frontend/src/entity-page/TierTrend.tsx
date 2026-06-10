@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type { ScorecardHistoryPoint } from "@internal/shared-types";
 
 // Weighted score over time for one scorecard on one entity; hidden until there are two points.
 export function TierTrend({ scorecardId, entityId }: { scorecardId: string; entityId: string }) {
   const api = useApi();
+  const { t } = useTranslation("catalog");
   const [points, setPoints] = useState<ScorecardHistoryPoint[] | null>(null);
 
   useEffect(() => {
@@ -27,7 +29,7 @@ export function TierTrend({ scorecardId, entityId }: { scorecardId: string; enti
 
   return (
     <div className="border-t border-app-border px-4 py-3">
-      <div className="mb-1 text-xs text-app-text-muted">Score trend</div>
+      <div className="mb-1 text-xs text-app-text-muted">{t("scoreTrend.label")}</div>
       <div className="h-20">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={series} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { PageLayout } from "@internal/shared-ui";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "@internal/i18n";
 import {
   useTasks,
   useCreateTask,
@@ -25,23 +26,8 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 type View = "list" | "kanban";
 type SortColumn = "dueDate" | "endDate";
 
-const PRIORITY_LABELS: Record<number, string> = {
-  0: "None",
-  1: "Low",
-  2: "Medium",
-  3: "High",
-  4: "Urgent",
-};
-
-const PRIORITY_COLORS: Record<number, string> = {
-  0: "bg-gray-600",
-  1: "bg-blue-600",
-  2: "bg-yellow-600",
-  3: "bg-orange-600",
-  4: "bg-red-600",
-};
-
 export function ProjectDetailPage() {
+  const { t } = useTranslation("projects");
   const { id = "" } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { project, refetch: refetchProject } = useProject(id);
@@ -204,7 +190,7 @@ export function ProjectDetailPage() {
   }
 
   async function handleDeleteProject() {
-    if (!confirm(`Delete "${project?.title}"? This cannot be undone.`)) return;
+    if (!confirm(t("confirm.deleteProject", { title: project?.title }))) return;
     try {
       await deleteProject(id);
       navigate("/projects");
@@ -219,7 +205,7 @@ export function ProjectDetailPage() {
 
   return (
     <PageLayout
-      title={project?.title ?? "Project"}
+      title={project?.title ?? t("page.projectFallbackTitle")}
       description={project?.description || undefined}
       actions={
         <div className="flex items-center gap-2">
@@ -229,14 +215,14 @@ export function ProjectDetailPage() {
               onClick={() => setView("list")}
               className={`px-3 py-1.5 text-sm ${view === "list" ? "bg-app-primary text-app-primary-on" : "text-app-text hover:bg-app-surface-hover"} rounded-l-md`}
             >
-              List
+              {t("view.list")}
             </button>
             <button
               type="button"
               onClick={() => setView("kanban")}
               className={`px-3 py-1.5 text-sm ${view === "kanban" ? "bg-app-primary text-app-primary-on" : "text-app-text hover:bg-app-surface-hover"} rounded-r-md`}
             >
-              Kanban
+              {t("view.kanban")}
             </button>
           </div>
           {isAdmin && (
@@ -245,7 +231,7 @@ export function ProjectDetailPage() {
               onClick={openEdit}
               className="rounded-md border border-app-border bg-app-surface px-3 py-1.5 text-sm text-app-text hover:bg-app-surface-hover"
             >
-              Edit
+              {t("actions.edit")}
             </button>
           )}
           {isAdmin && (
@@ -254,7 +240,7 @@ export function ProjectDetailPage() {
               onClick={() => setShowShares((v) => !v)}
               className="rounded-md border border-app-border bg-app-surface px-3 py-1.5 text-sm text-app-text hover:bg-app-surface-hover"
             >
-              Share
+              {t("actions.share")}
             </button>
           )}
           {canEdit && (
@@ -263,7 +249,7 @@ export function ProjectDetailPage() {
               onClick={() => setShowNewTask(true)}
               className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on hover:opacity-90"
             >
-              New Task
+              {t("actions.newTask")}
             </button>
           )}
           {isAdmin && (
@@ -273,7 +259,7 @@ export function ProjectDetailPage() {
               disabled={deletingProject}
               className="rounded-md border border-app-danger px-3 py-1.5 text-sm text-app-danger hover:bg-app-danger/10 disabled:opacity-60"
             >
-              {deletingProject ? "Deleting..." : "Delete"}
+              {deletingProject ? t("actions.deleting") : t("actions.delete")}
             </button>
           )}
         </div>
@@ -287,16 +273,11 @@ export function ProjectDetailPage() {
 
       {showShares && (
         <div className="mb-4 rounded-lg border border-app-border bg-app-surface p-4">
-          <h3 className="text-sm font-semibold text-app-text">Share Project</h3>
+          <h3 className="text-sm font-semibold text-app-text">{t("form.shareHeading")}</h3>
           {project?.isAutoProvisioned ? (
-            <p className="mt-1 text-xs text-app-text-muted">
-              Members synced from GitHub team membership. Manual changes are disabled.
-            </p>
+            <p className="mt-1 text-xs text-app-text-muted">{t("share.syncedNote")}</p>
           ) : (
-            <p className="mt-1 text-xs text-app-text-muted">
-              Add platform users by username. They'll see this project in their workspace
-              immediately.
-            </p>
+            <p className="mt-1 text-xs text-app-text-muted">{t("share.manualNote")}</p>
           )}
 
           {(addError || sharesError) && (
@@ -309,7 +290,7 @@ export function ProjectDetailPage() {
             <UserAutocomplete
               value={shareUsername}
               onChange={setShareUsername}
-              placeholder="Type a username..."
+              placeholder={t("form.usernamePlaceholder")}
             />
             <select
               value={sharePermission}
@@ -317,25 +298,27 @@ export function ProjectDetailPage() {
               disabled={project?.isAutoProvisioned}
               className="rounded-md border border-app-border bg-app-surface px-2 py-1.5 text-sm text-app-text disabled:opacity-60"
             >
-              <option value={0}>Read</option>
-              <option value={1}>Read & Write</option>
-              <option value={2}>Admin</option>
+              <option value={0}>{t("permissions.read")}</option>
+              <option value={1}>{t("permissions.readWrite")}</option>
+              <option value={2}>{t("permissions.admin")}</option>
             </select>
             <button
               type="submit"
               disabled={addingShare || !shareUsername.trim() || project?.isAutoProvisioned}
               className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on hover:opacity-90 disabled:opacity-60"
             >
-              {addingShare ? "Adding..." : "Add"}
+              {addingShare ? t("actions.adding") : t("actions.add")}
             </button>
           </form>
 
           <div className="mt-4">
-            <h4 className="text-xs font-semibold text-app-text-muted">Shared with</h4>
+            <h4 className="text-xs font-semibold text-app-text-muted">
+              {t("form.sharedWithHeading")}
+            </h4>
             {sharesLoading ? (
-              <p className="mt-2 text-xs text-app-text-muted">Loading...</p>
+              <p className="mt-2 text-xs text-app-text-muted">{t("loading.generic")}</p>
             ) : shares.length === 0 ? (
-              <p className="mt-2 text-xs text-app-text-muted">Not shared with anyone yet.</p>
+              <p className="mt-2 text-xs text-app-text-muted">{t("share.notSharedYet")}</p>
             ) : (
               <ul className="mt-2 divide-y divide-app-border rounded-md border border-app-border">
                 {shares.map((s) => (
@@ -352,11 +335,11 @@ export function ProjectDetailPage() {
                         }
                         disabled={project?.isAutoProvisioned}
                         className="rounded-md border border-app-border bg-app-surface px-2 py-1 text-xs text-app-text disabled:opacity-60"
-                        aria-label={`Permission for ${s.username}`}
+                        aria-label={t("permissions.permissionAriaLabel", { username: s.username })}
                       >
-                        <option value={0}>Read</option>
-                        <option value={1}>Read & Write</option>
-                        <option value={2}>Admin</option>
+                        <option value={0}>{t("permissions.read")}</option>
+                        <option value={1}>{t("permissions.readWrite")}</option>
+                        <option value={2}>{t("permissions.admin")}</option>
                       </select>
                       {!project?.isAutoProvisioned && (
                         <button
@@ -364,7 +347,7 @@ export function ProjectDetailPage() {
                           onClick={() => void handleRemoveShare(s.username)}
                           className="text-xs text-app-danger hover:underline"
                         >
-                          Remove
+                          {t("actions.remove")}
                         </button>
                       )}
                     </div>
@@ -382,7 +365,7 @@ export function ProjectDetailPage() {
             type="text"
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
-            placeholder="Task title"
+            placeholder={t("form.taskTitlePlaceholder")}
             autoFocus
             className="flex-1 rounded-md border border-app-border bg-app-surface px-3 py-1.5 text-sm text-app-text placeholder:text-app-text-muted focus:outline-none focus:ring-2 focus:ring-app-primary"
           />
@@ -392,7 +375,7 @@ export function ProjectDetailPage() {
               onChange={(e) => setNewTaskBucketId(e.target.value)}
               className="rounded-md border border-app-border bg-app-surface px-2 py-1.5 text-sm text-app-text"
             >
-              <option value="">Default column</option>
+              <option value="">{t("form.defaultColumn")}</option>
               {buckets.map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.title}
@@ -405,14 +388,14 @@ export function ProjectDetailPage() {
             disabled={creating}
             className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on hover:opacity-90 disabled:opacity-60"
           >
-            {creating ? "Creating..." : "Create"}
+            {creating ? t("actions.creating") : t("actions.create")}
           </button>
           <button
             type="button"
             onClick={() => setShowNewTask(false)}
             className="rounded-md border border-app-border px-3 py-1.5 text-sm text-app-text hover:bg-app-surface-hover"
           >
-            Cancel
+            {t("actions.cancel")}
           </button>
         </form>
       )}
@@ -422,9 +405,11 @@ export function ProjectDetailPage() {
           onSubmit={handleSaveProject}
           className="mb-4 rounded-lg border border-app-border bg-app-surface p-4 space-y-3"
         >
-          <h3 className="text-sm font-semibold text-app-text">Edit Project</h3>
+          <h3 className="text-sm font-semibold text-app-text">{t("form.editProjectHeading")}</h3>
           <div>
-            <label className="block text-xs font-medium text-app-text-muted">Title</label>
+            <label className="block text-xs font-medium text-app-text-muted">
+              {t("form.titleLabel")}
+            </label>
             <input
               type="text"
               value={editTitle}
@@ -435,7 +420,9 @@ export function ProjectDetailPage() {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-app-text-muted">Description</label>
+            <label className="block text-xs font-medium text-app-text-muted">
+              {t("form.descriptionEditLabel")}
+            </label>
             <textarea
               value={editDescription}
               onChange={(e) => setEditDescription(e.target.value)}
@@ -450,7 +437,7 @@ export function ProjectDetailPage() {
               checked={editArchived}
               onChange={(e) => setEditArchived(e.target.checked)}
             />
-            Archived
+            {t("form.archivedLabel")}
           </label>
           <div className="flex gap-2">
             <button
@@ -458,14 +445,14 @@ export function ProjectDetailPage() {
               disabled={savingProject || !editTitle.trim()}
               className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on hover:opacity-90 disabled:opacity-60"
             >
-              {savingProject ? "Saving..." : "Save"}
+              {savingProject ? t("actions.saving") : t("actions.save")}
             </button>
             <button
               type="button"
               onClick={() => setShowEdit(false)}
               className="rounded-md border border-app-border bg-app-surface px-3 py-1.5 text-sm text-app-text hover:bg-app-surface-hover"
             >
-              Cancel
+              {t("actions.cancel")}
             </button>
           </div>
         </form>
@@ -473,7 +460,7 @@ export function ProjectDetailPage() {
 
       {!canEdit && (
         <div className="mb-4 rounded-md border border-app-border bg-app-surface px-3 py-2 text-sm text-app-text-muted">
-          You have read-only access to this project. Editing and adding tasks is disabled.
+          {t("info.readOnlyProject")}
         </div>
       )}
 
@@ -485,7 +472,7 @@ export function ProjectDetailPage() {
             onChange={(e) => setAssignedToMe(e.target.checked)}
             className="rounded"
           />
-          Assigned to me
+          {t("filter.assignedToMe")}
         </label>
         <label className="inline-flex items-center gap-2 text-xs text-app-text-muted">
           <input
@@ -494,19 +481,19 @@ export function ProjectDetailPage() {
             onChange={(e) => setFavoritesOnly(e.target.checked)}
             className="rounded"
           />
-          ★ Favorites only
+          {t("filter.favoritesOnly")}
         </label>
         {(assignedToMe || favoritesOnly || sortColumn) && (
           <span className="text-xs text-app-text-muted">
-            Showing {visibleTasks.length} of {tasks.length}
+            {t("info.showingCount", { visible: visibleTasks.length, total: tasks.length })}
           </span>
         )}
       </div>
 
       {loading ? (
-        <p className="text-sm text-app-text-muted">Loading...</p>
+        <p className="text-sm text-app-text-muted">{t("loading.generic")}</p>
       ) : view === "kanban" ? (
-        <ErrorBoundary fallbackTitle="Kanban board failed to render">
+        <ErrorBoundary fallbackTitle={t("view.kanban")}>
           <KanbanBoard projectId={id} tasks={visibleTasks} onUpdate={refetch} canEdit={canEdit} />
         </ErrorBoundary>
       ) : (
@@ -535,8 +522,10 @@ function TaskListView({
   sortDir: "asc" | "desc";
   onSort: (column: SortColumn) => void;
 }) {
+  const { t } = useTranslation("projects");
+
   if (tasks.length === 0) {
-    return <p className="text-sm text-app-text-muted">No tasks match.</p>;
+    return <p className="text-sm text-app-text-muted">{t("empty.noTasks")}</p>;
   }
 
   function sortIndicator(column: SortColumn) {
@@ -547,9 +536,9 @@ function TaskListView({
   const sortedBuckets = [...buckets].sort((a, b) => a.position - b.position);
   const fallbackBucketId = sortedBuckets[0]?.id ?? null;
   const bucketTitleById = new Map(buckets.map((b) => [b.id, b.title]));
-  function columnLabel(t: Task): string | null {
-    const id = t.bucketId ?? fallbackBucketId;
-    return (id && bucketTitleById.get(id)) || null;
+  function columnLabel(task: Task): string | null {
+    const bid = task.bucketId ?? fallbackBucketId;
+    return (bid && bucketTitleById.get(bid)) || null;
   }
 
   return (
@@ -557,18 +546,19 @@ function TaskListView({
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-app-border bg-app-surface text-left text-xs text-app-text-muted">
-            <th className="px-4 py-2 font-medium">Title</th>
-            <th className="px-4 py-2 font-medium">Status</th>
-            <th className="px-4 py-2 font-medium">Stage</th>
-            <th className="px-4 py-2 font-medium">Priority</th>
-            <th className="px-4 py-2 font-medium">Assignee</th>
+            <th className="px-4 py-2 font-medium">{t("fields.title")}</th>
+            <th className="px-4 py-2 font-medium">{t("fields.status")}</th>
+            <th className="px-4 py-2 font-medium">{t("fields.stage")}</th>
+            <th className="px-4 py-2 font-medium">{t("fields.priority")}</th>
+            <th className="px-4 py-2 font-medium">{t("fields.assignee")}</th>
             <th className="px-4 py-2 font-medium">
               <button
                 type="button"
                 onClick={() => onSort("dueDate")}
                 className="flex items-center gap-1 hover:text-app-text"
               >
-                Due Date <span className="text-[10px]">{sortIndicator("dueDate")}</span>
+                {t("fields.dueDate")}{" "}
+                <span className="text-[10px]">{sortIndicator("dueDate")}</span>
               </button>
             </th>
             <th className="px-4 py-2 font-medium">
@@ -577,55 +567,79 @@ function TaskListView({
                 onClick={() => onSort("endDate")}
                 className="flex items-center gap-1 hover:text-app-text"
               >
-                End Date <span className="text-[10px]">{sortIndicator("endDate")}</span>
+                {t("fields.endDate")}{" "}
+                <span className="text-[10px]">{sortIndicator("endDate")}</span>
               </button>
             </th>
           </tr>
         </thead>
         <tbody className="divide-y divide-app-border">
-          {tasks.map((t) => (
-            <tr key={t.id} className="bg-app-surface hover:bg-app-surface-hover">
+          {tasks.map((task) => (
+            <tr key={task.id} className="bg-app-surface hover:bg-app-surface-hover">
               <td className="px-4 py-2">
-                <Link to={`/tasks/${t.id}`} className="text-app-primary-on hover:underline">
-                  {t.title}
+                <Link to={`/tasks/${task.id}`} className="text-app-primary-on hover:underline">
+                  {task.title}
                 </Link>
               </td>
               <td className="px-4 py-2">
                 <span
-                  className={`inline-block rounded-full px-2 py-0.5 text-xs ${t.done ? "bg-green-900/40 text-green-400" : "bg-gray-700/40 text-gray-300"}`}
+                  className={`inline-block rounded-full px-2 py-0.5 text-xs ${task.done ? "bg-green-900/40 text-green-400" : "bg-gray-700/40 text-gray-300"}`}
                 >
-                  {t.done ? "Done" : "Open"}
+                  {task.done ? t("status.done") : t("status.open")}
                 </span>
               </td>
               <td className="px-4 py-2">
-                {columnLabel(t) ? (
+                {columnLabel(task) ? (
                   <span className="inline-block rounded-full border border-app-border px-2 py-0.5 text-xs text-app-text-muted">
-                    {columnLabel(t)}
+                    {columnLabel(task)}
                   </span>
                 ) : (
                   <span className="text-app-text-muted">-</span>
                 )}
               </td>
               <td className="px-4 py-2">
-                <span
-                  className={`inline-block rounded-full px-2 py-0.5 text-xs text-white ${PRIORITY_COLORS[t.priority] ?? "bg-gray-600"}`}
-                >
-                  {PRIORITY_LABELS[t.priority] ?? "None"}
-                </span>
+                <PriorityBadge priority={task.priority} />
               </td>
               <td className="px-4 py-2 text-app-text-muted">
-                {t.assignees?.map((a) => a.name || a.username).join(", ") || "-"}
+                {task.assignees?.map((a) => a.name || a.username).join(", ") || "-"}
               </td>
               <td className="px-4 py-2 text-app-text-muted">
-                {t.dueDate ? new Date(t.dueDate).toLocaleDateString() : "-"}
+                {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "-"}
               </td>
               <td className="px-4 py-2 text-app-text-muted">
-                {t.endDate ? new Date(t.endDate).toLocaleDateString() : "-"}
+                {task.endDate ? new Date(task.endDate).toLocaleDateString() : "-"}
               </td>
             </tr>
           ))}
         </tbody>
       </table>
     </div>
+  );
+}
+
+const PRIORITY_COLORS: Record<number, string> = {
+  0: "bg-gray-600",
+  1: "bg-blue-600",
+  2: "bg-yellow-600",
+  3: "bg-orange-600",
+  4: "bg-red-600",
+};
+
+function PriorityBadge({ priority }: { priority: number }) {
+  const { t } = useTranslation("projects");
+  const priorityKeys: Record<number, string> = {
+    0: "priority.none",
+    1: "priority.low",
+    2: "priority.medium",
+    3: "priority.high",
+    4: "priority.urgent",
+  };
+  const key = priorityKeys[priority] ?? "priority.none";
+  return (
+    <span
+      className={`inline-block rounded-full px-2 py-0.5 text-xs text-white ${PRIORITY_COLORS[priority] ?? "bg-gray-600"}`}
+    >
+      {t(key)}
+    </span>
   );
 }

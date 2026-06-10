@@ -3,16 +3,25 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { PageLayout, AgentAvatar } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type { Agent, AgentToolGroup, ApprovalMode, LlmModelSummary } from "@internal/shared-types";
 import { fileToAvatarDataUrl } from "./avatarImage";
 import { AvatarPickerDialog } from "./AvatarPickerDialog";
 import type { AvatarPreset } from "./avatarPresets";
 
-const KIND_OPTIONS = ["custom", "catalog-enrichment", "platform-assistant"];
+const KIND_OPTIONS: {
+  value: string;
+  labelKey: "custom" | "catalogEnrichment" | "platformAssistant";
+}[] = [
+  { value: "custom", labelKey: "custom" },
+  { value: "catalog-enrichment", labelKey: "catalogEnrichment" },
+  { value: "platform-assistant", labelKey: "platformAssistant" },
+];
 
 export function AgentFormPage({ avatarPresets = [] }: { avatarPresets?: AvatarPreset[] }) {
   const api = useApi();
   const navigate = useNavigate();
+  const { t } = useTranslation("agents");
   const { id } = useParams<{ id?: string }>();
   const isEdit = Boolean(id);
 
@@ -47,7 +56,7 @@ export function AgentFormPage({ avatarPresets = [] }: { avatarPresets?: AvatarPr
     api.llm
       .listModels()
       .then((res) => setModels(res.items))
-      .catch((err) => setError(err.message ?? "Failed to load models"));
+      .catch((err) => setError(err.message ?? t("errors.failedToLoadModels")));
     api.agents
       .listTools()
       .then((res) => setToolGroups(res.groups))
@@ -63,7 +72,7 @@ export function AgentFormPage({ avatarPresets = [] }: { avatarPresets?: AvatarPr
         setCategories(distinct);
       })
       .catch(() => {});
-  }, [api]);
+  }, [api, t]);
 
   useEffect(() => {
     if (!isEdit || !id) return;
@@ -84,9 +93,9 @@ export function AgentFormPage({ avatarPresets = [] }: { avatarPresets?: AvatarPr
         setTokenBudget(a.tokenBudget != null ? String(a.tokenBudget) : "");
         setTemperature(a.temperature != null ? String(a.temperature) : "");
       })
-      .catch((err) => setError(err.message ?? "Failed to load agent"))
+      .catch((err) => setError(err.message ?? t("errors.failedToLoadAgent")))
       .finally(() => setLoading(false));
-  }, [api, id, isEdit]);
+  }, [api, id, isEdit, t]);
 
   const loadRecommendations = useCallback(
     (k: string) => {
@@ -129,12 +138,12 @@ export function AgentFormPage({ avatarPresets = [] }: { avatarPresets?: AvatarPr
 
   // One checkbox per group: if all are selected it clears the group, otherwise it adds the missing ones.
   function toggleGroup(group: AgentToolGroup) {
-    const ids = group.tools.map((t) => t.id);
-    const allSelected = ids.every((id) => toolIds.includes(id));
+    const ids = group.tools.map((tool) => tool.id);
+    const allSelected = ids.every((gid) => toolIds.includes(gid));
     setToolIds((prev) => {
-      if (allSelected) return prev.filter((id) => !ids.includes(id));
+      if (allSelected) return prev.filter((gid) => !ids.includes(gid));
       const next = new Set(prev);
-      ids.forEach((id) => next.add(id));
+      ids.forEach((gid) => next.add(gid));
       return [...next];
     });
   }
@@ -149,18 +158,18 @@ export function AgentFormPage({ avatarPresets = [] }: { avatarPresets?: AvatarPr
     try {
       setAvatarUrl(await fileToAvatarDataUrl(file));
     } catch {
-      setAvatarError("Could not read that image. Try a different file.");
+      setAvatarError(t("errors.avatarReadError"));
     }
   }
 
   async function save() {
     setError(null);
-    if (!name.trim()) return setError("Name is required.");
-    if (!instructions.trim()) return setError("System prompt is required.");
-    if (!modelId) return setError("Pick a model.");
+    if (!name.trim()) return setError(t("errors.nameRequired"));
+    if (!instructions.trim()) return setError(t("errors.systemPromptRequired"));
+    if (!modelId) return setError(t("errors.pickModel"));
     const selected = models.find((m) => m.id === modelId);
     if (toolsSelected && selected && !selected.supportsTools) {
-      return setError("The selected model does not support tools. Pick a tool-capable model.");
+      return setError(t("errors.modelNoTools"));
     }
     const body = {
       name: name.trim(),
@@ -186,23 +195,23 @@ export function AgentFormPage({ avatarPresets = [] }: { avatarPresets?: AvatarPr
         navigate(`/agents/${created.id}`);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Save failed");
+      setError(err instanceof Error ? err.message : t("errors.saveFailed"));
       setSaving(false);
     }
   }
 
   if (loading) {
     return (
-      <PageLayout title={isEdit ? "Edit agent" : "New agent"}>
-        <p className="text-sm text-app-text-muted">Loading…</p>
+      <PageLayout title={isEdit ? t("page.editAgent") : t("page.newAgent")}>
+        <p className="text-sm text-app-text-muted">{t("loading.agent")}</p>
       </PageLayout>
     );
   }
 
   return (
     <PageLayout
-      title={isEdit ? "Edit agent" : "New agent"}
-      description="Configure the agent's model, prompt, tools, and approval mode."
+      title={isEdit ? t("page.editAgent") : t("page.newAgent")}
+      description={t("page.formDescription")}
     >
       {error && (
         <div className="mb-4 rounded-md border border-app-danger bg-app-surface px-3 py-2 text-sm text-app-danger">
@@ -211,11 +220,11 @@ export function AgentFormPage({ avatarPresets = [] }: { avatarPresets?: AvatarPr
       )}
 
       <div className="grid max-w-2xl gap-4">
-        <Labeled label="Name" required>
+        <Labeled label={t("fields.name")} required>
           <input value={name} onChange={(e) => setName(e.target.value)} className={inputCls} />
         </Labeled>
 
-        <Labeled label="Description">
+        <Labeled label={t("fields.description")}>
           <input
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -223,22 +232,26 @@ export function AgentFormPage({ avatarPresets = [] }: { avatarPresets?: AvatarPr
           />
         </Labeled>
 
-        <Labeled label="Category">
-          <CategoryCombobox value={category} onChange={setCategory} options={categories} />
+        <Labeled label={t("fields.category")}>
+          <CategoryCombobox
+            value={category}
+            onChange={setCategory}
+            options={categories}
+            placeholder={t("form.categoryPlaceholder")}
+            toggleLabel={t("actions.toggleCategoryList")}
+          />
           {categories.length > 0 && (
-            <p className="mt-1 text-xs text-app-text-muted">
-              Pick an existing category or type a new one.
-            </p>
+            <p className="mt-1 text-xs text-app-text-muted">{t("form.categoryHint")}</p>
           )}
         </Labeled>
 
-        <Labeled label="Avatar">
+        <Labeled label={t("fields.avatar")}>
           <div className="flex items-center gap-3">
             <AgentAvatar name={name || "?"} avatarUrl={avatarUrl || null} size={56} />
             <div className="flex flex-col gap-1.5">
               <div className="flex gap-2">
                 <label className="cursor-pointer rounded-md border border-app-border bg-app-surface px-3 py-1.5 text-sm text-app-text hover:bg-app-surface-hover">
-                  {avatarUrl ? "Change image" : "Upload image"}
+                  {avatarUrl ? t("actions.changeImage") : t("actions.uploadImage")}
                   <input
                     type="file"
                     accept="image/*"
@@ -255,7 +268,7 @@ export function AgentFormPage({ avatarPresets = [] }: { avatarPresets?: AvatarPr
                   onClick={() => setPickerOpen(true)}
                   className="rounded-md border border-app-border bg-app-surface px-3 py-1.5 text-sm text-app-text hover:bg-app-surface-hover"
                 >
-                  Choose preset
+                  {t("actions.choosePreset")}
                 </button>
                 {avatarUrl && (
                   <button
@@ -263,14 +276,11 @@ export function AgentFormPage({ avatarPresets = [] }: { avatarPresets?: AvatarPr
                     onClick={() => setAvatarUrl("")}
                     className="rounded-md border border-app-border bg-app-surface px-3 py-1.5 text-sm text-app-text hover:bg-app-surface-hover"
                   >
-                    Remove
+                    {t("actions.remove")}
                   </button>
                 )}
               </div>
-              <p className="text-xs text-app-text-muted">
-                PNG, JPG, WebP, or SVG. Square images look best, large ones are scaled down. Leave
-                blank to show initials.
-              </p>
+              <p className="text-xs text-app-text-muted">{t("form.avatarHint")}</p>
               {avatarError && <p className="text-xs text-app-danger">{avatarError}</p>}
             </div>
           </div>
@@ -287,17 +297,17 @@ export function AgentFormPage({ avatarPresets = [] }: { avatarPresets?: AvatarPr
           />
         </Labeled>
 
-        <Labeled label="Kind">
+        <Labeled label={t("fields.kind")}>
           <select value={kind} onChange={(e) => setKind(e.target.value)} className={inputCls}>
             {KIND_OPTIONS.map((k) => (
-              <option key={k} value={k}>
-                {k}
+              <option key={k.value} value={k.value}>
+                {t(`kind.${k.labelKey}`)}
               </option>
             ))}
           </select>
         </Labeled>
 
-        <Labeled label="System prompt" required>
+        <Labeled label={t("fields.systemPrompt")} required>
           <textarea
             value={instructions}
             onChange={(e) => setInstructions(e.target.value)}
@@ -306,35 +316,32 @@ export function AgentFormPage({ avatarPresets = [] }: { avatarPresets?: AvatarPr
           />
         </Labeled>
 
-        <Labeled label="Tools">
+        <Labeled label={t("fields.tools")}>
           {toolsManaged ? (
             <div className="rounded-md border border-app-border bg-app-surface px-3 py-2">
-              <p className="mb-2 text-xs text-app-text-muted">
-                Tools for this built-in assistant are managed by the platform and cannot be edited
-                here.
-              </p>
+              <p className="mb-2 text-xs text-app-text-muted">{t("form.toolsManagedNote")}</p>
               {toolIds.length === 0 ? (
-                <p className="text-xs text-app-text-muted">No tools.</p>
+                <p className="text-xs text-app-text-muted">{t("empty.noTools")}</p>
               ) : (
                 <div className="flex flex-wrap gap-1.5">
-                  {toolIds.map((t) => (
+                  {toolIds.map((tid) => (
                     <span
-                      key={t}
+                      key={tid}
                       className="rounded-full border border-app-border bg-app-surface px-2 py-0.5 font-mono text-xs text-app-text-muted"
                     >
-                      {t}
+                      {tid}
                     </span>
                   ))}
                 </div>
               )}
             </div>
           ) : toolGroups.length === 0 ? (
-            <p className="text-xs text-app-text-muted">No tools registered.</p>
+            <p className="text-xs text-app-text-muted">{t("empty.noToolsRegistered")}</p>
           ) : (
             <div className="grid gap-2">
               {toolGroups.map((group) => {
-                const ids = group.tools.map((t) => t.id);
-                const selectedCount = ids.filter((id) => toolIds.includes(id)).length;
+                const ids = group.tools.map((tool) => tool.id);
+                const selectedCount = ids.filter((gid) => toolIds.includes(gid)).length;
                 const allSelected = ids.length > 0 && selectedCount === ids.length;
                 const someSelected = selectedCount > 0 && !allSelected;
                 const open = Boolean(openGroups[group.id]);
@@ -373,22 +380,22 @@ export function AgentFormPage({ avatarPresets = [] }: { avatarPresets?: AvatarPr
                     </div>
                     {open && (
                       <div className="grid gap-1.5 border-t border-app-border px-2 py-2">
-                        {group.tools.map((t) => (
+                        {group.tools.map((tool) => (
                           <label
-                            key={t.id}
+                            key={tool.id}
                             className="flex items-start gap-2 text-sm text-app-text"
                           >
                             <input
                               type="checkbox"
-                              checked={toolIds.includes(t.id)}
-                              onChange={() => toggleTool(t.id)}
+                              checked={toolIds.includes(tool.id)}
+                              onChange={() => toggleTool(tool.id)}
                               className="mt-0.5 text-app-primary focus:ring-app-primary"
                             />
                             <span>
-                              <span className="font-mono text-xs">{t.id}</span>
-                              {t.description && (
+                              <span className="font-mono text-xs">{tool.id}</span>
+                              {tool.description && (
                                 <span className="block text-xs text-app-text-muted">
-                                  {t.description}
+                                  {tool.description}
                                 </span>
                               )}
                             </span>
@@ -403,46 +410,47 @@ export function AgentFormPage({ avatarPresets = [] }: { avatarPresets?: AvatarPr
           )}
         </Labeled>
 
-        <Labeled label="Model" required>
+        <Labeled label={t("fields.model")} required>
           <select value={modelId} onChange={(e) => setModelId(e.target.value)} className={inputCls}>
-            <option value="">Select a model…</option>
+            <option value="">{t("form.selectModel")}</option>
             {sortedModels.map((m) => {
               const recommended = recommendedIds.includes(m.id);
               const incompatible = toolsSelected && !m.supportsTools;
               return (
                 <option key={m.id} value={m.id} disabled={incompatible}>
-                  {m.displayName} ({m.provider.displayName}){recommended ? " · Recommended" : ""}
-                  {incompatible ? " · no tool support" : ""}
+                  {m.displayName} ({m.provider.displayName})
+                  {recommended ? t("form.recommendedSuffix") : ""}
+                  {incompatible ? t("form.noToolSupportSuffix") : ""}
                 </option>
               );
             })}
           </select>
           {recommendedNames.length > 0 && (
             <p className="mt-1 text-xs text-app-text-muted">
-              Recommended for {kind}: {recommendedNames.join(", ")}
-              {requiresTools ? " (this kind needs a tool-capable model)" : ""}
+              {t("form.recommendedFor", {
+                kind: t(`kind.${KIND_OPTIONS.find((k) => k.value === kind)?.labelKey ?? "custom"}`),
+                names: recommendedNames.join(", "),
+              })}
+              {requiresTools ? t("form.requiresTools") : ""}
             </p>
           )}
           {models.length === 0 && (
-            <p className="mt-1 text-xs text-app-text-muted">
-              No models available. An admin must enable a model with a ready provider in Admin -&gt;
-              AI / Models.
-            </p>
+            <p className="mt-1 text-xs text-app-text-muted">{t("form.noModels")}</p>
           )}
         </Labeled>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <Labeled label="Approval mode">
+          <Labeled label={t("fields.approvalMode")}>
             <select
               value={approvalMode}
               onChange={(e) => setApprovalMode(e.target.value as ApprovalMode)}
               className={inputCls}
             >
-              <option value="ask">ask (confirm writes)</option>
-              <option value="auto">auto (run writes)</option>
+              <option value="ask">{t("form.approvalAsk")}</option>
+              <option value="auto">{t("form.approvalAuto")}</option>
             </select>
           </Labeled>
-          <Labeled label="Max tool calls">
+          <Labeled label={t("fields.maxToolCalls")}>
             <input
               type="number"
               min={1}
@@ -452,7 +460,7 @@ export function AgentFormPage({ avatarPresets = [] }: { avatarPresets?: AvatarPr
               className={inputCls}
             />
           </Labeled>
-          <Labeled label="Token budget (optional)">
+          <Labeled label={t("fields.tokenBudget")}>
             <input
               type="number"
               min={1}
@@ -461,21 +469,18 @@ export function AgentFormPage({ avatarPresets = [] }: { avatarPresets?: AvatarPr
               className={inputCls}
             />
           </Labeled>
-          <Labeled label="Temperature (optional)">
+          <Labeled label={t("fields.temperature")}>
             <input
               type="number"
               min={0}
               max={2}
               step={0.1}
               value={temperature}
-              placeholder="Recommended"
+              placeholder={t("form.temperaturePlaceholder")}
               onChange={(e) => setTemperature(e.target.value)}
               className={inputCls}
             />
-            <p className="mt-1 text-xs text-app-text-muted">
-              Higher is more creative, lower is more deterministic. Leave blank to use the
-              recommended default for the model.
-            </p>
+            <p className="mt-1 text-xs text-app-text-muted">{t("form.temperatureHint")}</p>
           </Labeled>
         </div>
 
@@ -485,7 +490,7 @@ export function AgentFormPage({ avatarPresets = [] }: { avatarPresets?: AvatarPr
             onClick={() => navigate(isEdit && id ? `/agents/${id}` : "/agents")}
             className="rounded-md border border-app-border bg-app-surface px-3 py-1.5 text-sm text-app-text hover:bg-app-surface-hover"
           >
-            Cancel
+            {t("actions.cancel")}
           </button>
           <button
             type="button"
@@ -493,7 +498,11 @@ export function AgentFormPage({ avatarPresets = [] }: { avatarPresets?: AvatarPr
             onClick={() => void save()}
             className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on hover:opacity-90 disabled:opacity-50"
           >
-            {saving ? "Saving…" : isEdit ? "Save changes" : "Create agent"}
+            {saving
+              ? t("actions.saving")
+              : isEdit
+                ? t("actions.saveChanges")
+                : t("actions.createAgent")}
           </button>
         </div>
       </div>
@@ -509,10 +518,14 @@ function CategoryCombobox({
   value,
   onChange,
   options,
+  placeholder,
+  toggleLabel,
 }: {
   value: string;
   onChange: (v: string) => void;
   options: string[];
+  placeholder: string;
+  toggleLabel: string;
 }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -539,14 +552,14 @@ function CategoryCombobox({
         }}
         onFocus={() => setOpen(true)}
         onKeyDown={(e) => e.key === "Escape" && setOpen(false)}
-        placeholder="e.g. Plan & Coordinate"
+        placeholder={placeholder}
         className={`${inputCls} ${options.length > 0 ? "pr-8" : ""}`}
       />
       {options.length > 0 && (
         <button
           type="button"
           tabIndex={-1}
-          aria-label="Toggle category list"
+          aria-label={toggleLabel}
           onClick={() => setOpen((v) => !v)}
           className="absolute inset-y-0 right-0 flex items-center px-2 text-xs text-app-text-muted"
         >

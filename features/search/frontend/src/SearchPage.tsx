@@ -4,6 +4,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { PageLayout } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
 import type { SearchHit, SearchResults } from "@internal/shared-types";
+import { useTranslation } from "@internal/i18n";
 
 type Kind = SearchHit["kind"];
 
@@ -18,28 +19,6 @@ const KIND_ORDER: Kind[] = [
   "agent",
   "devdoc",
 ];
-
-const SECTION_TITLE: Record<Kind, string> = {
-  project: "Projects",
-  task: "Tasks",
-  catalog: "Catalog",
-  team: "Teams",
-  page: "Pages",
-  chat: "Conversations",
-  agent: "Agents",
-  devdoc: "DevDocs",
-};
-
-const KIND_LABEL: Record<Kind, string> = {
-  catalog: "catalog entity",
-  team: "team",
-  agent: "agent",
-  devdoc: "devdoc",
-  project: "project",
-  task: "task",
-  chat: "conversation",
-  page: "page",
-};
 
 function hrefFor(hit: SearchHit): string | null {
   if (hit.href) return hit.href;
@@ -83,6 +62,7 @@ function groupByKind(hits: SearchHit[]): Array<{ kind: Kind; hits: SearchHit[] }
 }
 
 export function SearchPage() {
+  const { t } = useTranslation("search");
   const api = useApi();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialQuery = searchParams.get("q") ?? "";
@@ -98,7 +78,7 @@ export function SearchPage() {
     try {
       setResults(await api.search.query(q));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Search failed");
+      setError(err instanceof Error ? err.message : t("errors.searchFailed"));
     } finally {
       setLoading(false);
     }
@@ -120,15 +100,12 @@ export function SearchPage() {
   const groups = results ? groupByKind(results.hits) : [];
 
   return (
-    <PageLayout
-      title="Search"
-      description="Find catalog entities, projects, tasks, teams, agents, pages, conversations, and DevDocs pages."
-    >
+    <PageLayout title={t("page.title")} description={t("page.description")}>
       <form onSubmit={run} className="flex gap-2 mb-4">
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search…"
+          placeholder={t("form.placeholder")}
           className="flex-1 rounded-lg border border-app-border bg-app-bg px-3 py-1.5 text-sm text-app-text placeholder:text-app-text-muted focus:outline-none focus:ring-2 focus:ring-app-primary focus:border-transparent"
         />
         <button
@@ -136,14 +113,16 @@ export function SearchPage() {
           className="rounded-lg bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-foreground hover:bg-app-primary-hover disabled:opacity-50"
           disabled={loading}
         >
-          {loading ? "Searching…" : "Search"}
+          {loading ? t("form.submitting") : t("form.submit")}
         </button>
       </form>
 
       {error && <p className="text-sm text-app-danger">{error}</p>}
 
       {results && results.hits.length === 0 && (
-        <p className="text-sm text-app-text-muted">No results for &ldquo;{results.query}&rdquo;.</p>
+        <p className="text-sm text-app-text-muted">
+          {t("empty.noResults", { query: results.query })}
+        </p>
       )}
 
       {groups.length > 0 && (
@@ -151,7 +130,7 @@ export function SearchPage() {
           {groups.map((group) => (
             <section key={group.kind}>
               <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-app-text-muted">
-                {SECTION_TITLE[group.kind]}
+                {t(`sections.${group.kind}`)}
               </h2>
               <ul className="divide-y divide-app-border border-t border-app-border">
                 {group.hits.map((hit) => {
@@ -183,7 +162,7 @@ export function SearchPage() {
                   return (
                     <li key={`${hit.kind}:${hit.id}`} className="py-3">
                       <div>{titleNode}</div>
-                      <div className="text-xs text-app-text-muted">{KIND_LABEL[hit.kind]}</div>
+                      <div className="text-xs text-app-text-muted">{t(`kinds.${hit.kind}`)}</div>
                       {hit.snippet && <p className="mt-1 text-sm text-app-text">{hit.snippet}</p>}
                     </li>
                   );

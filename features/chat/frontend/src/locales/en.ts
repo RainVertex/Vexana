@@ -1,0 +1,45 @@
+export const en = {
+  page: {
+    defaultTitle: "Assistant",
+    loading: "Loading…",
+    openConversations: "Open conversations",
+  },
+  conversations: {
+    heading: "Conversations",
+    newChat: "New chat",
+    empty: "No conversations yet. Send a message to start one.",
+    deleteConversation: "Delete conversation",
+    confirmDelete: "Confirm delete",
+    cancelDelete: "Cancel delete",
+  },
+  widget: {
+    newChat: "New chat",
+    openFullView: "Open in full view",
+  },
+  composer: {
+    placeholder: "Ask about your work, teams, requests…",
+    widgetPlaceholder: "Ask anything…",
+    send: "Send",
+    stop: "Stop",
+    stopDisabledTooltip: "submission in progress — wait for it to complete or roll back",
+  },
+  welcome: {
+    title: "Welcome to the Assistant",
+    body: "Ask about your work, teams, catalog entities, requests, or anything readable in the app. You can also start a team-creation request directly here.",
+  },
+  message: {
+    youFallback: "You",
+    assistantFallback: "Assistant",
+  },
+  reasoning: {
+    streaming: "Reasoning - {{seconds}}s",
+    done: "Reasoned - {{seconds}}s",
+  },
+  toolCall: {
+    args: "args:",
+    result: "result:",
+    error: "error:",
+  },
+};
+
+export type ChatResources = typeof en;

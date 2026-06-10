@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { PageLayout } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type { ScaffolderBinding } from "@internal/shared-types";
 import { TemplateDriftBadge } from "./TemplateDriftBadge";
 
 export function BindingsPage() {
   const api = useApi();
+  const { t } = useTranslation("scaffolder");
   const [items, setItems] = useState<ScaffolderBinding[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -13,18 +15,17 @@ export function BindingsPage() {
     api.scaffolder
       .listBindings()
       .then((res) => setItems(res.items))
-      .catch((err) => setError(err.message ?? "Failed to load bindings"));
-  }, [api]);
+      .catch((err) => setError(err.message ?? t("errors.loadTemplates")));
+  }, [api, t]);
 
   return (
-    <PageLayout
-      title="Scaffolder bindings"
-      description="Generated artifacts and the templates that produced them."
-    >
+    <PageLayout title={t("page.bindingsTitle")} description={t("page.bindingsDescription")}>
       {error && <p className="text-sm text-red-600">{error}</p>}
-      {!error && items === null && <p className="text-sm text-app-text-muted">Loading…</p>}
+      {!error && items === null && (
+        <p className="text-sm text-app-text-muted">{t("loading.generic")}</p>
+      )}
       {items && items.length === 0 && (
-        <p className="text-sm text-app-text-muted">No bindings yet.</p>
+        <p className="text-sm text-app-text-muted">{t("empty.noBindings")}</p>
       )}
       {items && items.length > 0 && (
         <ul className="divide-y divide-app-border rounded-md border border-app-border bg-app-surface">

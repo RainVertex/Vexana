@@ -2,9 +2,11 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { PageLayout } from "@internal/shared-ui";
+import { useTranslation } from "@internal/i18n";
 import { useProjects, useCreateProject } from "./api";
 
 export function ProjectsPage() {
+  const { t } = useTranslation("projects");
   const { projects, loading, error, refetch } = useProjects();
   const { create: createProject, loading: creating, error: createError } = useCreateProject();
   const [showNewProject, setShowNewProject] = useState(false);
@@ -36,8 +38,8 @@ export function ProjectsPage() {
 
   return (
     <PageLayout
-      title="Projects"
-      description="Project boards and tasks."
+      title={t("page.projectsTitle")}
+      description={t("page.projectsDescription")}
       actions={
         <button
           type="button"
@@ -45,7 +47,7 @@ export function ProjectsPage() {
           disabled={showNewProject}
           className="rounded-md border border-app-border bg-app-primary px-3 py-1.5 text-sm text-app-primary-on hover:opacity-90 disabled:opacity-50"
         >
-          + New Project
+          {t("actions.newProject")}
         </button>
       }
     >
@@ -59,7 +61,9 @@ export function ProjectsPage() {
               {createError}
             </div>
           )}
-          <label className="block text-xs font-medium text-app-text-muted">Title</label>
+          <label className="block text-xs font-medium text-app-text-muted">
+            {t("form.titleLabel")}
+          </label>
           <input
             type="text"
             value={newTitle}
@@ -67,18 +71,18 @@ export function ProjectsPage() {
             autoFocus
             required
             maxLength={200}
-            placeholder="My new project"
+            placeholder={t("form.titlePlaceholder")}
             className="mt-1 w-full rounded-md border border-app-border bg-app-surface px-3 py-2 text-sm text-app-text"
           />
           <label className="mt-3 block text-xs font-medium text-app-text-muted">
-            Description (optional)
+            {t("form.descriptionLabel")}
           </label>
           <textarea
             value={newDescription}
             onChange={(e) => setNewDescription(e.target.value)}
             rows={2}
             maxLength={10000}
-            placeholder="What is this project about?"
+            placeholder={t("form.descriptionPlaceholderNew")}
             className="mt-1 w-full rounded-md border border-app-border bg-app-surface px-3 py-2 text-sm text-app-text"
           />
           <div className="mt-3 flex items-center gap-2">
@@ -87,7 +91,7 @@ export function ProjectsPage() {
               disabled={creating || !newTitle.trim()}
               className="rounded-md border border-app-border bg-app-primary px-3 py-1.5 text-sm text-app-primary-on hover:opacity-90 disabled:opacity-50"
             >
-              {creating ? "Creating..." : "Create"}
+              {creating ? t("actions.creating") : t("actions.create")}
             </button>
             <button
               type="button"
@@ -95,7 +99,7 @@ export function ProjectsPage() {
               disabled={creating}
               className="rounded-md border border-app-border bg-app-surface px-3 py-1.5 text-sm text-app-text hover:bg-app-surface-hover"
             >
-              Cancel
+              {t("actions.cancel")}
             </button>
           </div>
         </form>
@@ -108,11 +112,9 @@ export function ProjectsPage() {
       )}
 
       {loading ? (
-        <p className="text-sm text-app-text-muted">Loading...</p>
+        <p className="text-sm text-app-text-muted">{t("loading.generic")}</p>
       ) : projects.length === 0 ? (
-        <p className="text-sm text-app-text-muted">
-          No projects yet. Click "+ New Project" to create one.
-        </p>
+        <p className="text-sm text-app-text-muted">{t("empty.noProjects")}</p>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((p) => (
@@ -125,10 +127,10 @@ export function ProjectsPage() {
                 <h3 className="flex-1 text-sm font-medium text-app-text">{p.title}</h3>
                 {p.isAutoProvisioned && (
                   <span
-                    title="Synced from GitHub repository"
+                    title={t("info.syncedBadgeTitle")}
                     className="rounded-full border border-app-border bg-app-surface px-1.5 py-0.5 text-[10px] text-app-text-muted"
                   >
-                    Synced
+                    {t("info.syncedBadge")}
                   </span>
                 )}
               </div>
@@ -136,7 +138,7 @@ export function ProjectsPage() {
                 <p className="mt-1 text-xs text-app-text-muted line-clamp-2">{p.description}</p>
               )}
               <div className="mt-3 text-[11px] text-app-text-muted">
-                {p.taskCount !== undefined ? `${p.taskCount} tasks` : ""}
+                {p.taskCount !== undefined ? t("info.taskCount", { count: p.taskCount }) : ""}
               </div>
             </Link>
           ))}

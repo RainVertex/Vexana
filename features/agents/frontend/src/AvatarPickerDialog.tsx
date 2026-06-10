@@ -1,6 +1,7 @@
 // Modal gallery for picking a platform-shipped preset agent avatar.
 import { useEffect } from "react";
 import { AgentAvatar } from "@internal/shared-ui";
+import { useTranslation } from "@internal/i18n";
 import type { AvatarPreset } from "./avatarPresets";
 
 interface AvatarPickerDialogProps {
@@ -18,6 +19,8 @@ export function AvatarPickerDialog({
   onSelect,
   onClose,
 }: AvatarPickerDialogProps) {
+  const { t } = useTranslation("agents");
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -40,9 +43,9 @@ export function AvatarPickerDialog({
         className="w-full max-w-lg rounded-lg border border-app-border bg-app-surface p-4 shadow-lg"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="mb-3 text-sm font-semibold text-app-text">Choose an avatar</h3>
+        <h3 className="mb-3 text-sm font-semibold text-app-text">{t("avatar.dialogTitle")}</h3>
         {presets.length === 0 && (
-          <p className="text-xs text-app-text-muted">No preset avatars are available.</p>
+          <p className="text-xs text-app-text-muted">{t("avatar.noPresets")}</p>
         )}
         <div className="grid grid-cols-5 gap-3">
           {presets.map((preset) => {
@@ -68,7 +71,7 @@ export function AvatarPickerDialog({
             onClick={onClose}
             className="rounded px-3 py-1.5 text-sm text-app-text-muted hover:bg-app-surface-hover"
           >
-            Cancel
+            {t("avatar.cancelButton")}
           </button>
         </div>
       </div>

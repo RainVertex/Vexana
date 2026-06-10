@@ -5,8 +5,8 @@ PRETTIER_FILES=$(echo "$STAGED" | grep -E '\.(ts|tsx|js|jsx|json|md|css)$' || tr
 if [ -z "$PRETTIER_FILES" ]; then
   echo "No files to format"
 else
-  echo "$PRETTIER_FILES" | xargs yarn prettier --write || exit 1
-  echo "$PRETTIER_FILES" | xargs git add
+  echo "$PRETTIER_FILES" | xargs -n 100 yarn prettier --write || exit 1
+  echo "$PRETTIER_FILES" | xargs -n 100 git add
   echo "+-+-+ PRETTIER FORMATTING DONE +-+-+"
 fi
 
@@ -15,7 +15,7 @@ ESLINT_FILES=$(echo "$STAGED" | grep -E '\.(ts|tsx|js|jsx)$' || true)
 if [ -z "$ESLINT_FILES" ]; then
   echo "No files to lint"
 else
-  echo "$ESLINT_FILES" | xargs yarn eslint --fix || exit 1
-  echo "$ESLINT_FILES" | xargs git add
+  echo "$ESLINT_FILES" | xargs -n 100 yarn eslint --fix || exit 1
+  echo "$ESLINT_FILES" | xargs -n 100 git add
   echo "+-+-+ ESLINT DONE +-+-+"
 fi

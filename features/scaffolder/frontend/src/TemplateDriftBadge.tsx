@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DriftBadge } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type { ScaffolderDriftSummaryDto } from "@internal/shared-types";
 
 export interface TemplateDriftBadgeProps {
@@ -15,6 +16,7 @@ export interface TemplateDriftBadgeProps {
 export function TemplateDriftBadge({ bindingId, templateId }: TemplateDriftBadgeProps) {
   const api = useApi();
   const navigate = useNavigate();
+  const { t } = useTranslation("scaffolder");
   const [data, setData] = useState<ScaffolderDriftSummaryDto | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +43,7 @@ export function TemplateDriftBadge({ bindingId, templateId }: TemplateDriftBadge
       const plan = await api.scaffolder.replanBinding(bId);
       navigate(`/scaffolder/plans/${plan.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Replan failed");
+      setError(err instanceof Error ? err.message : t("errors.replanFailed"));
     } finally {
       setBusy(null);
     }
@@ -54,14 +56,14 @@ export function TemplateDriftBadge({ bindingId, templateId }: TemplateDriftBadge
       await api.scaffolder.updateDrift(driftId, "ignored");
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Update failed");
+      setError(err instanceof Error ? err.message : t("errors.updateFailed"));
     } finally {
       setBusy(null);
     }
   }
 
   return (
-    <DriftBadge count={data.openCount} label="drifted" severity="warn">
+    <DriftBadge count={data.openCount} label={t("drift.drifted")} severity="warn">
       <div className="space-y-3">
         {error && <div className="text-app-danger">{error}</div>}
         {data.byBinding.map((b) => (
@@ -85,7 +87,7 @@ export function TemplateDriftBadge({ bindingId, templateId }: TemplateDriftBadge
                     onClick={() => void replan(b.bindingId)}
                     className="rounded bg-app-primary px-2 py-0.5 text-[11px] text-app-primary-on disabled:opacity-50"
                   >
-                    Replan
+                    {t("drift.replan")}
                   </button>
                   <button
                     type="button"
@@ -93,7 +95,7 @@ export function TemplateDriftBadge({ bindingId, templateId }: TemplateDriftBadge
                     onClick={() => void ignore(d.id)}
                     className="rounded border border-app-border px-2 py-0.5 text-[11px] text-app-text-muted hover:bg-app-surface-hover disabled:opacity-50"
                   >
-                    Ignore
+                    {t("drift.ignore")}
                   </button>
                 </div>
               </div>

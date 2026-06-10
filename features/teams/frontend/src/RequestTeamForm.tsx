@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ApiError } from "@internal/api-client";
 import { useApi } from "@internal/api-client/react";
+import { useTranslation } from "@internal/i18n";
 import type {
   GithubInstallationSummary,
   TeamPolicyViolation,
@@ -27,6 +28,7 @@ export function RequestTeamForm({
   variant = "dialog",
 }: RequestTeamFormProps) {
   const api = useApi();
+  const { t } = useTranslation("teams");
   const [slug, setSlug] = useState("");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -73,7 +75,7 @@ export function RequestTeamForm({
       });
       onSubmitted(res.createdTeamSlug ?? null);
     } catch (err) {
-      setError(toSubmitError(err));
+      setError(toSubmitError(err, t("errors.submissionFailed")));
     } finally {
       setBusy(false);
     }
@@ -105,12 +107,12 @@ export function RequestTeamForm({
   return (
     <div className={variant === "page" ? "max-w-xl space-y-4 text-sm" : "space-y-3 text-sm"}>
       <label className="block">
-        <span className="text-xs text-app-text-muted">Team name</span>
+        <span className="text-xs text-app-text-muted">{t("form.teamNameLabel")}</span>
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="My new team"
+          placeholder={t("form.teamNamePlaceholder")}
           disabled={busy}
           className={inputClass}
         />
@@ -118,12 +120,12 @@ export function RequestTeamForm({
       </label>
 
       <label className="block">
-        <span className="text-xs text-app-text-muted">Slug</span>
+        <span className="text-xs text-app-text-muted">{t("form.slugLabel")}</span>
         <input
           type="text"
           value={slug}
           onChange={(e) => setSlug(e.target.value)}
-          placeholder="data-platform-team"
+          placeholder={t("form.slugPlaceholder")}
           disabled={busy}
           className={inputClass}
         />
@@ -131,7 +133,7 @@ export function RequestTeamForm({
       </label>
 
       <label className="block">
-        <span className="text-xs text-app-text-muted">Description (optional)</span>
+        <span className="text-xs text-app-text-muted">{t("form.descriptionLabel")}</span>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
@@ -143,7 +145,7 @@ export function RequestTeamForm({
 
       <section className="space-y-2">
         <div>
-          <div className="text-xs text-app-text-muted">Maintainers (optional)</div>
+          <div className="text-xs text-app-text-muted">{t("form.maintainersLabel")}</div>
           {pickedMaintainers.length > 0 && (
             <ul className="mt-1 flex flex-wrap gap-1">
               {pickedMaintainers.map((u) => (
@@ -160,14 +162,14 @@ export function RequestTeamForm({
             <UserPicker
               excludeIds={excludeIds}
               onSelect={addMaintainer}
-              placeholder="Add a maintainer…"
+              placeholder={t("form.addMaintainerPlaceholder")}
               disabled={busy}
             />
           </div>
         </div>
 
         <div>
-          <div className="text-xs text-app-text-muted">Members (optional)</div>
+          <div className="text-xs text-app-text-muted">{t("form.membersLabel")}</div>
           {pickedMembers.length > 0 && (
             <ul className="mt-1 flex flex-wrap gap-1">
               {pickedMembers.map((u) => (
@@ -179,16 +181,13 @@ export function RequestTeamForm({
             <UserPicker
               excludeIds={excludeIds}
               onSelect={addMember}
-              placeholder="Add a member…"
+              placeholder={t("form.addMemberPlaceholder")}
               disabled={busy}
             />
           </div>
         </div>
 
-        <p className="text-xs text-app-text-muted">
-          If you don&apos;t choose any members or maintainer, only you will be added as the
-          maintainer.
-        </p>
+        <p className="text-xs text-app-text-muted">{t("form.noMembersHint")}</p>
       </section>
 
       <label className="flex items-center gap-2">
@@ -198,19 +197,19 @@ export function RequestTeamForm({
           onChange={(e) => setMirrorToGithub(e.target.checked)}
           disabled={busy}
         />
-        <span className="text-app-text">Mirror to GitHub?</span>
+        <span className="text-app-text">{t("form.mirrorToGithub")}</span>
       </label>
 
       {mirrorToGithub && (
         <label className="block">
-          <span className="text-xs text-app-text-muted">Which GitHub org?</span>
+          <span className="text-xs text-app-text-muted">{t("form.whichGithubOrg")}</span>
           <select
             value={githubIntegrationId}
             onChange={(e) => setGithubIntegrationId(e.target.value)}
             disabled={busy || !installationsLoaded || installations.length === 0}
             className={inputClass}
           >
-            <option value="">— Select an org —</option>
+            <option value="">{t("form.selectOrgPlaceholder")}</option>
             {installations.map((i) => (
               <option key={i.integrationId} value={i.integrationId}>
                 {i.accountLogin} ({i.name})
@@ -218,15 +217,10 @@ export function RequestTeamForm({
             ))}
           </select>
           {installationsLoaded && installations.length === 0 && (
-            <p className="mt-1 text-xs text-app-text-muted">
-              No active GitHub integrations connected. Ask an admin to install the GitHub App first.
-            </p>
+            <p className="mt-1 text-xs text-app-text-muted">{t("form.noGithubIntegrations")}</p>
           )}
           {(pickedMaintainers.length > 0 || pickedMembers.length > 0) && (
-            <p className="mt-1 text-xs text-app-text-muted">
-              Picked users will also be added to the GitHub team. Anyone GitHub can&apos;t add (e.g.
-              not in the org and not invitable) will be skipped — the rest will go through.
-            </p>
+            <p className="mt-1 text-xs text-app-text-muted">{t("form.githubMembersHint")}</p>
           )}
         </label>
       )}
@@ -241,7 +235,7 @@ export function RequestTeamForm({
             disabled={busy}
             className="rounded-md px-3 py-1 text-app-text-muted hover:bg-app-surface-hover"
           >
-            Cancel
+            {t("actions.cancel")}
           </button>
         )}
         <button
@@ -250,14 +244,14 @@ export function RequestTeamForm({
           disabled={!canSubmit}
           className="rounded-md bg-app-primary px-3 py-1 text-app-primary-on disabled:opacity-50"
         >
-          {busy ? "Submitting…" : "Submit"}
+          {busy ? t("actions.submitting") : t("actions.submit")}
         </button>
       </div>
     </div>
   );
 }
 
-function toSubmitError(err: unknown): SubmitError {
+function toSubmitError(err: unknown, fallback: string): SubmitError {
   if (err instanceof ApiError) {
     return {
       message: err.message,
@@ -265,7 +259,7 @@ function toSubmitError(err: unknown): SubmitError {
     };
   }
   return {
-    message: err instanceof Error ? err.message : "Submission failed",
+    message: err instanceof Error ? err.message : fallback,
     policyViolation: null,
   };
 }
@@ -277,6 +271,7 @@ interface UserChipProps {
 }
 
 function UserChip({ user, onRemove, disabled }: UserChipProps) {
+  const { t } = useTranslation("teams");
   return (
     <li className="inline-flex items-center gap-1 rounded-full border border-app-border bg-app-surface px-2 py-0.5 text-xs text-app-text">
       <span>{user.displayName}</span>
@@ -284,7 +279,7 @@ function UserChip({ user, onRemove, disabled }: UserChipProps) {
         type="button"
         onClick={onRemove}
         disabled={disabled}
-        aria-label={`Remove ${user.displayName}`}
+        aria-label={t("members.removeAriaLabel", { name: user.displayName })}
         className="text-app-text-muted hover:text-app-danger disabled:opacity-50"
       >
         ×
