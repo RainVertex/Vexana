@@ -1,26 +1,29 @@
+import { useTranslation, LanguageSwitcher } from "@internal/i18n";
 import { useAuth } from "./AuthContext";
 
-const ERROR_MESSAGES: Record<string, string> = {
-  not_in_org: "Organizasyona dahil değilsiniz.",
-  bad_oauth_state: "The sign-in link expired or was tampered with. Please try again.",
-  account_disabled: "Your account has been disabled. Contact an admin.",
+const ERROR_KEYS: Record<string, string> = {
+  not_in_org: "auth.errorNotInOrg",
+  bad_oauth_state: "auth.errorBadOauthState",
+  account_disabled: "auth.errorAccountDisabled",
 };
 
 export function SignInPage() {
   const { signIn } = useAuth();
+  const { t } = useTranslation();
   const params = new URLSearchParams(window.location.search);
   const error = params.get("error");
-  const errorMessage = error
-    ? (ERROR_MESSAGES[error] ?? "Sign-in failed. Please try again.")
-    : null;
+  const errorMessage = error ? t(ERROR_KEYS[error] ?? "auth.errorGeneric") : null;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-app-bg px-4">
       <div className="w-full max-w-md rounded-lg border border-app-border bg-app-surface p-8 shadow-sm">
-        <h1 className="text-xl font-semibold text-app-text mb-1">Vexana</h1>
-        <p className="text-sm text-app-text-muted mb-6">
-          Internal tooling for our engineering org. Sign in with GitHub to continue.
-        </p>
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-semibold text-app-text mb-1">Vexana</h1>
+            <p className="text-sm text-app-text-muted">{t("auth.tagline")}</p>
+          </div>
+          <LanguageSwitcher variant="select" />
+        </div>
 
         {errorMessage && (
           <div className="mb-4 rounded-md border border-app-danger bg-app-surface px-3 py-2 text-sm text-app-danger">
@@ -34,12 +37,10 @@ export function SignInPage() {
           className="w-full flex items-center justify-center gap-2 rounded-md bg-app-text px-4 py-2.5 text-sm font-medium text-app-bg hover:opacity-90 transition-opacity"
         >
           <GithubIcon />
-          Sign in with GitHub
+          {t("auth.signInWithGithub")}
         </button>
 
-        <p className="mt-4 text-xs text-app-text-muted">
-          You must be a member of our GitHub organization to access the platform.
-        </p>
+        <p className="mt-4 text-xs text-app-text-muted">{t("auth.orgRequirement")}</p>
       </div>
     </div>
   );

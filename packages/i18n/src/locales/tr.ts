@@ -1,0 +1,117 @@
+import type { ShellResources } from "./en";
+
+export const tr: ShellResources = {
+  common: {
+    loading: "Yükleniyor…",
+    adminOnly: "Yalnızca yönetici.",
+    active: "Etkin",
+  },
+  auth: {
+    tagline:
+      "Mühendislik organizasyonumuz için dahili araçlar. Devam etmek için GitHub ile oturum açın.",
+    signInWithGithub: "GitHub ile oturum aç",
+    orgRequirement: "Platforma erişmek için GitHub organizasyonumuzun üyesi olmalısınız.",
+    errorGeneric: "Oturum açma başarısız oldu. Lütfen tekrar deneyin.",
+    errorNotInOrg: "Organizasyona dahil değilsiniz.",
+    errorBadOauthState:
+      "Oturum açma bağlantısının süresi doldu veya bağlantı değiştirildi. Lütfen tekrar deneyin.",
+    errorAccountDisabled: "Hesabınız devre dışı bırakıldı. Bir yöneticiyle iletişime geçin.",
+  },
+  nav: {
+    home: "Ana sayfa",
+    chat: "Asistan",
+    catalog: "Katalog",
+    selfservice: "Self servis",
+    requests: "Talepler",
+    workspace: "Projeler",
+    agents: "Ajanlar",
+    teams: "Takımlar",
+    observability: "Gözlemlenebilirlik",
+    integrations: "Entegrasyonlar",
+    admin: "Yönetim",
+    settings: "Ayarlar",
+    pin: "Sabitle",
+    unpin: "Sabitlemeyi kaldır",
+    pinSidebar: "Kenar çubuğunu sabitle",
+    unpinSidebar: "Kenar çubuğu sabitlemesini kaldır",
+    pendingBadge: "{{label}} ({{count}} bekliyor)",
+  },
+  header: {
+    openSettings: "Ayarları aç",
+  },
+  home: {
+    welcome: "Tekrar hoş geldiniz, {{name}}",
+    subtitle: "Vexana panonuza genel bakış.",
+    emptyTitle: "Ana sayfanızda widget yok",
+    emptyHint: 'Düzenleme moduna geçin ve başlamak için "Widget ekle" düğmesine tıklayın.',
+  },
+  settings: {
+    title: "Ayarlar",
+    description: "Profil ve görünüm tercihleriniz.",
+    profileTitle: "Profil",
+    profileDescription: "GitHub hesabınızdan alınmıştır.",
+    appearanceTitle: "Görünüm",
+    appearanceDescription: "Bir tema seçin. Seçiminiz bu tarayıcıda kaydedilir.",
+    languageTitle: "Dil",
+    languageDescription: "Bir dil seçin. Seçiminiz bu tarayıcıda kaydedilir.",
+    themeLabel: "Tema",
+  },
+  profile: {
+    roleAdmin: "Yönetici",
+    roleMember: "Üye",
+    roleViewer: "İzleyici",
+    fieldDisplayName: "Görünen ad",
+    fieldEmail: "E-posta",
+    fieldGithub: "GitHub",
+    fieldRole: "Rol",
+    fieldLastLogin: "Son giriş",
+    fieldStatus: "Durum",
+    sourcedNote:
+      "Adınız, e-postanız ve avatarınız GitHub'dan alınır. Bunları değiştirmek için GitHub profilinizi güncelleyin. Rol değişiklikleri bir yönetici tarafından yapılır.",
+    signOut: "Oturumu kapat",
+  },
+  forbidden: {
+    title: "Erişim reddedildi",
+    body: "Bu sayfayı görüntülemek için <strong>yönetici</strong> rolüne sahip olmanız gerekir.",
+  },
+  admin: {
+    usersTitle: "Kullanıcılar",
+    usersManage: "Platforma kimlerin erişebileceğini yönetin.",
+    usersDeleteConfirm: "{{name}} (@{{login}}) kalıcı olarak silinsin mi? Bu işlem geri alınamaz.",
+    aiModelsTitle: "Yapay zeka / Modeller",
+    aiModelsDescription:
+      "Desteklenen modeller, sağlayıcı hazırlığı ve etkin sohbet modeli. Hazır bir sağlayıcıdan araç destekli bir model seçene kadar asistan kullanılamaz durumda kalır.",
+    auditTitle: "Denetim kaydı",
+    auditDescription: "Platformdaki son ayrıcalıklı işlemler.",
+    jobsTitle: "İşler",
+    jobsDescription: "Arka plan zamanlayıcısı. Ne çalışıyor, ne başarısız oldu ve ne zaman.",
+    mcpTokensTitle: "MCP belirteçleri",
+    mcpTokensDescription: "/mcp/scaffolder çağıran harici ajanlar için taşıyıcı belirteçler.",
+    auditEmpty: "Eşleşen olay yok.",
+    jobsEmpty: "Kayıtlı iş yok.",
+    mcpTokensEmpty: "Henüz MCP belirteci verilmedi.",
+  },
+  themes: {
+    light: { label: "Açık", description: "Temiz ve aydınlık varsayılan." },
+    ocean: { label: "Okyanus", description: "Serin maviler ve turkuaz vurgular." },
+    nordic: {
+      label: "Nordik",
+      description: "Doygunluğu azaltılmış serin maviler. Gözleri yormaz.",
+    },
+    sandstone: {
+      label: "Kum taşı",
+      description: "Yumuşak ten rengi üzerine sıcak terakota.",
+    },
+    parchment: {
+      label: "Parşömen",
+      description: "Koyu kahverengi ile krem kağıt. Okuma için tasarlandı.",
+    },
+    sunset: { label: "Gün batımı", description: "Sıcak turuncular ve pembe vurgular." },
+    rose: { label: "Gül", description: "Yumuşak pembeler ve magenta dokunuşu." },
+    dark: { label: "Koyu", description: "Uzun oturumlarda gözleri yormaz." },
+    midnight: {
+      label: "Gece yarısı",
+      description: "Mor vurgularla derin çivit mavisi.",
+    },
+  },
+};

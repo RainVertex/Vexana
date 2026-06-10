@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useRoutes, type RouteObject } from "react-router-dom";
+import { Trans, useTranslation } from "@internal/i18n";
 import { useCurrentUser } from "./auth";
 import { HomePage } from "./pages/HomePage";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -16,12 +17,13 @@ import { buildFeatureRoutes } from "./featureRoutes";
 
 function AdminRoute({ children }: { children: ReactNode }) {
   const me = useCurrentUser();
+  const { t } = useTranslation();
   if (me.role !== "admin") {
     return (
       <div className="p-8">
-        <h1 className="mb-2 text-xl font-semibold text-app-text">Forbidden</h1>
+        <h1 className="mb-2 text-xl font-semibold text-app-text">{t("forbidden.title")}</h1>
         <p className="text-sm text-app-text-muted">
-          You need the <strong>admin</strong> role to view this page.
+          <Trans i18nKey="forbidden.body" components={{ strong: <strong /> }} />
         </p>
       </div>
     );

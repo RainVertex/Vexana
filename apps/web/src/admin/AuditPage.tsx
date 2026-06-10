@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { PageLayout } from "@internal/shared-ui";
+import { Trans, useTranslation } from "@internal/i18n";
 import { useApi } from "@internal/api-client/react";
 import type { AuditEventRow } from "@internal/shared-types";
 import { useCurrentUser } from "../auth";
@@ -8,6 +9,7 @@ import { ProfileAvatar } from "../profile";
 export function AuditPage() {
   const client = useApi();
   const me = useCurrentUser();
+  const { t } = useTranslation();
   const [rows, setRows] = useState<AuditEventRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [kindFilter, setKindFilter] = useState("");
@@ -28,16 +30,16 @@ export function AuditPage() {
 
   if (me.role !== "admin") {
     return (
-      <PageLayout title="Audit log" description="Admin only.">
+      <PageLayout title={t("admin.auditTitle")} description={t("common.adminOnly")}>
         <div className="text-sm text-app-text-muted">
-          You need the <strong>admin</strong> role to view this page.
+          <Trans i18nKey="forbidden.body" components={{ strong: <strong /> }} />
         </div>
       </PageLayout>
     );
   }
 
   return (
-    <PageLayout title="Audit log" description="Recent privileged actions on the platform.">
+    <PageLayout title={t("admin.auditTitle")} description={t("admin.auditDescription")}>
       <div className="mb-4 flex items-center gap-3">
         <input
           type="text"
@@ -62,9 +64,9 @@ export function AuditPage() {
       )}
 
       {!rows ? (
-        <div className="text-sm text-app-text-muted">Loading…</div>
+        <div className="text-sm text-app-text-muted">{t("common.loading")}</div>
       ) : rows.length === 0 ? (
-        <div className="text-sm text-app-text-muted">No events match.</div>
+        <div className="text-sm text-app-text-muted">{t("admin.auditEmpty")}</div>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-app-border bg-app-surface">
           <table className="w-full text-sm">

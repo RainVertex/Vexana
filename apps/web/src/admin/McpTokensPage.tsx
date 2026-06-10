@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { PageLayout } from "@internal/shared-ui";
+import { Trans, useTranslation } from "@internal/i18n";
 import { useApi } from "@internal/api-client/react";
 import { useCurrentUser } from "../auth";
 
@@ -16,6 +17,7 @@ interface TokenRow {
 export function McpTokensPage() {
   const client = useApi();
   const me = useCurrentUser();
+  const { t: tr } = useTranslation();
   const [rows, setRows] = useState<TokenRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [revoking, setRevoking] = useState<string | null>(null);
@@ -79,9 +81,9 @@ export function McpTokensPage() {
 
   if (me.role !== "admin") {
     return (
-      <PageLayout title="MCP tokens" description="Admin only.">
+      <PageLayout title={tr("admin.mcpTokensTitle")} description={tr("common.adminOnly")}>
         <p className="text-sm text-app-text-muted">
-          You need the <strong>admin</strong> role to view this page.
+          <Trans i18nKey="forbidden.body" components={{ strong: <strong /> }} />
         </p>
       </PageLayout>
     );
@@ -89,8 +91,8 @@ export function McpTokensPage() {
 
   return (
     <PageLayout
-      title="MCP tokens"
-      description="Bearer tokens for external agents calling /mcp/scaffolder."
+      title={tr("admin.mcpTokensTitle")}
+      description={tr("admin.mcpTokensDescription")}
       actions={
         <button
           type="button"
@@ -179,9 +181,9 @@ export function McpTokensPage() {
       )}
 
       {!rows ? (
-        <p className="text-sm text-app-text-muted">Loading…</p>
+        <p className="text-sm text-app-text-muted">{tr("common.loading")}</p>
       ) : rows.length === 0 ? (
-        <p className="text-sm text-app-text-muted">No MCP tokens issued yet.</p>
+        <p className="text-sm text-app-text-muted">{tr("admin.mcpTokensEmpty")}</p>
       ) : (
         <ul className="divide-y divide-app-border rounded-md border border-app-border bg-app-surface">
           {rows.map((t) => (

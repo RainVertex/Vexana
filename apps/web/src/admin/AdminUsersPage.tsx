@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { PageLayout } from "@internal/shared-ui";
+import { Trans, useTranslation } from "@internal/i18n";
 import { useApi } from "@internal/api-client/react";
 import type { AdminUserRow, UserRole, UserStatus } from "@internal/shared-types";
 import { useCurrentUser } from "../auth";
@@ -8,6 +9,7 @@ import { ProfileAvatar } from "../profile";
 export function AdminUsersPage() {
   const client = useApi();
   const me = useCurrentUser();
+  const { t } = useTranslation();
   const [rows, setRows] = useState<AdminUserRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -40,9 +42,7 @@ export function AdminUsersPage() {
 
   async function remove(u: AdminUserRow) {
     if (
-      !window.confirm(
-        `Delete ${u.displayName} (@${u.githubLogin}) permanently? This cannot be undone.`,
-      )
+      !window.confirm(t("admin.usersDeleteConfirm", { name: u.displayName, login: u.githubLogin }))
     ) {
       return;
     }
@@ -59,16 +59,16 @@ export function AdminUsersPage() {
 
   if (me.role !== "admin") {
     return (
-      <PageLayout title="Users" description="Admin only.">
+      <PageLayout title={t("admin.usersTitle")} description={t("common.adminOnly")}>
         <div className="text-sm text-app-text-muted">
-          You need the <strong>admin</strong> role to view this page.
+          <Trans i18nKey="forbidden.body" components={{ strong: <strong /> }} />
         </div>
       </PageLayout>
     );
   }
 
   return (
-    <PageLayout title="Users" description="Manage who can access the platform.">
+    <PageLayout title={t("admin.usersTitle")} description={t("admin.usersManage")}>
       {error && (
         <div className="mb-4 rounded-md border border-app-danger bg-app-surface px-3 py-2 text-sm text-app-danger">
           {error}
@@ -76,7 +76,7 @@ export function AdminUsersPage() {
       )}
 
       {!rows ? (
-        <div className="text-sm text-app-text-muted">Loading…</div>
+        <div className="text-sm text-app-text-muted">{t("common.loading")}</div>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-app-border bg-app-surface">
           <table className="w-full text-sm">

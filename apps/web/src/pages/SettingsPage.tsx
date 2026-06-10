@@ -1,18 +1,23 @@
 import type { ReactNode } from "react";
 import { PageLayout } from "@internal/shared-ui";
+import { LanguageSwitcher, useTranslation } from "@internal/i18n";
 import { ProfileView } from "../profile";
 import { ThemeSwitcher } from "../theme";
 
 export function SettingsPage() {
+  const { t } = useTranslation();
   return (
-    <PageLayout title="Settings" description="Your profile and appearance preferences.">
+    <PageLayout title={t("settings.title")} description={t("settings.description")}>
       <div className="grid gap-6 max-w-4xl lg:grid-cols-2">
-        <Card title="Profile" description="Sourced from your GitHub account.">
+        <Card title={t("settings.profileTitle")} description={t("settings.profileDescription")}>
           <ProfileView />
         </Card>
+        <Card title={t("settings.languageTitle")} description={t("settings.languageDescription")}>
+          <LanguageSwitcher variant="grid" />
+        </Card>
         <Card
-          title="Appearance"
-          description="Pick a theme -- your choice is saved in this browser."
+          title={t("settings.appearanceTitle")}
+          description={t("settings.appearanceDescription")}
         >
           <ThemeSwitcher variant="grid" />
         </Card>

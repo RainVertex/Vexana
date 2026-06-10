@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { PageLayout } from "@internal/shared-ui";
+import { Trans, useTranslation } from "@internal/i18n";
 import { useApi } from "@internal/api-client/react";
 import type { JobRunStatus, JobSummary } from "@internal/shared-types";
 import { useCurrentUser } from "../auth";
@@ -14,6 +15,7 @@ const statusColors: Record<JobRunStatus, string> = {
 export function JobsPage() {
   const client = useApi();
   const me = useCurrentUser();
+  const { t } = useTranslation();
   const [jobs, setJobs] = useState<JobSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -60,19 +62,16 @@ export function JobsPage() {
 
   if (me.role !== "admin") {
     return (
-      <PageLayout title="Jobs" description="Admin only.">
+      <PageLayout title={t("admin.jobsTitle")} description={t("common.adminOnly")}>
         <div className="text-sm text-app-text-muted">
-          You need the <strong>admin</strong> role to view this page.
+          <Trans i18nKey="forbidden.body" components={{ strong: <strong /> }} />
         </div>
       </PageLayout>
     );
   }
 
   return (
-    <PageLayout
-      title="Jobs"
-      description="Background scheduler — what's running, what failed, and when."
-    >
+    <PageLayout title={t("admin.jobsTitle")} description={t("admin.jobsDescription")}>
       {error && (
         <div className="mb-4 rounded-md border border-app-danger bg-app-surface px-3 py-2 text-sm text-app-danger">
           {error}
@@ -80,9 +79,9 @@ export function JobsPage() {
       )}
 
       {!jobs ? (
-        <div className="text-sm text-app-text-muted">Loading…</div>
+        <div className="text-sm text-app-text-muted">{t("common.loading")}</div>
       ) : jobs.length === 0 ? (
-        <div className="text-sm text-app-text-muted">No jobs registered.</div>
+        <div className="text-sm text-app-text-muted">{t("admin.jobsEmpty")}</div>
       ) : (
         <div className="grid gap-4">
           {jobs.map((j) => (

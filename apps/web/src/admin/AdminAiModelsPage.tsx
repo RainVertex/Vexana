@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { PageLayout } from "@internal/shared-ui";
+import { Trans, useTranslation } from "@internal/i18n";
 import { useApi } from "@internal/api-client/react";
 import type {
   AdminAiModelsResponse,
@@ -11,6 +12,7 @@ import { useCurrentUser } from "../auth";
 export function AdminAiModelsPage() {
   const client = useApi();
   const me = useCurrentUser();
+  const { t } = useTranslation();
   const [data, setData] = useState<AdminAiModelsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -83,9 +85,9 @@ export function AdminAiModelsPage() {
 
   if (me.role !== "admin") {
     return (
-      <PageLayout title="AI / Models" description="Admin only.">
+      <PageLayout title={t("admin.aiModelsTitle")} description={t("common.adminOnly")}>
         <div className="text-sm text-app-text-muted">
-          You need the <strong>admin</strong> role to view this page.
+          <Trans i18nKey="forbidden.body" components={{ strong: <strong /> }} />
         </div>
       </PageLayout>
     );
@@ -94,10 +96,7 @@ export function AdminAiModelsPage() {
   const activeId = data?.activeChatModelId ?? null;
 
   return (
-    <PageLayout
-      title="AI / Models"
-      description="Supported models, provider readiness, and the active chat model. The assistant stays unavailable until you select a tool-capable model from a ready provider."
-    >
+    <PageLayout title={t("admin.aiModelsTitle")} description={t("admin.aiModelsDescription")}>
       {error && (
         <div className="mb-4 rounded-md border border-app-danger bg-app-surface px-3 py-2 text-sm text-app-danger">
           {error}
@@ -134,7 +133,7 @@ export function AdminAiModelsPage() {
       </section>
 
       {!data ? (
-        <div className="text-sm text-app-text-muted">Loading…</div>
+        <div className="text-sm text-app-text-muted">{t("common.loading")}</div>
       ) : (
         <div className="grid gap-4">
           {data.providers.map((p) => (

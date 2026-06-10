@@ -1,6 +1,7 @@
 // Collapsible primary navigation rail with hover-peek overlay and a Requests badge.
 import { useMemo, type ReactNode } from "react";
 import { NavLink } from "react-router-dom";
+import { useTranslation } from "@internal/i18n";
 import { useCurrentUser } from "../../auth";
 import {
   AccountIcon,
@@ -55,8 +56,8 @@ const SECTIONS: SectionDef[] = [
   { key: "admin", to: "/admin/users", label: "Admin", icon: AdminIcon, adminOnly: true },
 ];
 
-const FOOTER: Array<{ to: string; label: string; icon: () => ReactNode }> = [
-  { to: "/settings", label: "Settings", icon: AccountIcon },
+const FOOTER: Array<{ to: string; key: string; label: string; icon: () => ReactNode }> = [
+  { to: "/settings", key: "settings", label: "Settings", icon: AccountIcon },
 ];
 
 export function Rail() {
@@ -118,7 +119,7 @@ export function Rail() {
 interface RailContentProps {
   expanded: boolean;
   sections: SectionDef[];
-  footer: Array<{ to: string; label: string; icon: () => ReactNode }>;
+  footer: Array<{ to: string; key: string; label: string; icon: () => ReactNode }>;
   pinned: boolean;
   onTogglePin: () => void;
   requestsBadge: number;
@@ -132,31 +133,33 @@ function RailContent({
   onTogglePin,
   requestsBadge,
 }: RailContentProps) {
+  const { t } = useTranslation();
   return (
     <nav className="flex h-full flex-col gap-1 p-2">
       <button
         type="button"
         onClick={onTogglePin}
-        title={pinned ? "Unpin sidebar" : "Pin sidebar"}
-        aria-label={pinned ? "Unpin sidebar" : "Pin sidebar"}
+        title={pinned ? t("nav.unpinSidebar") : t("nav.pinSidebar")}
+        aria-label={pinned ? t("nav.unpinSidebar") : t("nav.pinSidebar")}
         className="flex h-10 items-center gap-3 rounded-md px-2 text-app-text-muted hover:bg-app-surface-hover hover:text-app-text"
       >
         <span className="flex h-6 w-6 shrink-0 items-center justify-center">
           {pinned ? <PinOffIcon /> : <PinIcon />}
         </span>
-        {expanded && <span className="text-sm">{pinned ? "Unpin" : "Pin"}</span>}
+        {expanded && <span className="text-sm">{pinned ? t("nav.unpin") : t("nav.pin")}</span>}
       </button>
 
       <div className="my-1 border-t border-app-border" aria-hidden />
 
-      {sections.map(({ key, to, label, icon: Icon }) => {
+      {sections.map(({ key, to, label: rawLabel, icon: Icon }) => {
         const badge = key === "requests" && requestsBadge > 0 ? requestsBadge : 0;
+        const label = t(`nav.${key}`, { defaultValue: rawLabel });
         return (
           <NavLink
             key={key}
             to={to}
             end={to === "/"}
-            title={badge > 0 ? `${label} (${badge} pending)` : label}
+            title={badge > 0 ? t("nav.pendingBadge", { label, count: badge }) : label}
             className={({ isActive }) =>
               `relative flex h-10 items-center gap-3 rounded-md px-2 transition-colors ${
                 isActive
@@ -189,25 +192,28 @@ function RailContent({
 
       <div className="mt-auto flex flex-col gap-1">
         <div className="my-1 border-t border-app-border" aria-hidden />
-        {footer.map(({ to, label, icon: Icon }) => (
-          <NavLink
-            key={to}
-            to={to}
-            title={label}
-            className={({ isActive }) =>
-              `flex h-10 items-center gap-3 rounded-md px-2 transition-colors ${
-                isActive
-                  ? "bg-app-primary-soft text-app-primary-soft-foreground font-medium"
-                  : "text-app-text-muted hover:bg-app-surface-hover hover:text-app-text"
-              }`
-            }
-          >
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center">
-              <Icon />
-            </span>
-            {expanded && <span className="truncate text-sm">{label}</span>}
-          </NavLink>
-        ))}
+        {footer.map(({ to, key, label: rawLabel, icon: Icon }) => {
+          const label = t(`nav.${key}`, { defaultValue: rawLabel });
+          return (
+            <NavLink
+              key={to}
+              to={to}
+              title={label}
+              className={({ isActive }) =>
+                `flex h-10 items-center gap-3 rounded-md px-2 transition-colors ${
+                  isActive
+                    ? "bg-app-primary-soft text-app-primary-soft-foreground font-medium"
+                    : "text-app-text-muted hover:bg-app-surface-hover hover:text-app-text"
+                }`
+              }
+            >
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center">
+                <Icon />
+              </span>
+              {expanded && <span className="truncate text-sm">{label}</span>}
+            </NavLink>
+          );
+        })}
       </div>
     </nav>
   );

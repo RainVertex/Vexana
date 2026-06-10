@@ -59,8 +59,10 @@
     "typescript-eslint": "^8.59.0"
   },
   "resolutions": {
+    "i18next": "26.3.1",
     "react": "19.2.7",
     "react-dom": "19.2.7",
+    "react-i18next": "17.0.8",
     "react-router": "7.17.0",
     "react-router-dom": "7.17.0"
   }

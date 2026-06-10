@@ -1,5 +1,6 @@
+import { useTranslation } from "@internal/i18n";
 import { useTheme } from "./ThemeContext";
-import type { ThemeId } from "./themes";
+import type { ThemeId, ThemeOption } from "./themes";
 
 interface ThemeSwitcherProps {
   variant?: "select" | "grid";
@@ -7,12 +8,18 @@ interface ThemeSwitcherProps {
 
 export function ThemeSwitcher({ variant = "select" }: ThemeSwitcherProps) {
   const { theme, setTheme, themes } = useTheme();
+  const { t } = useTranslation();
+
+  const themeLabel = (option: ThemeOption) =>
+    t(`themes.${option.id}.label`, { defaultValue: option.label });
+  const themeDescription = (option: ThemeOption) =>
+    t(`themes.${option.id}.description`, { defaultValue: option.description });
 
   if (variant === "select") {
-    const active = themes.find((t) => t.id === theme);
+    const active = themes.find((option) => option.id === theme);
     return (
       <label className="flex items-center gap-2 text-xs text-app-text-muted">
-        <span className="hidden sm:inline">Theme</span>
+        <span className="hidden sm:inline">{t("settings.themeLabel")}</span>
         <span className="relative inline-flex items-center">
           {active && (
             <span
@@ -22,14 +29,14 @@ export function ThemeSwitcher({ variant = "select" }: ThemeSwitcherProps) {
             />
           )}
           <select
-            aria-label="Theme"
+            aria-label={t("settings.themeLabel")}
             value={theme}
             onChange={(e) => setTheme(e.target.value as ThemeId)}
             className="appearance-none bg-none rounded-md border border-app-border bg-app-surface py-1.5 pl-8 pr-8 text-sm text-app-text focus:outline-none focus:ring-2 focus:ring-app-primary"
           >
-            {themes.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.label}
+            {themes.map((option) => (
+              <option key={option.id} value={option.id}>
+                {themeLabel(option)}
               </option>
             ))}
           </select>
@@ -70,11 +77,13 @@ export function ThemeSwitcher({ variant = "select" }: ThemeSwitcherProps) {
                   active ? "text-app-primary-soft-foreground" : "text-app-text"
                 }`}
               >
-                {option.label}
+                {themeLabel(option)}
               </span>
-              {active && <span className="text-xs font-semibold text-app-primary">Active</span>}
+              {active && (
+                <span className="text-xs font-semibold text-app-primary">{t("common.active")}</span>
+              )}
             </div>
-            <div className="mt-1 text-xs text-app-text-muted">{option.description}</div>
+            <div className="mt-1 text-xs text-app-text-muted">{themeDescription(option)}</div>
             <div className="mt-3 flex gap-1.5" aria-hidden>
               <Swatch color={option.swatch.bg} />
               <Swatch color={option.swatch.surface} />
