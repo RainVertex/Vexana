@@ -67,6 +67,7 @@ export const en = {
     scorecards: "Scorecards",
     templates: "Templates",
     bindings: "Bindings",
+    templateEditor: "Template editor",
     requestTeam: "Request a team",
     requestMaintainership: "Request maintainership",
     myRequests: "My Requests",

@@ -21,6 +21,13 @@ export const KNOWN_ROUTES: KnownRoute[] = [
     section: "selfservice",
   },
   {
+    path: "/scaffolder/editor",
+    label: "Template editor",
+    labelKey: "route.templateEditor",
+    section: "selfservice",
+    adminOnly: true,
+  },
+  {
     path: "/self-service/request-team",
     label: "Request a team",
     labelKey: "route.requestTeam",

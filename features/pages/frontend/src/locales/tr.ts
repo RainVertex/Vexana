@@ -70,6 +70,7 @@ export const tr: PagesResources = {
     scorecards: "Puan kartları",
     templates: "Şablonlar",
     bindings: "Bağlamalar",
+    templateEditor: "Şablon editörü",
     requestTeam: "Takım talep et",
     requestMaintainership: "Bakım sorumluluğu talep et",
     myRequests: "Taleplerim",

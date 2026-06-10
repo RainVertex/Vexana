@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { PageLayout } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
-import type { ScaffolderTemplateSummary } from "@internal/shared-types";
+import type { CurrentUser, ScaffolderTemplateSummary } from "@internal/shared-types";
 
 const TAG_FILTERS = ["recommended", "service", "github"] as const;
 
@@ -11,6 +11,7 @@ export function ScaffolderPage() {
   const api = useApi();
   const { t } = useTranslation("scaffolder");
   const [items, setItems] = useState<ScaffolderTemplateSummary[] | null>(null);
+  const [me, setMe] = useState<CurrentUser | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeTag, setActiveTag] = useState<string | null>("recommended");
 
@@ -19,13 +20,30 @@ export function ScaffolderPage() {
       .listTemplates()
       .then((res) => setItems(res.items))
       .catch((err) => setError(err.message ?? t("errors.loadTemplates")));
+    api.auth
+      .me()
+      .then(setMe)
+      .catch(() => setMe(null));
   }, [api, t]);
 
   const filtered =
     items && activeTag ? items.filter((item) => item.tags.includes(activeTag)) : items;
 
   return (
-    <PageLayout title={t("page.createTitle")} description={t("page.createDescription")}>
+    <PageLayout
+      title={t("page.createTitle")}
+      description={t("page.createDescription")}
+      actions={
+        me?.role === "admin" ? (
+          <Link
+            to="/scaffolder/editor"
+            className="rounded-md border border-app-border px-3 py-1.5 text-sm text-app-text-muted hover:bg-app-surface-hover"
+          >
+            {t("editor.openLink")}
+          </Link>
+        ) : undefined
+      }
+    >
       {error && <p className="text-sm text-red-600">{error}</p>}
       {!error && items === null && (
         <p className="text-sm text-app-text-muted">{t("loading.generic")}</p>
