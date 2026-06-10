@@ -1,4 +1,4 @@
-export type LocaleCode = "en" | "tr" | "fr" | "de" | "es";
+export type LocaleCode = "en" | "tr";
 
 export interface LocaleOption {
   code: LocaleCode;
@@ -8,9 +8,6 @@ export interface LocaleOption {
 export const SUPPORTED_LOCALES: LocaleOption[] = [
   { code: "en", label: "English" },
   { code: "tr", label: "Türkçe" },
-  { code: "fr", label: "Français" },
-  { code: "de", label: "Deutsch" },
-  { code: "es", label: "Español" },
 ];
 
 export const DEFAULT_LOCALE: LocaleCode = "en";
