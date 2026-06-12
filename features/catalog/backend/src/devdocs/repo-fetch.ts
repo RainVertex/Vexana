@@ -30,7 +30,12 @@ export class RepoFetchClient {
   private octo: OctokitClient | null = null;
   private resolvedRef: string | null = null;
 
-  constructor(private readonly target: RepoTarget) {}
+  constructor(
+    private readonly target: RepoTarget,
+    octo?: OctokitClient,
+  ) {
+    this.octo = octo ?? null;
+  }
 
   private async getOcto(): Promise<OctokitClient> {
     if (this.octo) return this.octo;

@@ -1,5 +1,9 @@
 // Resolves and syncs a catalog entity's DevDocs (README or docs/ tree) from GitHub into DocPage rows.
-import { Prisma, prisma } from "@internal/db";
+import { Prisma, prisma, type CatalogEntity } from "@internal/db";
+import {
+  GitHubAppNotConfiguredError,
+  octokitForInstallation,
+} from "@feature/integrations-backend/contract";
 import matter from "gray-matter";
 import type { DocResolvedSource } from "@internal/shared-types";
 import { parseGithubUrl, readSpecDocs, resolveDocSource } from "./resolver";
@@ -76,7 +80,7 @@ export async function syncDevDocsForEntity(entityId: string): Promise<SyncResult
     };
   }
 
-  const client = new RepoFetchClient({ owner: gh.owner, repo: gh.repo });
+  const client = await repoClientFor(entity, gh);
 
   let resolved: DocResolvedSource;
   try {
@@ -150,6 +154,22 @@ export async function syncDevDocsForEntity(entityId: string): Promise<SyncResult
     pageCount: drafts.length,
     resolvedSource: resolved,
   };
+}
+
+// Prefers the GitHub App installation token so private repos resolve, falls back to GITHUB_TOKEN.
+async function repoClientFor(
+  entity: CatalogEntity,
+  gh: { owner: string; repo: string },
+): Promise<RepoFetchClient> {
+  if (entity.installationId != null) {
+    try {
+      const octo = await octokitForInstallation(entity.installationId);
+      return new RepoFetchClient({ owner: gh.owner, repo: gh.repo }, octo);
+    } catch (err) {
+      if (!(err instanceof GitHubAppNotConfiguredError)) throw err;
+    }
+  }
+  return new RepoFetchClient({ owner: gh.owner, repo: gh.repo });
 }
 
 async function buildDraft(
