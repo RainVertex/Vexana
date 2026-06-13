@@ -7,6 +7,7 @@ import {
   listToolGroups,
   resolveTools,
   recommendationsForKind,
+  getSetting,
 } from "@internal/llm-core";
 import { runAgent, startAgentRun, cancelAgentRun } from "./executor";
 
@@ -41,6 +42,20 @@ const PROTECTED_AGENT_IDS = new Set(["seed-agent-assistant", "seed-agent-catalog
 
 // The Platform Assistant's tool set is computed live in streamAgent (read groups + env-gated chat writes), so its persisted toolIds are display-only. Edits to them are ignored and the form renders them read-only.
 const PLATFORM_ASSISTANT_AGENT_ID = "seed-agent-assistant";
+
+// The Platform Assistant ignores its own modelId FK and runs whatever admins pick as the active chat model (SystemSetting "chat.activeModelId"). Resolve that live so the card shows the model chat actually uses, or null when chat is not yet configured.
+async function activeChatModelDisplay() {
+  const activeModelId = await getSetting<string>("chat.activeModelId");
+  if (!activeModelId) return null;
+  return prisma.llmModel.findUnique({
+    where: { id: activeModelId },
+    select: {
+      slug: true,
+      displayName: true,
+      provider: { select: { slug: true, displayName: true } },
+    },
+  });
+}
 
 async function getCallerTeamIds(userId: string): Promise<string[]> {
   const memberships = await prisma.teamMembership.findMany({
@@ -135,9 +150,12 @@ agentsRouter.get("/", async (req, res) => {
       runs: { orderBy: { startedAt: "desc" }, take: 1, select: { status: true } },
     },
   });
+  const hasAssistant = agents.some((a) => a.id === PLATFORM_ASSISTANT_AGENT_ID);
+  const assistantModel = hasAssistant ? await activeChatModelDisplay() : null;
   const items = agents.map(({ runs, ...agent }) => ({
     ...agent,
     status: runs[0]?.status ?? "idle",
+    llmModel: agent.id === PLATFORM_ASSISTANT_AGENT_ID ? assistantModel : agent.llmModel,
   }));
   res.json({ items });
 });
@@ -199,8 +217,11 @@ agentsRouter.get("/:id", async (req, res) => {
     conversation: conversationId ? (conversationById.get(conversationId) ?? null) : null,
   }));
   // Derived from the most recent run (scoped above). The agent row no longer stores status.
+  const llmModel =
+    agent.id === PLATFORM_ASSISTANT_AGENT_ID ? await activeChatModelDisplay() : agent.llmModel;
   res.json({
     ...agent,
+    llmModel,
     runs,
     status: agent.runs[0]?.status ?? "idle",
     toolsManaged: agent.id === PLATFORM_ASSISTANT_AGENT_ID,
