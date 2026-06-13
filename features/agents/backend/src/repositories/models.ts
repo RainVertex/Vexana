@@ -1,0 +1,61 @@
+import { prisma, Prisma } from "@internal/db";
+
+export type ModelListItem = Prisma.LlmModelGetPayload<{
+  include: { provider: { select: { slug: true; displayName: true; kind: true } } };
+}>;
+
+export type ChatModelDisplay = Prisma.LlmModelGetPayload<{
+  select: {
+    slug: true;
+    displayName: true;
+    provider: { select: { slug: true; displayName: true } };
+  };
+}>;
+
+type ModelCapability = Prisma.LlmModelGetPayload<{
+  select: { id: true; enabled: true; supportsTools: true; provider: { select: { enabled: true } } };
+}>;
+
+export interface ModelRepository {
+  listEnabled(): Promise<ModelListItem[]>;
+  findBySlugs(slugs: string[]): Promise<Array<{ id: string; slug: string }>>;
+  findCapability(modelId: string): Promise<ModelCapability | null>;
+  findActiveChatModelDisplay(modelId: string): Promise<ChatModelDisplay | null>;
+}
+
+export const modelRepository: ModelRepository = {
+  listEnabled() {
+    return prisma.llmModel.findMany({
+      where: { enabled: true, provider: { enabled: true } },
+      include: { provider: { select: { slug: true, displayName: true, kind: true } } },
+      orderBy: [{ provider: { slug: "asc" } }, { slug: "asc" }],
+    });
+  },
+  findBySlugs(slugs) {
+    return prisma.llmModel.findMany({
+      where: { slug: { in: slugs }, enabled: true, provider: { enabled: true } },
+      select: { id: true, slug: true },
+    });
+  },
+  findCapability(modelId) {
+    return prisma.llmModel.findUnique({
+      where: { id: modelId },
+      select: {
+        id: true,
+        enabled: true,
+        supportsTools: true,
+        provider: { select: { enabled: true } },
+      },
+    });
+  },
+  findActiveChatModelDisplay(modelId) {
+    return prisma.llmModel.findUnique({
+      where: { id: modelId },
+      select: {
+        slug: true,
+        displayName: true,
+        provider: { select: { slug: true, displayName: true } },
+      },
+    });
+  },
+};
