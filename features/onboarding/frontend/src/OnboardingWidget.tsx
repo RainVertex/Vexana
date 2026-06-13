@@ -26,13 +26,6 @@ function usePresenters(): (kind: string) => TaskPresenter {
   const { t } = useTranslation("onboarding");
 
   const map: PresenterMap = {
-    "request-tool-access": {
-      title: t("tasks.request-tool-access.title"),
-      description: t("tasks.request-tool-access.description"),
-      ctaHref: "/integrations",
-      ctaLabel: t("tasks.request-tool-access.ctaLabel"),
-      autoCompletes: false,
-    },
     "team-join": {
       title: t("tasks.team-join.title"),
       description: t("tasks.team-join.description"),

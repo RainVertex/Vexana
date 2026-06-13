@@ -3,7 +3,4 @@ export interface SeedTask {
   payload: Record<string, unknown>;
 }
 
-export const SEED_TASKS: SeedTask[] = [
-  { kind: "request-tool-access", payload: {} },
-  { kind: "team-join", payload: {} },
-];
+export const SEED_TASKS: SeedTask[] = [{ kind: "team-join", payload: {} }];

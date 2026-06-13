@@ -3,12 +3,6 @@ export const en = {
     remaining: "{{remaining}} of {{total}} remaining",
   },
   tasks: {
-    "request-tool-access": {
-      title: "Request access to your tools",
-      description:
-        "Get the credentials you need for GitHub, observability, and the rest of your toolchain.",
-      ctaLabel: "Browse integrations",
-    },
     "team-join": {
       title: "Join or create a team",
       description: "Find your team or request a new one if it doesn't exist yet.",

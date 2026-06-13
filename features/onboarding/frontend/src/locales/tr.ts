@@ -5,12 +5,6 @@ export const tr: OnboardingResources = {
     remaining: "{{total}} görevin {{remaining}} tanesi kaldı",
   },
   tasks: {
-    "request-tool-access": {
-      title: "Araçlarınıza erişim talep edin",
-      description:
-        "GitHub, gözlemlenebilirlik ve araç zincirinizin geri kalanı için gereken kimlik bilgilerini edinin.",
-      ctaLabel: "Entegrasyonlara göz atın",
-    },
     "team-join": {
       title: "Bir takıma katılın veya takım oluşturun",
       description: "Takımınızı bulun veya mevcut değilse yeni bir takım talep edin.",
