@@ -17,12 +17,6 @@ export class BadRequestError extends AppError {
   }
 }
 
-export class ForbiddenError extends AppError {
-  constructor(message: string) {
-    super(403, { error: message });
-  }
-}
-
 export class NotFoundError extends AppError {
   constructor(message: string) {
     super(404, { error: message });

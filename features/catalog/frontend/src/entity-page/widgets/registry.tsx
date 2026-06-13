@@ -1,5 +1,5 @@
 import { useTranslation } from "@internal/i18n";
-import type { WidgetDefinition, WidgetInstance, WidgetRegistry } from "@internal/shared-ui";
+import type { WidgetInstance, WidgetRegistry } from "@internal/shared-ui";
 import { DetailsWidget } from "./DetailsWidget";
 import { ScorecardsWidget } from "./ScorecardsWidget";
 import { RelationsGraphWidget } from "./RelationsGraphWidget";
@@ -15,7 +15,6 @@ export type EntityWidgetId =
   | "dora-chart"
   | "pipelines";
 
-export type EntityWidgetDefinition = WidgetDefinition<EntityWidgetId>;
 export type EntityWidgetInstance = WidgetInstance<EntityWidgetId>;
 
 export const ENTITY_WIDGETS: WidgetRegistry<EntityWidgetId> = {
@@ -105,8 +104,6 @@ export function useLocalizedEntityWidgets(): WidgetRegistry<EntityWidgetId> {
     },
   };
 }
-
-export const ENTITY_WIDGET_LIST: EntityWidgetDefinition[] = Object.values(ENTITY_WIDGETS);
 
 export const DEFAULT_ENTITY_WIDGETS: EntityWidgetInstance[] = [
   { i: "details-1", widgetId: "details", x: 0, y: 0, w: 8, h: 9 },

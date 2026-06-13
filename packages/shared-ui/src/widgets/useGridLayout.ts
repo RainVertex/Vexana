@@ -1,7 +1,8 @@
 // localStorage-backed widget grid layout state with edit/draft/commit flow.
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect } from "react";
 import type { Layout } from "react-grid-layout";
 import type { WidgetInstance, WidgetRegistry } from "./types";
+import { useGridLayoutCore } from "./useGridLayoutCore";
 
 interface UseGridLayoutOptions<TId extends string> {
   storageKey: string;
@@ -53,9 +54,21 @@ export function useGridLayout<TId extends string>({
     [storageKey],
   );
 
-  const [committed, setCommitted] = useState<WidgetInstance<TId>[]>(() => readStored());
-  const [draft, setDraft] = useState<WidgetInstance<TId>[]>(committed);
-  const [editMode, setEditMode] = useState(false);
+  const {
+    committed,
+    setCommitted,
+    draft,
+    setDraft,
+    editMode,
+    setEditMode,
+    widgets,
+    isDirty,
+    clearAll,
+    updateLayout,
+    addWidget,
+    removeWidget,
+    updateWidgetConfig,
+  } = useGridLayoutCore(registry, readStored);
 
   // Reload from storage when the key changes (navigating between entities).
   useEffect(() => {
@@ -63,81 +76,31 @@ export function useGridLayout<TId extends string>({
     setCommitted(next);
     setDraft(next);
     setEditMode(false);
-  }, [readStored]);
+  }, [readStored, setCommitted, setDraft, setEditMode]);
 
   useEffect(() => {
     if (!editMode) persist(committed);
   }, [committed, editMode, persist]);
 
-  const widgets = editMode ? draft : committed;
-
   const enterEdit = useCallback(() => {
     setDraft(committed);
     setEditMode(true);
-  }, [committed]);
+  }, [committed, setDraft, setEditMode]);
 
   const save = useCallback(() => {
     setCommitted(draft);
     setEditMode(false);
-  }, [draft]);
+  }, [draft, setCommitted, setEditMode]);
 
   const cancel = useCallback(() => {
     setDraft(committed);
     setEditMode(false);
-  }, [committed]);
-
-  const clearAll = useCallback(() => {
-    setDraft([]);
-  }, []);
+  }, [committed, setDraft, setEditMode]);
 
   const resetToDefault = useCallback(() => {
     setCommitted(defaultWidgets);
     setDraft(defaultWidgets);
-  }, [defaultWidgets]);
-
-  const updateLayout = useCallback((layout: Layout) => {
-    setDraft((prev) =>
-      prev.map((widget) => {
-        const l = layout.find((item) => item.i === widget.i);
-        if (!l) return widget;
-        return { ...widget, x: l.x, y: l.y, w: l.w, h: l.h };
-      }),
-    );
-  }, []);
-
-  const addWidget = useCallback(
-    (widgetId: TId, initialConfig?: Record<string, unknown>) => {
-      setDraft((prev) => {
-        const def = registry[widgetId];
-        const maxY = prev.reduce((max, w) => Math.max(max, w.y + w.h), 0);
-        const config = initialConfig ?? def.defaultConfig;
-        const instance: WidgetInstance<TId> = {
-          i: `${widgetId}-${Date.now().toString(36)}`,
-          widgetId,
-          x: 0,
-          y: maxY,
-          w: def.defaultSize.w,
-          h: def.defaultSize.h,
-          ...(config ? { config } : {}),
-        };
-        return [...prev, instance];
-      });
-    },
-    [registry],
-  );
-
-  const removeWidget = useCallback((instanceId: string) => {
-    setDraft((prev) => prev.filter((w) => w.i !== instanceId));
-  }, []);
-
-  const updateWidgetConfig = useCallback((instanceId: string, config: Record<string, unknown>) => {
-    setDraft((prev) => prev.map((w) => (w.i === instanceId ? { ...w, config } : w)));
-  }, []);
-
-  const isDirty = useMemo(
-    () => JSON.stringify(draft) !== JSON.stringify(committed),
-    [draft, committed],
-  );
+  }, [defaultWidgets, setCommitted, setDraft]);
 
   return {
     widgets,

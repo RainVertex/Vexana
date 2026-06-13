@@ -52,7 +52,6 @@ export type Bucket = BucketDto;
 export type Task = TaskDto;
 export type TaskComment = TaskCommentDto;
 export type ProjectShareUser = ProjectShareDto;
-export type { LabelDto };
 
 export interface TaskFilters {
   done?: boolean;

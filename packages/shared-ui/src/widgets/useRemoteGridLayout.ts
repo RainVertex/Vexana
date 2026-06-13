@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Layout } from "react-grid-layout";
 import type { WidgetInstance, WidgetRegistry } from "./types";
+import { useGridLayoutCore } from "./useGridLayoutCore";
 
 interface UseRemoteGridLayoutOptions<TId extends string> {
   initialWidgets: WidgetInstance<TId>[];
@@ -37,9 +38,22 @@ export function useRemoteGridLayout<TId extends string>({
   onSave,
   readOnly = false,
 }: UseRemoteGridLayoutOptions<TId>): UseRemoteGridLayoutResult<TId> {
-  const [committed, setCommitted] = useState<WidgetInstance<TId>[]>(initialWidgets);
-  const [draft, setDraft] = useState<WidgetInstance<TId>[]>(initialWidgets);
-  const [editMode, setEditMode] = useState(false);
+  const {
+    committed,
+    setCommitted,
+    draft,
+    setDraft,
+    editMode,
+    setEditMode,
+    widgets,
+    isDirty,
+    clearAll,
+    updateLayout,
+    addWidget,
+    removeWidget,
+    updateWidgetConfig,
+  } = useGridLayoutCore(registry, initialWidgets);
+
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -53,14 +67,12 @@ export function useRemoteGridLayout<TId extends string>({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialKey]);
 
-  const widgets = editMode ? draft : committed;
-
   const enterEdit = useCallback(() => {
     if (readOnly) return;
     setDraft(committed);
     setSaveError(null);
     setEditMode(true);
-  }, [committed, readOnly]);
+  }, [committed, readOnly, setDraft, setEditMode]);
 
   const save = useCallback(async () => {
     if (isSaving) return;
@@ -75,65 +87,17 @@ export function useRemoteGridLayout<TId extends string>({
     } finally {
       setIsSaving(false);
     }
-  }, [draft, isSaving, onSave]);
+  }, [draft, isSaving, onSave, setCommitted, setEditMode]);
 
   const cancel = useCallback(() => {
     setDraft(committed);
     setSaveError(null);
     setEditMode(false);
-  }, [committed]);
-
-  const clearAll = useCallback(() => {
-    setDraft([]);
-  }, []);
+  }, [committed, setDraft, setEditMode]);
 
   const resetToDefault = useCallback(() => {
     // Remote layouts have no inherent default, kept as a no-op for parity with useGridLayout.
   }, []);
-
-  const updateLayout = useCallback((layout: Layout) => {
-    setDraft((prev) =>
-      prev.map((widget) => {
-        const l = layout.find((item) => item.i === widget.i);
-        if (!l) return widget;
-        return { ...widget, x: l.x, y: l.y, w: l.w, h: l.h };
-      }),
-    );
-  }, []);
-
-  const addWidget = useCallback(
-    (widgetId: TId, initialConfig?: Record<string, unknown>) => {
-      setDraft((prev) => {
-        const def = registry[widgetId];
-        const maxY = prev.reduce((max, w) => Math.max(max, w.y + w.h), 0);
-        const config = initialConfig ?? def.defaultConfig;
-        const instance: WidgetInstance<TId> = {
-          i: `${widgetId}-${Date.now().toString(36)}`,
-          widgetId,
-          x: 0,
-          y: maxY,
-          w: def.defaultSize.w,
-          h: def.defaultSize.h,
-          ...(config ? { config } : {}),
-        };
-        return [...prev, instance];
-      });
-    },
-    [registry],
-  );
-
-  const removeWidget = useCallback((instanceId: string) => {
-    setDraft((prev) => prev.filter((w) => w.i !== instanceId));
-  }, []);
-
-  const updateWidgetConfig = useCallback((instanceId: string, config: Record<string, unknown>) => {
-    setDraft((prev) => prev.map((w) => (w.i === instanceId ? { ...w, config } : w)));
-  }, []);
-
-  const isDirty = useMemo(
-    () => JSON.stringify(draft) !== JSON.stringify(committed),
-    [draft, committed],
-  );
 
   return {
     widgets,

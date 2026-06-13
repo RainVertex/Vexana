@@ -144,14 +144,6 @@ function widgetOnSurface(def: HomeWidgetDefinition, surface: "home" | "dashboard
   return (def.surfaces ?? ["home", "dashboard"]).includes(surface);
 }
 
-export const HOME_WIDGET_LIST: HomeWidgetDefinition[] = WIDGET_LIST.filter((w) =>
-  widgetOnSurface(w, "home"),
-);
-
-export const DASHBOARD_WIDGET_LIST: HomeWidgetDefinition[] = WIDGET_LIST.filter((w) =>
-  widgetOnSurface(w, "dashboard"),
-);
-
 export const DEFAULT_WIDGETS: HomeWidgetInstance[] = [
   { i: "search-1", widgetId: "search", x: 0, y: 0, w: 12, h: 2 },
   { i: "onboarding-1", widgetId: "onboarding", x: 0, y: 2, w: 12, h: 4 },
