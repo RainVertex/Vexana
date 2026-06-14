@@ -270,7 +270,7 @@ export function TaskDetailPage() {
             <button
               type="button"
               onClick={() => void handleQuickDone()}
-              className={`rounded-md px-3 py-1.5 text-sm font-medium ${done ? "bg-green-900/40 text-green-400" : "bg-app-primary text-app-primary-on hover:opacity-90"}`}
+              className={`rounded-md px-3 py-1.5 text-sm font-medium ${done ? "bg-green-900/40 text-green-400" : "bg-app-primary text- hover:opacity-90"}`}
             >
               {done ? t("actions.doneBadge") : t("actions.markDone")}
             </button>
@@ -278,7 +278,7 @@ export function TaskDetailPage() {
               type="button"
               onClick={handleSave}
               disabled={saving || !dirty}
-              className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on hover:opacity-90 disabled:opacity-60"
+              className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text- hover:opacity-90 disabled:opacity-60"
             >
               {saving ? t("actions.saving") : t("actions.save")}
             </button>
@@ -366,7 +366,7 @@ export function TaskDetailPage() {
               <button
                 type="submit"
                 disabled={commenting || !newComment.trim()}
-                className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on hover:opacity-90 disabled:opacity-60"
+                className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text- hover:opacity-90 disabled:opacity-60"
               >
                 {commenting ? t("actions.posting") : t("actions.comment")}
               </button>
@@ -494,7 +494,7 @@ export function TaskDetailPage() {
               <button
                 type="submit"
                 disabled={!newAssignee.trim()}
-                className="rounded-md bg-app-primary px-2 py-1 text-xs text-app-primary-on hover:opacity-90 disabled:opacity-60"
+                className="rounded-md bg-app-primary px-2 py-1 text-xs text- hover:opacity-90 disabled:opacity-60"
               >
                 {t("actions.add")}
               </button>
@@ -554,7 +554,7 @@ export function TaskDetailPage() {
               <button
                 type="submit"
                 disabled={!newLabelTitle.trim() || !task?.projectId}
-                className="rounded-md bg-app-primary px-2 py-1 text-xs text-app-primary-on hover:opacity-90 disabled:opacity-60"
+                className="rounded-md bg-app-primary px-2 py-1 text-xs text- hover:opacity-90 disabled:opacity-60"
               >
                 {t("actions.create")}
               </button>

@@ -27,7 +27,7 @@ export function ConfirmDialog({
   if (!open) return null;
   const confirmClass = destructive
     ? "rounded-md bg-app-danger px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
-    : "rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on hover:opacity-90 disabled:opacity-50";
+    : "rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text- hover:opacity-90 disabled:opacity-50";
 
   return (
     <div

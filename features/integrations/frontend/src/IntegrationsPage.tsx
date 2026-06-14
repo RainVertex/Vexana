@@ -106,7 +106,7 @@ export function IntegrationsPage() {
                   type="button"
                   disabled={!available}
                   onClick={() => setConnectKind(provider.kind)}
-                  className="self-start rounded bg-app-primary px-2.5 py-1 text-xs font-medium text-app-primary-on disabled:cursor-not-allowed disabled:opacity-50"
+                  className="self-start rounded bg-app-primary px-2.5 py-1 text-xs font-medium text- disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {t("providers.connect")}
                 </button>

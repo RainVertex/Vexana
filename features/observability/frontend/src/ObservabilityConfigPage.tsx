@@ -225,7 +225,7 @@ export function ObservabilityConfigPage() {
                       type="button"
                       onClick={() => save(entity.id)}
                       disabled={row.status === "saving" || row.status === "clean"}
-                      className="rounded bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on disabled:opacity-50"
+                      className="rounded bg-app-primary px-3 py-1.5 text-sm font-medium text- disabled:opacity-50"
                     >
                       {row.status === "saving" ? t("actions.saving") : t("actions.save")}
                     </button>

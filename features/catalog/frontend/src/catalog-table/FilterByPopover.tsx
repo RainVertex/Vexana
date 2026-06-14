@@ -53,13 +53,13 @@ export function FilterByPopover({
           aria-label={ariaLabel}
           className={
             activeCount > 0
-              ? "inline-flex items-center gap-1 rounded-md border border-app-primary bg-app-primary px-2 py-1 text-xs font-medium text-app-primary-on"
+              ? "inline-flex items-center gap-1 rounded-md border border-app-primary bg-app-primary px-2 py-1 text-xs font-medium text-"
               : "inline-flex items-center gap-1 rounded-md border border-app-border bg-app-surface px-2 py-1 text-xs text-app-text hover:bg-app-surface-hover"
           }
         >
           {t("filterBy.sectionHide")}
           {activeCount > 0 && (
-            <span className="rounded-full bg-app-primary-on/20 px-1.5 text-[10px] font-semibold leading-tight">
+            <span className="rounded-full bg-/20 px-1.5 text-[10px] font-semibold leading-tight">
               {activeCount}
             </span>
           )}

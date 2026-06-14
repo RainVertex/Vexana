@@ -129,7 +129,7 @@ export function TemplatePage() {
             <button
               type="submit"
               disabled={submitting || planBlocked}
-              className="rounded-md bg-app-primary px-4 py-2 text-sm font-medium text-app-primary-on disabled:opacity-50"
+              className="rounded-md bg-app-primary px-4 py-2 text-sm font-medium text- disabled:opacity-50"
             >
               {submitting ? t("form.planningLabel") : t("form.plan")}
             </button>

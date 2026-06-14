@@ -290,7 +290,7 @@ function ProbePanel({
           href={result.authUrl}
           target="_blank"
           rel="noreferrer"
-          className="inline-block rounded-md bg-app-primary px-3 py-1.5 font-medium text-app-primary-on hover:opacity-90"
+          className="inline-block rounded-md bg-app-primary px-3 py-1.5 font-medium text- hover:opacity-90"
         >
           {t("mcp.authorize")}
         </a>
@@ -341,7 +341,7 @@ function ProbePanel({
         <button
           type="button"
           onClick={() => onSaveAllowlist(selected)}
-          className="rounded-md bg-app-primary px-3 py-1.5 text-xs font-medium text-app-primary-on hover:opacity-90"
+          className="rounded-md bg-app-primary px-3 py-1.5 text-xs font-medium text- hover:opacity-90"
         >
           {t("mcp.saveAllowlist")}
         </button>
@@ -456,7 +456,7 @@ function ServerForm({
           type="button"
           disabled={saving || !label.trim() || !url.trim()}
           onClick={() => void submit()}
-          className="rounded-md bg-app-primary px-3 py-1.5 text-xs font-medium text-app-primary-on hover:opacity-90 disabled:opacity-50"
+          className="rounded-md bg-app-primary px-3 py-1.5 text-xs font-medium text- hover:opacity-90 disabled:opacity-50"
         >
           {initial ? t("mcp.save") : t("mcp.add")}
         </button>

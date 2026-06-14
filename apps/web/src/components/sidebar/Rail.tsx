@@ -190,7 +190,7 @@ function RailContent({
             <span className="relative flex h-6 w-6 shrink-0 items-center justify-center">
               <Icon />
               {badge > 0 && !expanded && (
-                <span className="absolute -right-1.5 -top-1 rounded-full bg-app-primary px-1 text-[9px] font-semibold leading-tight text-app-primary-on">
+                <span className="absolute -right-1.5 -top-1 rounded-full bg-app-primary px-1 text-[9px] font-semibold leading-tight text-">
                   {badge > 99 ? "99+" : badge}
                 </span>
               )}
@@ -199,7 +199,7 @@ function RailContent({
               <span className="flex flex-1 items-center justify-between gap-2 truncate text-sm">
                 <span className="truncate">{label}</span>
                 {badge > 0 && (
-                  <span className="rounded-full bg-app-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-app-primary-on">
+                  <span className="rounded-full bg-app-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-">
                     {badge > 99 ? "99+" : badge}
                   </span>
                 )}

@@ -60,7 +60,7 @@ export function EntityLogsPanel({
               onClick={() => setMinutes(w.minutes)}
               className={`rounded px-2 py-1 text-xs ${
                 minutes === w.minutes
-                  ? "bg-app-primary text-app-primary-on"
+                  ? "bg-app-primary text-"
                   : "bg-app-surface text-app-text-muted hover:bg-app-surface-hover"
               }`}
             >

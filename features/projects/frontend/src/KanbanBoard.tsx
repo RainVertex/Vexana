@@ -299,7 +299,7 @@ export function KanbanBoard({ projectId, tasks, onUpdate, canEdit = true }: Prop
                     />
                     <button
                       type="submit"
-                      className="rounded bg-app-primary px-2 py-1 text-xs text-app-primary-on"
+                      className="rounded bg-app-primary px-2 py-1 text-xs text-"
                     >
                       {t("actions.add")}
                     </button>
@@ -346,7 +346,7 @@ export function KanbanBoard({ projectId, tasks, onUpdate, canEdit = true }: Prop
                   <button
                     type="submit"
                     disabled={!newBucketTitle.trim()}
-                    className="rounded bg-app-primary px-3 py-1 text-xs text-app-primary-on hover:opacity-90 disabled:opacity-60"
+                    className="rounded bg-app-primary px-3 py-1 text-xs text- hover:opacity-90 disabled:opacity-60"
                   >
                     {t("actions.add")}
                   </button>

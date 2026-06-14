@@ -87,6 +87,24 @@ function notificationSummary(n: NotificationDto, t: TFunction): string {
   }
 }
 
+function BellIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </svg>
+  );
+}
+
 export function NotificationBell() {
   const api = useApi();
   const { t } = useTranslation("notifications");
@@ -172,46 +190,70 @@ export function NotificationBell() {
         type="button"
         onClick={() => void handleOpen()}
         aria-label={ariaLabel}
-        className="relative rounded-full border border-app-border bg-app-surface px-3 py-1 text-sm text-app-text hover:bg-app-surface-hover"
+        aria-haspopup="true"
+        aria-expanded={open}
+        className={`relative inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-app-focus-ring ${
+          open
+            ? "border-app-border-strong bg-app-surface-hover text-app-text"
+            : "border-app-border bg-app-surface text-app-text-muted hover:bg-app-surface-hover hover:text-app-text"
+        }`}
       >
-        {t("bell.buttonLabel")}
+        <BellIcon className="h-4 w-4" />
+        <span className="hidden sm:inline">{t("bell.buttonLabel")}</span>
         {unread > 0 && (
-          <span className="absolute -right-1 -top-1 rounded-full bg-app-primary px-1.5 py-0.5 text-[10px] font-medium leading-none text-app-primary-on">
+          <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-app-primary px-1 text-[10px] font-semibold leading-none text-app-primary-foreground ring-2 ring-app-surface">
             {unread > 99 ? "99+" : unread}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-lg border border-app-border bg-app-surface shadow-lg">
-          <div className="flex items-center justify-between border-b border-app-border px-3 py-2 text-xs">
-            <span className="font-semibold text-app-text">{t("bell.heading")}</span>
+        <div className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-app-lg border border-app-border bg-app-surface shadow-app-lg">
+          <div className="flex items-center justify-between gap-2 border-b border-app-border bg-app-bg-sunken px-3 py-2.5">
             <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-app-text">{t("bell.heading")}</span>
+              {unread > 0 && (
+                <span className="rounded-full bg-app-primary-soft px-1.5 py-0.5 text-[10px] font-semibold leading-none text-app-primary-soft-foreground">
+                  {unread > 99 ? "99+" : unread}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-3 text-xs">
               <button
                 type="button"
                 onClick={() => void markAllRead()}
-                className="text-app-text-muted hover:text-app-text"
+                disabled={unread === 0}
+                className="font-medium text-app-text-muted transition-colors hover:text-app-text disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {t("bell.markAllRead")}
               </button>
-              <Link to="/notifications" className="text-app-primary">
+              <Link
+                to="/notifications"
+                onClick={() => setOpen(false)}
+                className="font-medium text-app-primary transition-colors hover:text-app-primary-hover"
+              >
                 {t("bell.viewAll")}
               </Link>
             </div>
           </div>
           {items === null && (
-            <div className="px-3 py-4 text-xs text-app-text-muted">{t("bell.loading")}</div>
+            <div className="px-3 py-8 text-center text-xs text-app-text-muted">
+              {t("bell.loading")}
+            </div>
           )}
           {items && items.length === 0 && (
-            <div className="px-3 py-4 text-xs text-app-text-muted">{t("bell.empty")}</div>
+            <div className="flex flex-col items-center gap-2 px-3 py-8 text-center">
+              <BellIcon className="h-6 w-6 text-app-text-subtle" />
+              <span className="text-xs text-app-text-muted">{t("bell.empty")}</span>
+            </div>
           )}
           {items && items.length > 0 && (
-            <ul className="max-h-80 overflow-y-auto">
+            <ul className="max-h-80 divide-y divide-app-border overflow-y-auto">
               {items.map((n) => {
                 const href = notificationHref(n);
                 const isUnread = !n.readAt;
                 const content = (
-                  <div className="flex items-start gap-2 px-3 py-2">
+                  <div className="flex items-start gap-2.5 px-3 py-2.5">
                     <span
                       aria-hidden="true"
                       className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
@@ -220,31 +262,26 @@ export function NotificationBell() {
                     />
                     <div className="min-w-0 flex-1">
                       <div
-                        className={`text-xs ${
+                        className={`text-[13px] leading-snug ${
                           isUnread ? "font-medium text-app-text" : "text-app-text-muted"
                         }`}
                       >
                         {notificationSummary(n, t)}
                         {isUnread && <span className="sr-only"> {t("bell.unreadSrOnly")}</span>}
                       </div>
-                      <div className="text-[10px] text-app-text-muted">
+                      <div className="mt-0.5 text-[11px] text-app-text-subtle">
                         {new Date(n.createdAt).toLocaleString()}
                       </div>
                     </div>
                   </div>
                 );
                 return (
-                  <li
-                    key={n.id}
-                    className={`border-t border-app-border first:border-t-0 ${
-                      isUnread ? "bg-app-primary-soft" : ""
-                    }`}
-                  >
+                  <li key={n.id} className={isUnread ? "bg-app-primary-soft" : ""}>
                     {href ? (
                       <Link
                         to={href}
                         onClick={() => void handleNotificationClick(n)}
-                        className="block hover:bg-app-surface-hover"
+                        className="block transition-colors hover:bg-app-surface-hover"
                       >
                         {content}
                       </Link>
@@ -252,7 +289,7 @@ export function NotificationBell() {
                       <button
                         type="button"
                         onClick={() => void handleNotificationClick(n)}
-                        className="block w-full text-left hover:bg-app-surface-hover"
+                        className="block w-full text-left transition-colors hover:bg-app-surface-hover"
                       >
                         {content}
                       </button>

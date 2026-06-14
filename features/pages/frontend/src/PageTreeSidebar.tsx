@@ -482,7 +482,7 @@ function NodeRow(props: NodeRowProps) {
             </span>
             <span className="truncate">{displayTitle}</span>
             {badgeCount > 0 && (
-              <span className="ml-auto rounded-full bg-app-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-app-primary-on">
+              <span className="ml-auto rounded-full bg-app-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-">
                 {badgeCount > 99 ? "99+" : badgeCount}
               </span>
             )}

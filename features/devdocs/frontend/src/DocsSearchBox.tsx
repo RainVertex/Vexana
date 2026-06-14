@@ -44,7 +44,7 @@ export function DocsSearchBox({
         <button
           type="submit"
           disabled={loading}
-          className="rounded-md bg-app-primary px-3 py-1 text-xs font-medium text-app-primary-on hover:opacity-90 disabled:opacity-50"
+          className="rounded-md bg-app-primary px-3 py-1 text-xs font-medium text- hover:opacity-90 disabled:opacity-50"
         >
           {loading ? t("search.searching") : t("search.button")}
         </button>

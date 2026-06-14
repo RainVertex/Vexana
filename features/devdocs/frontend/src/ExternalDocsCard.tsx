@@ -14,7 +14,7 @@ export function ExternalDocsCard({ url }: ExternalDocsCardProps) {
         href={url}
         target="_blank"
         rel="noreferrer noopener"
-        className="text-sm text-app-primary-on hover:underline break-all"
+        className="text-sm text- hover:underline break-all"
       >
         {url} ↗
       </a>

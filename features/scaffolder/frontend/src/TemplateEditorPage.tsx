@@ -241,7 +241,7 @@ export function TemplateEditorPage() {
             type="button"
             disabled={busy}
             onClick={save}
-            className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on disabled:opacity-50"
+            className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text- disabled:opacity-50"
           >
             {busy ? t("editor.saving") : t("editor.save")}
           </button>

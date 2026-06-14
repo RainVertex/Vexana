@@ -46,7 +46,7 @@ export function ScorecardsTab() {
           type="button"
           onClick={recompute}
           disabled={recomputing}
-          className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on hover:opacity-90 disabled:opacity-60"
+          className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text- hover:opacity-90 disabled:opacity-60"
         >
           {recomputing ? t("scorecards.recomputing") : t("scorecards.recompute")}
         </button>

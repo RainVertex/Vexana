@@ -24,7 +24,7 @@ export function LinksWidget() {
             href={l.url}
             target="_blank"
             rel="noreferrer noopener"
-            className="flex items-center gap-2 text-app-primary-on hover:underline"
+            className="flex items-center gap-2 text- hover:underline"
           >
             <span aria-hidden="true">{(l.icon && ICON_MAP[l.icon]) ?? "🔗"}</span>
             <span className="truncate">{l.title}</span>

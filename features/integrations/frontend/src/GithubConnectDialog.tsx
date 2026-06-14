@@ -58,7 +58,7 @@ export function GithubConnectDialog({ open, onClose }: GithubConnectDialogProps)
             type="button"
             onClick={handleInstall}
             disabled={redirecting}
-            className="rounded bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on disabled:opacity-50"
+            className="rounded bg-app-primary px-3 py-1.5 text-sm font-medium text- disabled:opacity-50"
           >
             {redirecting ? t("githubConnect.redirecting") : t("githubConnect.installButton")}
           </button>

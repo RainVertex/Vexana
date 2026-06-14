@@ -118,7 +118,7 @@ export function AdminTeamRequestsPage() {
                       type="button"
                       disabled={busyId === r.id}
                       onClick={() => void approve(r.id)}
-                      className="rounded-md bg-app-primary px-3 py-1 text-app-primary-on disabled:opacity-50"
+                      className="rounded-md bg-app-primary px-3 py-1 text- disabled:opacity-50"
                     >
                       {t("actions.approve")}
                     </button>

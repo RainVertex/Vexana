@@ -151,7 +151,7 @@ export function ChatAssistantPanel({ userId, userName, userAvatarUrl }: Props) {
                   href={s.authUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded-md bg-app-primary px-2.5 py-1 font-medium text-app-primary-on hover:opacity-90"
+                  className="rounded-md bg-app-primary px-2.5 py-1 font-medium text- hover:opacity-90"
                 >
                   {t("mcpOauth.authorize", { label: s.label })}
                 </a>

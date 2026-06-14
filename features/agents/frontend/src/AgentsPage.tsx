@@ -82,7 +82,7 @@ export function AgentsPage() {
         <div className="mb-4 flex items-center justify-end gap-2">
           <Link
             to="/agents/new"
-            className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on hover:opacity-90"
+            className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text- hover:opacity-90"
           >
             + {t("page.newAgent")}
           </Link>
@@ -103,7 +103,7 @@ export function AgentsPage() {
           {isAdmin && (
             <Link
               to="/agents/new"
-              className="inline-block rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on hover:opacity-90"
+              className="inline-block rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text- hover:opacity-90"
             >
               {t("actions.createFirst")}
             </Link>

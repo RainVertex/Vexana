@@ -130,7 +130,7 @@ function NodePill({
       ? "var(--color-app-surface-hover)"
       : "var(--color-app-surface)";
   const stroke = highlight ? "var(--color-app-primary)" : "var(--color-app-border)";
-  const text = highlight ? "var(--color-app-primary-on)" : "var(--color-app-text)";
+  const text = highlight ? "var(--color-)" : "var(--color-app-text)";
   return (
     <g transform={`translate(${x - w / 2}, ${y - h / 2})`}>
       <rect width={w} height={h} rx={13} fill={fill} stroke={stroke} strokeWidth={1} />

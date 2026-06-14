@@ -152,7 +152,7 @@ export function WebhookSettingsPage({ scope = "user" }: WebhookSettingsPageProps
           type="button"
           onClick={handleCreate}
           disabled={busy || !url || selectedKinds.length === 0}
-          className="mt-3 rounded-md bg-app-primary px-3 py-1 text-sm text-app-primary-on disabled:opacity-50"
+          className="mt-3 rounded-md bg-app-primary px-3 py-1 text-sm text- disabled:opacity-50"
         >
           {t("form.createButton")}
         </button>

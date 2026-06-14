@@ -150,10 +150,7 @@ export function PipelinesWidget() {
       )}
 
       <div className="pt-1">
-        <Link
-          to={`/catalog/${entityId}/runs`}
-          className="text-xs text-app-primary-on hover:underline"
-        >
+        <Link to={`/catalog/${entityId}/runs`} className="text-xs text- hover:underline">
           {t("runs.viewAll")}
         </Link>
       </div>

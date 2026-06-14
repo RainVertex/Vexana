@@ -213,14 +213,14 @@ export function ProjectDetailPage() {
             <button
               type="button"
               onClick={() => setView("list")}
-              className={`px-3 py-1.5 text-sm ${view === "list" ? "bg-app-primary text-app-primary-on" : "text-app-text hover:bg-app-surface-hover"} rounded-l-md`}
+              className={`px-3 py-1.5 text-sm ${view === "list" ? "bg-app-primary text-" : "text-app-text hover:bg-app-surface-hover"} rounded-l-md`}
             >
               {t("view.list")}
             </button>
             <button
               type="button"
               onClick={() => setView("kanban")}
-              className={`px-3 py-1.5 text-sm ${view === "kanban" ? "bg-app-primary text-app-primary-on" : "text-app-text hover:bg-app-surface-hover"} rounded-r-md`}
+              className={`px-3 py-1.5 text-sm ${view === "kanban" ? "bg-app-primary text-" : "text-app-text hover:bg-app-surface-hover"} rounded-r-md`}
             >
               {t("view.kanban")}
             </button>
@@ -247,7 +247,7 @@ export function ProjectDetailPage() {
             <button
               type="button"
               onClick={() => setShowNewTask(true)}
-              className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on hover:opacity-90"
+              className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text- hover:opacity-90"
             >
               {t("actions.newTask")}
             </button>
@@ -305,7 +305,7 @@ export function ProjectDetailPage() {
             <button
               type="submit"
               disabled={addingShare || !shareUsername.trim() || project?.isAutoProvisioned}
-              className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on hover:opacity-90 disabled:opacity-60"
+              className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text- hover:opacity-90 disabled:opacity-60"
             >
               {addingShare ? t("actions.adding") : t("actions.add")}
             </button>
@@ -386,7 +386,7 @@ export function ProjectDetailPage() {
           <button
             type="submit"
             disabled={creating}
-            className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on hover:opacity-90 disabled:opacity-60"
+            className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text- hover:opacity-90 disabled:opacity-60"
           >
             {creating ? t("actions.creating") : t("actions.create")}
           </button>
@@ -443,7 +443,7 @@ export function ProjectDetailPage() {
             <button
               type="submit"
               disabled={savingProject || !editTitle.trim()}
-              className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on hover:opacity-90 disabled:opacity-60"
+              className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text- hover:opacity-90 disabled:opacity-60"
             >
               {savingProject ? t("actions.saving") : t("actions.save")}
             </button>
@@ -577,7 +577,7 @@ function TaskListView({
           {tasks.map((task) => (
             <tr key={task.id} className="bg-app-surface hover:bg-app-surface-hover">
               <td className="px-4 py-2">
-                <Link to={`/tasks/${task.id}`} className="text-app-primary-on hover:underline">
+                <Link to={`/tasks/${task.id}`} className="text- hover:underline">
                   {task.title}
                 </Link>
               </td>

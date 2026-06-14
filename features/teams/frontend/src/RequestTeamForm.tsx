@@ -242,7 +242,7 @@ export function RequestTeamForm({
           type="button"
           onClick={() => void handleSubmit()}
           disabled={!canSubmit}
-          className="rounded-md bg-app-primary px-3 py-1 text-app-primary-on disabled:opacity-50"
+          className="rounded-md bg-app-primary px-3 py-1 text- disabled:opacity-50"
         >
           {busy ? t("actions.submitting") : t("actions.submit")}
         </button>

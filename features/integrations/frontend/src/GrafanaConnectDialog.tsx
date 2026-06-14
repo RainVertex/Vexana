@@ -166,7 +166,7 @@ export function GrafanaConnectDialog({ open, onClose, onConnected }: GrafanaConn
               <button
                 type="submit"
                 disabled={busy || !baseUrl.trim() || !apiToken.trim()}
-                className="rounded bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on disabled:opacity-50"
+                className="rounded bg-app-primary px-3 py-1.5 text-sm font-medium text- disabled:opacity-50"
               >
                 {busy ? t("grafanaConnect.probing") : t("grafanaConnect.connectButton")}
               </button>
@@ -219,7 +219,7 @@ export function GrafanaConnectDialog({ open, onClose, onConnected }: GrafanaConn
                 type="button"
                 onClick={handleCommit}
                 disabled={busy || !promUid}
-                className="rounded bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on disabled:opacity-50"
+                className="rounded bg-app-primary px-3 py-1.5 text-sm font-medium text- disabled:opacity-50"
               >
                 {busy ? t("grafanaConnect.saving") : t("grafanaConnect.saveIntegration")}
               </button>
@@ -264,7 +264,7 @@ export function GrafanaConnectDialog({ open, onClose, onConnected }: GrafanaConn
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-on"
+                className="rounded bg-app-primary px-3 py-1.5 text-sm font-medium text-"
               >
                 {t("grafanaConnect.done")}
               </button>

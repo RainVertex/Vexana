@@ -52,7 +52,7 @@ export function TeamsPage() {
           {isAdmin && (
             <Link
               to="/admin/team-requests"
-              className="rounded-md bg-app-primary px-3 py-1 text-sm text-app-primary-on"
+              className="rounded-md bg-app-primary px-3 py-1 text-sm text-"
             >
               {t("actions.reviewRequests")}
             </Link>

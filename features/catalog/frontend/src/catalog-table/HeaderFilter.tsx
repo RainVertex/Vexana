@@ -76,9 +76,7 @@ export function HeaderFilter({ column, options, selected, onToggle, onClear }: P
           setOpen((v) => !v);
         }}
         className={`ml-1 rounded px-1 text-[10px] leading-none ${
-          active
-            ? "bg-app-primary-soft text-app-primary-on"
-            : "text-app-text-muted hover:bg-app-surface-hover"
+          active ? "bg-app-primary-soft text-" : "text-app-text-muted hover:bg-app-surface-hover"
         }`}
         aria-label={t("headerFilter.filterLabel", { label: meta.label })}
       >
@@ -97,11 +95,7 @@ export function HeaderFilter({ column, options, selected, onToggle, onClear }: P
             <div className="mb-1 flex items-center justify-between px-1 text-[10px] uppercase tracking-wide text-app-text-muted">
               <span>{t("headerFilter.filterLabel", { label: meta.label })}</span>
               {active && (
-                <button
-                  type="button"
-                  onClick={onClear}
-                  className="text-app-primary-on hover:underline"
-                >
+                <button type="button" onClick={onClear} className="text- hover:underline">
                   {t("headerFilter.clear")}
                 </button>
               )}
