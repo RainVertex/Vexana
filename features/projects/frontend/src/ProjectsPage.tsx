@@ -45,7 +45,7 @@ export function ProjectsPage() {
           type="button"
           onClick={() => setShowNewProject(true)}
           disabled={showNewProject}
-          className="rounded-md border border-app-border bg-app-primary px-3 py-1.5 text-sm text- hover:opacity-90 disabled:opacity-50"
+          className="rounded-md border border-app-border bg-app-primary px-3 py-1.5 text-sm text-app-primary-foreground hover:opacity-90 disabled:opacity-50"
         >
           {t("actions.newProject")}
         </button>
@@ -89,7 +89,7 @@ export function ProjectsPage() {
             <button
               type="submit"
               disabled={creating || !newTitle.trim()}
-              className="rounded-md border border-app-border bg-app-primary px-3 py-1.5 text-sm text- hover:opacity-90 disabled:opacity-50"
+              className="rounded-md border border-app-border bg-app-primary px-3 py-1.5 text-sm text-app-primary-foreground hover:opacity-90 disabled:opacity-50"
             >
               {creating ? t("actions.creating") : t("actions.create")}
             </button>

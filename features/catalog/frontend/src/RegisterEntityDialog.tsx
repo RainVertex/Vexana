@@ -233,7 +233,7 @@ export function RegisterEntityDialog({ open, onClose, onCreated }: Props) {
           <button
             type="submit"
             disabled={submitting || !name.trim()}
-            className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text- disabled:opacity-50"
+            className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-foreground disabled:opacity-50"
           >
             {submitting ? t("register.registering") : t("register.register")}
           </button>

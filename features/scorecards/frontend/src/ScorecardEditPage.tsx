@@ -222,7 +222,7 @@ export function ScorecardEditPage() {
             type="button"
             onClick={save}
             disabled={saving}
-            className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text- hover:opacity-90 disabled:opacity-60"
+            className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-foreground hover:opacity-90 disabled:opacity-60"
           >
             {saving ? t("edit.saving") : t("edit.save")}
           </button>

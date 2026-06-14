@@ -9,7 +9,8 @@ import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = join(fileURLToPath(import.meta.url), "..", "..");
-const FANIN_BUDGET = 5;
+// catalog-backend is the org-visibility/access-control authority; consumers use its narrow /contract barrel.
+const FANIN_BUDGET = 6;
 
 // Collects every workspace package.json under the given roots.
 function findPackages() {

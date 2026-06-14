@@ -242,7 +242,7 @@ function SuppressionSection({
           type="button"
           disabled={!dirty || busy}
           onClick={save}
-          className="rounded bg-app-primary px-2.5 py-1 text-xs font-medium text- disabled:opacity-50"
+          className="rounded bg-app-primary px-2.5 py-1 text-xs font-medium text-app-primary-foreground disabled:opacity-50"
         >
           {busy ? t("grafanaManage.savingSuppression") : t("grafanaManage.saveSuppression")}
         </button>
@@ -311,7 +311,7 @@ function RotateTokenDialog({
           <button
             type="submit"
             disabled={busy || !apiToken.trim()}
-            className="rounded bg-app-primary px-3 py-1.5 text-sm font-medium text- disabled:opacity-50"
+            className="rounded bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-foreground disabled:opacity-50"
           >
             {busy ? t("grafanaManage.validating") : t("grafanaManage.rotateButton")}
           </button>
@@ -431,7 +431,7 @@ function EditDatasourcesDialog({
             type="button"
             onClick={save}
             disabled={busy || !probe || !promUid}
-            className="rounded bg-app-primary px-3 py-1.5 text-sm font-medium text- disabled:opacity-50"
+            className="rounded bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-foreground disabled:opacity-50"
           >
             {busy ? t("grafanaManage.saving") : t("grafanaManage.save")}
           </button>
@@ -473,7 +473,7 @@ function NewWebhookSecretDialog({
           <button
             type="button"
             onClick={onClose}
-            className="rounded bg-app-primary px-3 py-1.5 text-sm font-medium text-"
+            className="rounded bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-foreground"
           >
             {t("grafanaManage.done")}
           </button>

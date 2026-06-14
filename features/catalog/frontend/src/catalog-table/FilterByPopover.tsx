@@ -53,7 +53,7 @@ export function FilterByPopover({
           aria-label={ariaLabel}
           className={
             activeCount > 0
-              ? "inline-flex items-center gap-1 rounded-md border border-app-primary bg-app-primary px-2 py-1 text-xs font-medium text-"
+              ? "inline-flex items-center gap-1 rounded-md border border-app-primary bg-app-primary px-2 py-1 text-xs font-medium text-app-primary-foreground"
               : "inline-flex items-center gap-1 rounded-md border border-app-border bg-app-surface px-2 py-1 text-xs text-app-text hover:bg-app-surface-hover"
           }
         >

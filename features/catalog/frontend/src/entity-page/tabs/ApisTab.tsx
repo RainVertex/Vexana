@@ -68,7 +68,7 @@ export function ApisTab() {
               <td className="px-4 py-2 text-app-text">{r.direction}</td>
               <td className="px-4 py-2">
                 {r.target ? (
-                  <Link to={`/catalog/${r.target.id}`} className="text- hover:underline">
+                  <Link to={`/catalog/${r.target.id}`} className="text-app-primary hover:underline">
                     {r.target.name}
                   </Link>
                 ) : (

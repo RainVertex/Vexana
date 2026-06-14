@@ -12,7 +12,7 @@ export function FilterChip({ column, value, onRemove }: Props) {
   const localizedMeta = useLocalizedColumnMeta();
   const columnLabel = localizedMeta[column].label;
   return (
-    <span className="inline-flex items-center gap-1 rounded-full border border-app-primary bg-app-primary-soft px-2.5 py-0.5 text-xs text-">
+    <span className="inline-flex items-center gap-1 rounded-full border border-app-primary bg-app-primary-soft px-2.5 py-0.5 text-xs text-app-primary-soft-foreground">
       <span className="font-medium">{columnLabel}:</span>
       <span>{value}</span>
       <button

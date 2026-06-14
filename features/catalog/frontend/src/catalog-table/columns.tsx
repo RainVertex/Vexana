@@ -24,7 +24,6 @@ export type CatalogColumnId =
   | "owner"
   | "tags"
   | "repoUrl"
-  | "description"
   | "updatedAt"
   | "createdAt";
 
@@ -46,12 +45,6 @@ export const COLUMN_META: Record<CatalogColumnId, CatalogColumnMeta> = {
   owner: { label: "Owner", groupable: true, filterKind: "facet", defaultVisible: true },
   tags: { label: "Tags", groupable: true, filterKind: "facet", defaultVisible: true },
   repoUrl: { label: "Repository", groupable: false, filterKind: "text", defaultVisible: false },
-  description: {
-    label: "Description",
-    groupable: false,
-    filterKind: "text",
-    defaultVisible: false,
-  },
   updatedAt: { label: "Updated", groupable: false, filterKind: "none", defaultVisible: true },
   createdAt: { label: "Created", groupable: false, filterKind: "none", defaultVisible: false },
 };
@@ -65,7 +58,6 @@ export const COLUMN_ORDER: CatalogColumnId[] = [
   "owner",
   "tags",
   "repoUrl",
-  "description",
   "updatedAt",
   "createdAt",
 ];
@@ -225,26 +217,6 @@ export function buildColumns(
       cell: ({ row }) => {
         if (row.getIsGrouped()) return null;
         return <RepoCell url={row.original.accessible ? row.original.repoUrl : null} />;
-      },
-    },
-    {
-      id: "description",
-      accessorKey: "description",
-      header: headers.description,
-      enableGrouping: false,
-      enableColumnFilter: true,
-      enableSorting: false,
-      filterFn: "includesString",
-      cell: ({ row }) => {
-        if (row.getIsGrouped()) return null;
-        const d = row.original.description;
-        return d ? (
-          <div className="max-w-[20rem] truncate text-app-text-muted" title={d}>
-            {d}
-          </div>
-        ) : (
-          <span className="text-app-text-muted">—</span>
-        );
       },
     },
     {

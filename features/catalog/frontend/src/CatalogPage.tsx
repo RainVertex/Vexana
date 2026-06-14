@@ -44,7 +44,7 @@ export function CatalogPage() {
         <button
           type="button"
           onClick={() => setDialogOpen(true)}
-          className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text- hover:opacity-90"
+          className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-foreground hover:opacity-90"
         >
           {t("page.registerButton")}
         </button>
@@ -69,7 +69,11 @@ export function CatalogPage() {
           {rows.length > 0 && filteredCount === 0 && (
             <p className="mt-3 text-sm text-app-text-muted">
               {t("page.noMatch")}{" "}
-              <button type="button" onClick={view.reset} className="text- hover:underline">
+              <button
+                type="button"
+                onClick={view.reset}
+                className="text-app-primary hover:underline"
+              >
                 {t("page.resetFilters")}
               </button>
             </p>

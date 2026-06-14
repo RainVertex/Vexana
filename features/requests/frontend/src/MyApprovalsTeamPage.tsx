@@ -214,7 +214,7 @@ export function MyApprovalsTeamPage() {
                           type="button"
                           disabled={busyId === r.id}
                           onClick={() => void handleApprove(r)}
-                          className="rounded-md bg-app-primary px-3 py-1 text-xs text- disabled:opacity-50"
+                          className="rounded-md bg-app-primary px-3 py-1 text-xs text-app-primary-foreground disabled:opacity-50"
                         >
                           {t("actions.approve")}
                         </button>

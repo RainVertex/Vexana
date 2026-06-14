@@ -183,7 +183,7 @@ export function MyRequestsTeamPage() {
                         type="button"
                         disabled={busyId === r.id}
                         onClick={() => void confirmTeamProposal(r)}
-                        className="rounded-md bg-app-primary px-2 py-0.5 text- disabled:opacity-50"
+                        className="rounded-md bg-app-primary px-2 py-0.5 text-app-primary-foreground disabled:opacity-50"
                       >
                         {t("actions.confirm")}
                       </button>

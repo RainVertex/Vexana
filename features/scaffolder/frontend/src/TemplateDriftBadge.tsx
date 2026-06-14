@@ -85,7 +85,7 @@ export function TemplateDriftBadge({ bindingId, templateId }: TemplateDriftBadge
                     type="button"
                     disabled={busy === b.bindingId}
                     onClick={() => void replan(b.bindingId)}
-                    className="rounded bg-app-primary px-2 py-0.5 text-[11px] text- disabled:opacity-50"
+                    className="rounded bg-app-primary px-2 py-0.5 text-[11px] text-app-primary-foreground disabled:opacity-50"
                   >
                     {t("drift.replan")}
                   </button>

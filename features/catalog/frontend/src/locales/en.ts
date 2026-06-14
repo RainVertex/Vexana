@@ -76,7 +76,6 @@ export const en = {
     owner: "Owner",
     tags: "Tags",
     repoUrl: "Repository",
-    description: "Description",
     updatedAt: "Updated",
     createdAt: "Created",
   },

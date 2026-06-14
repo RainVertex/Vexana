@@ -134,7 +134,7 @@ export function RunsTab() {
           type="button"
           onClick={refresh}
           disabled={refreshing}
-          className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text- hover:opacity-90 disabled:opacity-60"
+          className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-foreground hover:opacity-90 disabled:opacity-60"
         >
           {refreshing ? t("runs.refreshing") : t("runs.refresh")}
         </button>
@@ -185,7 +185,7 @@ function RunsSection({ runs }: { runs: WorkflowRunRow[] }) {
                       href={r.htmlUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="text- hover:underline"
+                      className="text-app-primary hover:underline"
                     >
                       {r.workflowName} #{r.runNumber}
                     </a>
@@ -283,7 +283,7 @@ function DeploymentsSection({ deploys }: { deploys: DeploymentRow[] }) {
                         href={d.htmlUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="text- hover:underline"
+                        className="text-app-primary hover:underline"
                       >
                         {d.sha.slice(0, 7)}
                       </a>

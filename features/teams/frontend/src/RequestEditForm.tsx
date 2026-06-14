@@ -169,7 +169,7 @@ export function RequestEditForm(props: RequestEditFormProps) {
           type="button"
           onClick={handleSubmit}
           disabled={!canSubmit}
-          className="rounded-md bg-app-primary px-3 py-1 text- disabled:opacity-50"
+          className="rounded-md bg-app-primary px-3 py-1 text-app-primary-foreground disabled:opacity-50"
         >
           {busy ? t("actions.submitting") : submitLabel}
         </button>

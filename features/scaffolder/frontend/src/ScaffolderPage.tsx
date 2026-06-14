@@ -119,7 +119,7 @@ export function ScaffolderPage() {
 function chipClass(active: boolean): string {
   return `rounded-full border px-3 py-1 text-xs transition-colors ${
     active
-      ? "border-app-primary bg-app-primary-soft text-"
+      ? "border-app-primary bg-app-primary-soft text-app-primary-soft-foreground"
       : "border-app-border text-app-text-muted hover:bg-app-surface-hover"
   }`;
 }

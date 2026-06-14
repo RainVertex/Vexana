@@ -152,7 +152,7 @@ export function ScorecardReportPage() {
                   <td className="px-3 py-2">
                     <Link
                       to={`/catalog/${row.entity.id}`}
-                      className="font-medium text- hover:underline"
+                      className="font-medium text-app-primary hover:underline"
                     >
                       {row.entity.name}
                     </Link>

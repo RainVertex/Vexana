@@ -78,7 +78,6 @@ export const tr: CatalogResources = {
     owner: "Sahip",
     tags: "Etiketler",
     repoUrl: "Depo",
-    description: "Açıklama",
     updatedAt: "Güncellendi",
     createdAt: "Oluşturuldu",
   },

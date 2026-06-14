@@ -44,7 +44,7 @@ export function ScorecardsPage() {
         <button
           type="button"
           onClick={createBlank}
-          className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text- hover:opacity-90"
+          className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-foreground hover:opacity-90"
         >
           {t("page.newScorecard")}
         </button>
@@ -66,7 +66,7 @@ export function ScorecardsPage() {
               <div>
                 <Link
                   to={`/scorecards/${s.id}`}
-                  className="text-sm font-medium text- hover:underline"
+                  className="text-sm font-medium text-app-primary hover:underline"
                 >
                   {s.name}
                 </Link>
@@ -84,7 +84,10 @@ export function ScorecardsPage() {
                 </div>
               </div>
               <span className="flex items-center gap-3">
-                <Link to={`/scorecards/${s.id}/report`} className="text-xs text- hover:underline">
+                <Link
+                  to={`/scorecards/${s.id}/report`}
+                  className="text-xs text-app-primary hover:underline"
+                >
                   {t("page.report")}
                 </Link>
                 <span className="text-xs text-app-text-muted">

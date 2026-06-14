@@ -282,7 +282,7 @@ function SourceRepoSection() {
           type="button"
           disabled={!canSave}
           onClick={() => void save()}
-          className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text- hover:opacity-90 disabled:opacity-50"
+          className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-foreground hover:opacity-90 disabled:opacity-50"
         >
           Save
         </button>
@@ -453,7 +453,7 @@ function ProviderCard({
                 onSaveKey(provider.slug, keyInput.trim());
                 setKeyInput("");
               }}
-              className="rounded-md bg-app-primary px-2.5 py-1 text-xs font-medium text- hover:opacity-90 disabled:opacity-50"
+              className="rounded-md bg-app-primary px-2.5 py-1 text-xs font-medium text-app-primary-foreground hover:opacity-90 disabled:opacity-50"
             >
               Save key
             </button>

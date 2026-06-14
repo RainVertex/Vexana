@@ -96,7 +96,7 @@ export function RequestMaintainerPickerPage() {
               <button
                 type="button"
                 onClick={() => setPicked({ slug: team.slug, name: team.name })}
-                className="shrink-0 rounded-md bg-app-primary px-3 py-1 text-xs text-"
+                className="shrink-0 rounded-md bg-app-primary px-3 py-1 text-xs text-app-primary-foreground"
               >
                 {t("actions.requestMaintainership")}
               </button>

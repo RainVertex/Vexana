@@ -43,7 +43,7 @@ export function OwnerCell({ teams }: { teams: Team[] }) {
         <a
           key={team.id}
           href={`/teams/${team.slug}`}
-          className="inline-flex items-center rounded-full bg-app-primary-soft px-2 py-0.5 text-[11px] font-medium text- hover:underline"
+          className="inline-flex items-center rounded-full bg-app-primary-soft px-2 py-0.5 text-[11px] font-medium text-app-primary-soft-foreground hover:underline"
           title={team.description ?? team.name}
         >
           {team.name}
@@ -73,7 +73,12 @@ export function RepoCell({ url }: { url: string | null | undefined }) {
   if (!url) return <span className="text-app-text-muted">—</span>;
   const label = url.replace(/^https?:\/\/(www\.)?github\.com\//, "").replace(/\.git$/, "");
   return (
-    <a href={url} target="_blank" rel="noreferrer noopener" className="text- hover:underline">
+    <a
+      href={url}
+      target="_blank"
+      rel="noreferrer noopener"
+      className="text-app-primary hover:underline"
+    >
       {label} ↗
     </a>
   );
@@ -104,7 +109,7 @@ export function NameCell({
         {id ? (
           <Link
             to={`/catalog/${id}`}
-            className="truncate font-medium text-app-text hover:text- hover:underline"
+            className="truncate font-medium text-app-text hover:text-app-primary hover:underline"
           >
             {name}
           </Link>
@@ -125,7 +130,11 @@ export function NameCell({
           </span>
         )}
       </div>
-      {description && <div className="truncate text-xs text-app-text-muted">{description}</div>}
+      {description && (
+        <div className="max-w-[12rem] truncate text-xs text-app-text-muted" title={description}>
+          {description}
+        </div>
+      )}
     </div>
   );
 }

@@ -501,7 +501,7 @@ export function AgentFormPage({ avatarPresets = [] }: { avatarPresets?: AvatarPr
             type="button"
             disabled={saving}
             onClick={() => void save()}
-            className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text- hover:opacity-90 disabled:opacity-50"
+            className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
             {saving
               ? t("actions.saving")

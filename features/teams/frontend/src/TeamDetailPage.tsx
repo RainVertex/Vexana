@@ -285,7 +285,7 @@ export function TeamDetailPage() {
               type="button"
               onClick={handleTransfer}
               disabled={busy || !transferTarget}
-              className="rounded-md bg-app-primary px-3 py-1 text- disabled:opacity-50"
+              className="rounded-md bg-app-primary px-3 py-1 text-app-primary-foreground disabled:opacity-50"
             >
               {t("actions.transfer")}
             </button>

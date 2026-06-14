@@ -42,7 +42,7 @@ spec:
         type="button"
         onClick={onRunSync}
         disabled={syncing}
-        className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text- hover:opacity-90 disabled:opacity-50"
+        className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-foreground hover:opacity-90 disabled:opacity-50"
       >
         {syncing ? t("empty.syncing") : t("empty.runSync")}
       </button>

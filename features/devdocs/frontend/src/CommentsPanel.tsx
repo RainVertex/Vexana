@@ -98,7 +98,7 @@ export function CommentsPanel({
           <button
             type="submit"
             disabled={posting || !draft.trim()}
-            className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text- hover:opacity-90 disabled:opacity-50"
+            className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
             {posting ? t("comments.posting") : t("comments.post")}
           </button>
