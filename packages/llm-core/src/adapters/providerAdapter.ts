@@ -23,6 +23,6 @@ export interface AdapterResult {
 }
 
 export interface ProviderAdapter {
-  readonly kind: "openai_compat" | "anthropic" | "gemini";
+  readonly kind: "openai_compat" | "openai_responses" | "anthropic" | "gemini";
   stream(req: AdapterRequest): Promise<AdapterResult>;
 }

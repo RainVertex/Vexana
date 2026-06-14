@@ -54,6 +54,7 @@ adminAiRouter.get("/models", async (_req, res, next) => {
         modelName: m.modelName,
         supportsTools: m.supportsTools,
         supportsVision: m.supportsVision,
+        supportsReasoning: m.supportsReasoning,
         enabled: m.enabled,
         isActiveChatModel: m.id === activeChatModelId,
         isActiveVisionModel: m.id === activeVisionModelId,

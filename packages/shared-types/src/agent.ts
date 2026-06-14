@@ -3,7 +3,7 @@ import type { ID, ISODateString, NamedEntity, Timestamped } from "./common";
 
 export type AgentStatus = "idle" | "running" | "succeeded" | "failed" | "cancelled";
 
-export type ProviderKind = "openai_compat" | "anthropic" | "gemini";
+export type ProviderKind = "openai_compat" | "openai_responses" | "anthropic" | "gemini";
 
 export type ToolApprovalMode = "auto" | "requires_approval" | "forbidden";
 
@@ -28,6 +28,7 @@ export interface LlmModelSummary {
   contextWindow: number;
   supportsTools: boolean;
   supportsVision: boolean;
+  supportsReasoning: boolean;
   costPer1kIn: number | null;
   costPer1kOut: number | null;
   provider: LlmProviderSummary;
@@ -107,7 +108,7 @@ export interface Agent extends NamedEntity {
   maxToolCalls: number;
   tokenBudget: number | null;
   temperature: number | null;
-  // True when the tool set is code-owned (the Platform Assistant) and persisted toolIds are display-only. The form shows tools read-only.
+  // True when the tool set is code-owned (the Platform Assistant). Some agents tools are not editable.
   toolsManaged?: boolean;
   mcpServers?: AgentMcpServerSummary[];
   llmModel?: {
@@ -132,7 +133,6 @@ export interface AgentRun extends Timestamped {
   containsWrites?: boolean;
   startedAt: ISODateString;
   finishedAt?: ISODateString | null;
-  // How the run was started and what it acted on, for the per-agent activity history.
   trigger?: AgentRunTrigger | null;
   task?: { id: ID; title: string; projectId: ID } | null;
   conversation?: { id: ID; title: string } | null;
@@ -169,6 +169,7 @@ export interface AdminAiModelRow {
   modelName: string;
   supportsTools: boolean;
   supportsVision: boolean;
+  supportsReasoning: boolean;
   enabled: boolean;
   isActiveChatModel: boolean;
   isActiveVisionModel: boolean;

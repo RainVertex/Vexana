@@ -454,6 +454,11 @@ function ProviderCard({
                       vision
                     </span>
                   )}
+                  {m.supportsReasoning && (
+                    <span className="ml-2 rounded-full border border-app-border px-1.5 py-0.5 text-[10px] text-app-text-muted">
+                      reasoning
+                    </span>
+                  )}
                   {isActive && (
                     <span className="ml-2 rounded-full bg-app-primary/10 px-1.5 py-0.5 text-[10px] text-app-primary">
                       active chat model

@@ -54,6 +54,7 @@ model LlmModel {
   contextWindow  Int
   supportsTools  Boolean     @default(true)
   supportsVision Boolean     @default(false)
+  supportsReasoning Boolean  @default(false)
   costPer1kIn    Decimal?    @db.Decimal(10, 6)
   costPer1kOut   Decimal?    @db.Decimal(10, 6)
   enabled        Boolean     @default(true)
@@ -76,24 +77,14 @@ model Agent {
   description  String?
   avatarUrl    String?
   category     String?
-  // Task category. Documented values: "platform-assistant" |
-  // "catalog-enrichment" | "custom". Drives the recommended-model map in
-  // @internal/llm-core (recommendationsForKind).
   kind         String
   modelId      String
   instructions String
   toolIds      Json              @default("[]")
-  // "auto": write tools run without confirmation (autonomous agents like the
-  // Catalog Enricher). "ask": write tools require confirmation, in chat this
-  // is the prepare/submit prose flow, in autonomous runs write tools are
-  // blocked.
   approvalMode AgentApprovalMode @default(ask)
   maxToolCalls Int               @default(10)
   tokenBudget  Int?
-  // Sampling temperature override. Null means use the per-model recommended
-  // default (samplingDefaults in the openai_compat adapter, 0.2 elsewhere).
   temperature  Float?
-  // Backing User (userKind='agent') the agent acts as when it does work (e.g. assigned to a task). Runs execute under this identity (ToolContext.userId), so the agent gets its own team/project grants.
   userId       String?           @unique
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
@@ -116,16 +107,11 @@ model AgentMcpServer {
   label           String
   url             String
   authKind        String          @default("none")
-  // Encrypted shared bearer token (authKind="bearer"). Decrypted server-side only.
   bearerToken     Bytes?
-  // OAuth (authKind="oauth"): requested scope, encrypted dynamic-client-registration result, and
-  // cached RFC 9728 / RFC 8414 discovery state so repeat connects skip discovery.
   oauthScope      String?
   oauthClientInfo Bytes?
   oauthDiscovery  Json?
-  // Tool function names to expose; empty array means all of the server's tools.
   toolAllowlist   Json            @default("[]")
-  // Namespace prefix so a server's tool names cannot collide with built-in tools or another server.
   toolPrefix      String
   enabled         Boolean         @default(true)
   lastError       String?
@@ -179,14 +165,8 @@ model McpOAuthFlow {
 model AgentRun {
   id             String            @id @default(cuid())
   agentId        String
-  // The user who invoked this run (chat turn, /test, manual /run).
   userId         String?
-  // How the run was started: "chat" | "task" | "test" | "manual" | "cron". Null for legacy rows.
   trigger        String?
-  // Context the run acted on, when applicable, so a bot's history links back to
-  // the task/conversation. conversationId is an informational link only (no FK):
-  // the data model stays acyclic (Agent -> AgentRun -> Chat would otherwise close
-  // a cycle against Chat -> Agent). Resolve titles via a separate Chat read.
   taskId         String?
   conversationId String?
   status         AgentStatus

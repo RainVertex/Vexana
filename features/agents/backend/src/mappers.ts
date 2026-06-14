@@ -11,6 +11,7 @@ export function toModelDto(m: ModelListItem) {
     contextWindow: m.contextWindow,
     supportsTools: m.supportsTools,
     supportsVision: m.supportsVision,
+    supportsReasoning: m.supportsReasoning,
     costPer1kIn: m.costPer1kIn ? Number(m.costPer1kIn) : null,
     costPer1kOut: m.costPer1kOut ? Number(m.costPer1kOut) : null,
     provider: m.provider,
