@@ -58,6 +58,7 @@ export function MessageBubble({
   const hasReasoning = !isUser && (reasoning.length > 0 || reasoningStartedAt != null);
   const reasoningStreaming = isLive(message) && reasoningDurationMs == null;
   const attachments = isUser && !isLive(message) ? (message.attachments ?? []) : [];
+  const hasAttachments = attachments.length > 0;
 
   return (
     <div className={`flex gap-2 ${isUser ? "flex-row-reverse" : "flex-row"}`}>
@@ -77,7 +78,9 @@ export function MessageBubble({
         )}
       </div>
       <div
-        className={`max-w-[85%] rounded-app-lg px-3 py-2 text-sm sm:max-w-[80%] ${
+        className={`rounded-app-lg px-3 py-2 text-sm ${
+          hasAttachments ? "max-w-full sm:max-w-[90%]" : "max-w-[85%] sm:max-w-[80%]"
+        } ${
           isUser
             ? "bg-app-primary-soft text-app-primary-soft-foreground"
             : "bg-app-surface text-app-text border border-app-border"
@@ -137,7 +140,7 @@ function AttachmentImage({ attachment, index }: { attachment: ChatAttachmentDto;
       alt={t("message.imageAlt", { index: index + 1 })}
       onClick={() => setExpanded((v) => !v)}
       className={`max-w-full rounded-app-md border border-app-border object-contain ${
-        expanded ? "max-h-96 cursor-zoom-out" : "h-24 cursor-zoom-in"
+        expanded ? "max-h-[40rem] w-full cursor-zoom-out" : "h-24 cursor-zoom-in"
       }`}
     />
   );
