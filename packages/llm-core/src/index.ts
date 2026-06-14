@@ -37,3 +37,23 @@ export {
   setProviderKey,
   clearProviderKey,
 } from "./providerCredentials";
+
+export { encryptSecret, decryptSecret } from "./crypto";
+
+export {
+  openMcpToolset,
+  openAgentMcpToolset,
+  probeMcpServer,
+  completeMcpOAuth,
+  toMcpServerConfig,
+  mcpOAuthRedirectUrl,
+  MCP_OAUTH_CALLBACK_PATH,
+  type McpProbeResult,
+} from "./mcp/connect";
+export type {
+  McpServerConfig,
+  McpResolveOptions,
+  McpToolInfo,
+  McpToolset,
+  McpAuthPrompt,
+} from "./mcp/types";

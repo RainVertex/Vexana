@@ -15,6 +15,7 @@
     "@google/genai": "^2.0.1",
     "@internal/db": "0.1.0",
     "@internal/shared-types": "0.1.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "openai": "^6.37.0"
   },
   "devDependencies": {

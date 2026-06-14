@@ -141,6 +141,24 @@ export function ChatAssistantPanel({ userId, userName, userAvatarUrl }: Props) {
           assistantName={assistant.name ?? undefined}
           assistantAvatarUrl={assistant.avatarUrl}
         />
+        {stream.oauthRequired.length > 0 && (
+          <div className="mx-3 mb-2 rounded-md border border-app-border bg-app-surface p-2 text-xs">
+            <p className="mb-1.5 text-app-text-muted">{t("mcpOauth.prompt")}</p>
+            <div className="flex flex-wrap gap-1.5">
+              {stream.oauthRequired.map((s) => (
+                <a
+                  key={s.serverId}
+                  href={s.authUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-md bg-app-primary px-2.5 py-1 font-medium text-app-primary-on hover:opacity-90"
+                >
+                  {t("mcpOauth.authorize", { label: s.label })}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
         <Composer
           onSend={handleSend}
           onStop={abort}

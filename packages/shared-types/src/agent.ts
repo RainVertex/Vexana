@@ -51,6 +51,50 @@ export interface AgentToolsResponse {
   groups: AgentToolGroup[];
 }
 
+export type McpAuthKind = "none" | "bearer" | "oauth";
+
+export interface McpToolInfo {
+  name: string;
+  description: string;
+}
+
+// One external MCP server attached to an agent. Secrets are never returned: a stored bearer token
+// shows only as hasBearerToken, and OAuth state shows only as oauthConnected for the current user.
+export interface AgentMcpServerSummary {
+  id: ID;
+  agentId: ID;
+  label: string;
+  url: string;
+  authKind: McpAuthKind;
+  hasBearerToken: boolean;
+  oauthScope: string | null;
+  oauthConnected: boolean;
+  toolAllowlist: string[];
+  toolPrefix: string;
+  enabled: boolean;
+  lastError: string | null;
+  lastConnectedAt: ISODateString | null;
+}
+
+export interface CreateAgentMcpServerInput {
+  label: string;
+  url: string;
+  authKind?: McpAuthKind;
+  // Plaintext bearer token, write-only. Sent only when authKind is "bearer".
+  bearerToken?: string | null;
+  oauthScope?: string | null;
+  toolAllowlist?: string[];
+  toolPrefix?: string;
+  enabled?: boolean;
+}
+
+export type UpdateAgentMcpServerInput = Partial<CreateAgentMcpServerInput>;
+
+export type McpProbeResult =
+  | { status: "ok"; tools: McpToolInfo[] }
+  | { status: "needs_auth"; authUrl: string }
+  | { status: "error"; message: string };
+
 export interface Agent extends NamedEntity {
   avatarUrl?: string | null;
   category?: string | null;
@@ -65,6 +109,7 @@ export interface Agent extends NamedEntity {
   temperature: number | null;
   // True when the tool set is code-owned (the Platform Assistant) and persisted toolIds are display-only. The form shows tools read-only.
   toolsManaged?: boolean;
+  mcpServers?: AgentMcpServerSummary[];
   llmModel?: {
     slug: string;
     displayName: string;

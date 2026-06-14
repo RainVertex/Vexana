@@ -45,6 +45,10 @@ export const en = {
     result: "result:",
     error: "error:",
   },
+  mcpOauth: {
+    prompt: "Connect an account to use these tools:",
+    authorize: "Connect {{label}}",
+  },
 };
 
 export type ChatResources = typeof en;

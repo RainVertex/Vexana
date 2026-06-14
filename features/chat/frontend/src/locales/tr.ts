@@ -48,4 +48,8 @@ export const tr: ChatResources = {
     result: "result:",
     error: "error:",
   },
+  mcpOauth: {
+    prompt: "Bu araçları kullanmak için bir hesap bağlayın:",
+    authorize: "{{label}} bağla",
+  },
 };

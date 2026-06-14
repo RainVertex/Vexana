@@ -102,8 +102,78 @@ model Agent {
   llmModel          LlmModel           @relation(fields: [modelId], references: [id])
   chatConversations ChatConversation[]
   user              User?              @relation("AgentBackingUser", fields: [userId], references: [id], onDelete: SetNull)
+  mcpServers        AgentMcpServer[]
 
   @@index([modelId])
+}
+
+// An external MCP server attached to an agent. Its tools are fetched at resolve time and merged
+// into the agent's tool set. Admin-managed config; secrets are stored encrypted (AES-256-GCM) and
+// never returned to clients. authKind is "none" | "bearer" | "oauth".
+model AgentMcpServer {
+  id              String          @id @default(cuid())
+  agentId         String
+  label           String
+  url             String
+  authKind        String          @default("none")
+  // Encrypted shared bearer token (authKind="bearer"). Decrypted server-side only.
+  bearerToken     Bytes?
+  // OAuth (authKind="oauth"): requested scope, encrypted dynamic-client-registration result, and
+  // cached RFC 9728 / RFC 8414 discovery state so repeat connects skip discovery.
+  oauthScope      String?
+  oauthClientInfo Bytes?
+  oauthDiscovery  Json?
+  // Tool function names to expose; empty array means all of the server's tools.
+  toolAllowlist   Json            @default("[]")
+  // Namespace prefix so a server's tool names cannot collide with built-in tools or another server.
+  toolPrefix      String
+  enabled         Boolean         @default(true)
+  lastError       String?
+  lastConnectedAt DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  agent           Agent           @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  oauthTokens     McpOAuthToken[]
+  oauthFlows      McpOAuthFlow[]
+
+  @@index([agentId])
+}
+
+// Per-user OAuth tokens for an attached MCP server. Each invoking user authorizes once; tokens are
+// stored encrypted and refreshed by the SDK when expired.
+model McpOAuthToken {
+  id           String         @id @default(cuid())
+  mcpServerId  String
+  userId       String
+  accessToken  Bytes
+  refreshToken Bytes?
+  tokenType    String?
+  scope        String?
+  expiresAt    DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  mcpServer    AgentMcpServer @relation(fields: [mcpServerId], references: [id], onDelete: Cascade)
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([mcpServerId, userId])
+  @@index([userId])
+}
+
+// Short-lived in-flight OAuth state. id is the OAuth `state` value so the callback can correlate the
+// redirect back to the user, server, and PKCE verifier.
+model McpOAuthFlow {
+  id           String         @id
+  mcpServerId  String
+  userId       String
+  codeVerifier Bytes
+  redirectTo   String
+  expiresAt    DateTime
+  createdAt    DateTime       @default(now())
+  mcpServer    AgentMcpServer @relation(fields: [mcpServerId], references: [id], onDelete: Cascade)
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model AgentRun {

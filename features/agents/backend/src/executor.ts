@@ -6,10 +6,13 @@ import {
   providerKindFromProvider,
   resolveProviderApiKey,
   resolveTools,
+  openAgentMcpToolset,
+  mcpOAuthRedirectUrl,
   type ChatRequest,
   type ChatResult,
   type ResolvedModel,
   type ToolContext,
+  type McpToolset,
 } from "@internal/llm-core";
 
 // Generic agent execution loop (runAgent) plus the async kickoff and catalog-enricher wrapper.
@@ -110,7 +113,18 @@ export async function runAgent(
       }) as Promise<ChatResult>);
 
   const toolIds = Array.isArray(agent.toolIds) ? (agent.toolIds as unknown as string[]) : [];
-  const tools = resolveTools(toolIds);
+  const baseTools = resolveTools(toolIds);
+
+  // Merge tools from the agent's attached external MCP servers. Autonomous runs (no caller user)
+  // skip OAuth servers, an unreachable server is skipped with a warning, so the loop runs with
+  // whatever tools resolve.
+  const webOrigin = process.env.WEB_ORIGIN ?? "http://localhost:3010";
+  const mcpToolset: McpToolset | null = await openAgentMcpToolset(
+    agentId,
+    opts.callerUserId ?? null,
+    { redirectUrl: mcpOAuthRedirectUrl(webOrigin), redirectTo: webOrigin },
+  );
+  const tools = mcpToolset ? [...baseTools, ...mcpToolset.tools] : baseTools;
   const openaiTools: OpenAI.Chat.Completions.ChatCompletionFunctionTool[] = tools.map(
     (t) => t.openaiDef,
   );
@@ -299,6 +313,7 @@ export async function runAgent(
     };
   } finally {
     activeRuns.delete(run.id);
+    if (mcpToolset) await mcpToolset.close();
   }
 }
 

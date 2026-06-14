@@ -116,6 +116,12 @@ export interface ChatDoneEvent {
   containsWrites: boolean;
 }
 
+// Emitted once per turn when one or more attached MCP servers need the current user to authorize via
+// OAuth before their tools become available. The UI renders an "Authorize" link per server.
+export interface ChatOAuthRequiredEvent {
+  servers: { serverId: ID; label: string; authUrl: string }[];
+}
+
 export type ChatSseEvent =
   | { event: "token"; data: ChatTokenEvent }
   | { event: "reasoning_token"; data: ChatReasoningTokenEvent }
@@ -123,6 +129,7 @@ export type ChatSseEvent =
   | { event: "tool_call_start"; data: ChatToolCallStartEvent }
   | { event: "tool_call_end"; data: ChatToolCallEndEvent }
   | { event: "preview"; data: ChatPreviewEvent }
+  | { event: "oauth_required"; data: ChatOAuthRequiredEvent }
   | { event: "error"; data: ChatErrorEvent }
   | { event: "done"; data: ChatDoneEvent };
 

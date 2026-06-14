@@ -3,11 +3,14 @@ import { prisma, Prisma } from "@internal/db";
 import {
   computeCostUsd,
   getSetting,
+  mcpOAuthRedirectUrl,
+  openAgentMcpToolset,
   providerKindFromProvider,
   resolveProviderApiKey,
   resolveTools,
   selectAdapter,
   type AdapterRequest,
+  type McpToolset,
   type ResolvedModel,
   type RegisteredTool,
   type ToolContext,
@@ -119,8 +122,12 @@ export async function streamAgent(args: StreamAgentArgs): Promise<StreamAgentRes
     args.agentId === PLATFORM_ASSISTANT_AGENT_ID
       ? [...platformAssistantReadToolIds(), ...chatWriteToolIds()]
       : persistedIds;
-  const tools = resolveTools(toolIds);
-  const openaiTools = tools.map((t) => t.openaiDef);
+  const baseTools = resolveTools(toolIds);
+  // Merged with the agent's attached external MCP server tools just below, inside the try so the
+  // toolset is always torn down in finally.
+  let tools = baseTools;
+  let openaiTools = baseTools.map((t) => t.openaiDef);
+  let mcpToolset: McpToolset | null = null;
 
   const history = await loadHistory(args.conversationId, args.currentUserMessageId);
 
@@ -173,6 +180,21 @@ export async function streamAgent(args: StreamAgentArgs): Promise<StreamAgentRes
   const splitter = new ThinkTagSplitter();
 
   try {
+    // Pull in the agent's external MCP server tools. A server that needs the caller to authorize via
+    // OAuth surfaces as an oauth_required event, the turn still runs with whatever tools resolved.
+    const webOrigin = process.env.WEB_ORIGIN ?? "http://localhost:3010";
+    mcpToolset = await openAgentMcpToolset(args.agentId, args.callerUserId, {
+      redirectUrl: mcpOAuthRedirectUrl(webOrigin),
+      redirectTo: `${webOrigin}/?mcp_oauth=connected`,
+    });
+    if (mcpToolset) {
+      tools = [...baseTools, ...mcpToolset.tools];
+      openaiTools = tools.map((t) => t.openaiDef);
+      if (mcpToolset.needsAuth.length > 0) {
+        args.onEvent({ event: "oauth_required", data: { servers: mcpToolset.needsAuth } });
+      }
+    }
+
     for (let step = 0; step < agent.maxToolCalls; step++) {
       if (args.signal?.aborted) throw new Error("aborted");
 
@@ -300,6 +322,8 @@ export async function streamAgent(args: StreamAgentArgs): Promise<StreamAgentRes
       reasoning: partialReasoning,
       reasoningDurationMs: partialDurationMs,
     };
+  } finally {
+    if (mcpToolset) await mcpToolset.close();
   }
 }
 

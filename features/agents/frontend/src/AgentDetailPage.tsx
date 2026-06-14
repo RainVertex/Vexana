@@ -4,6 +4,7 @@ import { PageLayout, ConfirmDialog, AgentAvatar } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
 import type { Agent, AgentRun, CurrentUser } from "@internal/shared-types";
+import { McpServersEditor } from "./McpServersEditor";
 
 const KIND_LABEL_KEY: Record<string, "custom" | "catalogEnrichment" | "platformAssistant"> = {
   custom: "custom",
@@ -177,6 +178,8 @@ export function AgentDetailPage() {
           {agent.instructions}
         </pre>
       </section>
+
+      {isAdmin && <McpServersEditor agentId={agent.id} />}
 
       {isAdmin && (
         <section className="mb-6 rounded-lg border border-app-border bg-app-surface p-4">

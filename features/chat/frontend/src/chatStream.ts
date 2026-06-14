@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ChatToolCallStartEvent, ChatToolCallEndEvent } from "@internal/shared-types";
+import type {
+  ChatToolCallStartEvent,
+  ChatToolCallEndEvent,
+  ChatOAuthRequiredEvent,
+} from "@internal/shared-types";
 
 // React hook that consumes the chat SSE stream via fetch (EventSource lacks POST bodies).
 
@@ -21,6 +25,8 @@ export interface ChatStreamState {
   reasoningStartedAt: number | null;
   reasoningDurationMs: number | null;
   toolCalls: ChatToolCallView[];
+  // Attached MCP servers that need the user to authorize via OAuth before their tools work.
+  oauthRequired: ChatOAuthRequiredEvent["servers"];
   submitInFlight: boolean;
   error?: string;
 }
@@ -32,6 +38,7 @@ const initial: ChatStreamState = {
   reasoningStartedAt: null,
   reasoningDurationMs: null,
   toolCalls: [],
+  oauthRequired: [],
   submitInFlight: false,
 };
 
@@ -187,6 +194,11 @@ function handleFrame(
     }
     case "preview": {
       // Emitted for *_prepare tools, intentionally not rendered.
+      break;
+    }
+    case "oauth_required": {
+      const e = data as ChatOAuthRequiredEvent;
+      setState((s) => ({ ...s, oauthRequired: e.servers }));
       break;
     }
     case "error": {

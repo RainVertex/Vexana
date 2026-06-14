@@ -7,6 +7,10 @@ import type {
   AiRecommendationsDto,
   AgentRun,
   AgentToolsResponse,
+  AgentMcpServerSummary,
+  CreateAgentMcpServerInput,
+  UpdateAgentMcpServerInput,
+  McpProbeResult,
   AuditEventRow,
   CatalogEntityKind,
   CatalogEntityOverviewResponse,
@@ -284,6 +288,30 @@ export function createApiClient(options: ApiClientOptions = {}) {
           { method: "POST" },
         ),
       listTools: () => request<AgentToolsResponse>(`/api/agents/tools`),
+      listMcpServers: (id: string) =>
+        request<ListResponse<AgentMcpServerSummary>>(
+          `/api/agents/${encodeURIComponent(id)}/mcp-servers`,
+        ),
+      createMcpServer: (id: string, body: CreateAgentMcpServerInput) =>
+        request<AgentMcpServerSummary>(`/api/agents/${encodeURIComponent(id)}/mcp-servers`, {
+          method: "POST",
+          body: JSON.stringify(body),
+        }),
+      updateMcpServer: (id: string, sid: string, body: UpdateAgentMcpServerInput) =>
+        request<AgentMcpServerSummary>(
+          `/api/agents/${encodeURIComponent(id)}/mcp-servers/${encodeURIComponent(sid)}`,
+          { method: "PATCH", body: JSON.stringify(body) },
+        ),
+      deleteMcpServer: (id: string, sid: string) =>
+        request<void>(
+          `/api/agents/${encodeURIComponent(id)}/mcp-servers/${encodeURIComponent(sid)}`,
+          { method: "DELETE" },
+        ),
+      probeMcpServer: (id: string, sid: string) =>
+        request<McpProbeResult>(
+          `/api/agents/${encodeURIComponent(id)}/mcp-servers/${encodeURIComponent(sid)}/probe`,
+          { method: "POST" },
+        ),
     },
 
     llm: {

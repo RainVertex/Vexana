@@ -31,8 +31,36 @@ export const testAgentSchema = z.object({ prompt: z.string().min(1).max(8000) })
 
 export const runAgentSchema = z.object({ input: z.record(z.string(), z.unknown()).default({}) });
 
+export const createMcpServerSchema = z.object({
+  label: z.string().min(1).max(120),
+  url: z.url().max(2000),
+  authKind: z.enum(["none", "bearer", "oauth"]).default("none"),
+  // Plaintext bearer token, write-only. null clears a stored token.
+  bearerToken: z.string().max(8000).nullable().optional(),
+  oauthScope: z.string().max(500).nullable().optional(),
+  toolAllowlist: z.array(z.string().max(200)).max(500).default([]),
+  toolPrefix: z.string().max(40).optional(),
+  enabled: z.boolean().default(true),
+});
+
+// Defined explicitly rather than createMcpServerSchema.partial() because .partial() keeps the
+// .default() values, so an absent field (e.g. a save that only changes toolAllowlist) would parse
+// to authKind:"none"/enabled:true and silently overwrite the stored config.
+export const updateMcpServerSchema = z.object({
+  label: z.string().min(1).max(120).optional(),
+  url: z.url().max(2000).optional(),
+  authKind: z.enum(["none", "bearer", "oauth"]).optional(),
+  bearerToken: z.string().max(8000).nullable().optional(),
+  oauthScope: z.string().max(500).nullable().optional(),
+  toolAllowlist: z.array(z.string().max(200)).max(500).optional(),
+  toolPrefix: z.string().max(40).optional(),
+  enabled: z.boolean().optional(),
+});
+
 export type CreateAgentInput = z.infer<typeof createAgentSchema>;
 export type UpdateAgentInput = z.infer<typeof updateAgentSchema>;
 export type TestAgentInput = z.infer<typeof testAgentSchema>;
 // Named to avoid colliding with the executor's RunAgentInput that the package barrel re-exports.
 export type RunAgentBody = z.infer<typeof runAgentSchema>;
+export type CreateMcpServerInput = z.infer<typeof createMcpServerSchema>;
+export type UpdateMcpServerInput = z.infer<typeof updateMcpServerSchema>;
