@@ -29,7 +29,7 @@ export function ProfileAvatar({ name, avatarUrl, size = "md" }: ProfileAvatarPro
   }
   return (
     <span
-      className={`flex items-center justify-center rounded-full bg-app-primary text-white font-semibold ${sizeClasses[size]}`}
+      className={`flex items-center justify-center rounded-full bg-app-primary text-app-primary-foreground font-semibold ${sizeClasses[size]}`}
     >
       {getInitials(name)}
     </span>

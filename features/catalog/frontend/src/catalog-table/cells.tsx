@@ -27,9 +27,9 @@ export function LifecycleBadge({ value }: { value: Lifecycle }) {
 function lifecycleStyle(value: Lifecycle): string {
   switch (value) {
     case "production":
-      return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300";
+      return "bg-app-success-soft text-app-success-foreground";
     case "experimental":
-      return "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300";
+      return "bg-app-warning-soft text-app-warning-foreground";
     case "deprecated":
       return "bg-app-surface-hover text-app-text-muted line-through";
   }
@@ -118,7 +118,7 @@ export function NameCell({
         )}
         {staleSince && (
           <span
-            className="inline-flex items-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
+            className="inline-flex items-center rounded-full bg-app-warning-soft px-1.5 py-0.5 text-[10px] font-medium text-app-warning-foreground"
             title={t("cell.staleTitle", { date: new Date(staleSince).toLocaleString() })}
           >
             {t("cell.staleLabel")}

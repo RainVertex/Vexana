@@ -157,6 +157,10 @@ export const en = {
       label: "Midnight",
       description: "Deep indigo with violet accents.",
     },
+    material: {
+      label: "Material",
+      description: "Near-black surfaces with a signature purple.",
+    },
   },
 };
 

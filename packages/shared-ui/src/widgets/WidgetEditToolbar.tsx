@@ -51,7 +51,7 @@ export function WidgetEditToolbar<TId extends string>({
           type="button"
           onClick={() => void save()}
           disabled={!isDirty || isSaving}
-          className="px-3 py-1.5 rounded-md bg-app-primary text-white text-sm font-medium hover:bg-app-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="px-3 py-1.5 rounded-md bg-app-primary text-app-primary-foreground text-sm font-medium hover:bg-app-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {isSaving ? "Saving…" : "Save"}
         </button>
@@ -73,7 +73,7 @@ export function WidgetEditToolbar<TId extends string>({
       <button
         type="button"
         onClick={enterEdit}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-app-primary text-white text-sm font-medium hover:bg-app-primary-hover transition-colors"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-app-primary text-app-primary-foreground text-sm font-medium hover:bg-app-primary-hover transition-colors"
       >
         <EditIcon />
         Customize

@@ -156,7 +156,7 @@ function ConfigModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-app-primary-hover"
+            className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-foreground hover:bg-app-primary-hover"
           >
             {t("done")}
           </button>

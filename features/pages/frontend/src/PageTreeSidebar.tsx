@@ -820,7 +820,7 @@ function CreatePageModal({
               type="button"
               onClick={submit}
               disabled={!canSubmit}
-              className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-app-primary-hover disabled:opacity-50"
+              className="rounded-md bg-app-primary px-3 py-1.5 text-sm font-medium text-app-primary-foreground hover:bg-app-primary-hover disabled:opacity-50"
             >
               {t("modal.create")}
             </button>

@@ -7,7 +7,8 @@ export type ThemeId =
   | "sunset"
   | "rose"
   | "dark"
-  | "midnight";
+  | "midnight"
+  | "material";
 
 export type ThemeCategory = "light" | "dark";
 
@@ -161,6 +162,21 @@ export const THEMES: ThemeOption[] = [
       success: "#34d399",
       warning: "#fbbf24",
       danger: "#fb7185",
+    },
+  },
+  {
+    id: "material",
+    label: "Material",
+    description: "Near-black surfaces with a signature purple.",
+    category: "dark",
+    swatch: {
+      bg: "#121212",
+      surface: "#1d1d1d",
+      primary: "#bb86fc",
+      accent: "#03dac6",
+      success: "#81c784",
+      warning: "#f59e0b",
+      danger: "#cf6679",
     },
   },
 ];

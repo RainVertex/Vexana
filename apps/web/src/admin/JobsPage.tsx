@@ -101,7 +101,7 @@ export function JobsPage() {
                     type="button"
                     disabled={busy === j.name}
                     onClick={() => void runNow(j.name)}
-                    className="rounded-md bg-app-primary px-3 py-1 text-sm text-white hover:bg-app-primary-hover disabled:opacity-50 transition-colors"
+                    className="rounded-md bg-app-primary px-3 py-1 text-sm text-app-primary-foreground hover:bg-app-primary-hover disabled:opacity-50 transition-colors"
                   >
                     Run now
                   </button>

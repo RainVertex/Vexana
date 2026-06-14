@@ -162,5 +162,9 @@ export const tr: ShellResources = {
       label: "Gece yarısı",
       description: "Mor vurgularla derin çivit mavisi.",
     },
+    material: {
+      label: "Material",
+      description: "Neredeyse siyah yüzeyler ve imza bir mor.",
+    },
   },
 };

@@ -53,7 +53,7 @@
     0 4px 6px -4px rgb(var(--c-shadow-color) / 0.08);
 }
 
-/* WCAG AA audit (body 4.5:1, large/UI 3:1) — passed for all 10 themes: text on bg / text on */
+/* WCAG AA audit (body 4.5:1, large/UI 3:1) — passed for all 11 themes: text on bg / text on */
 
 @layer base {
   :root,
@@ -335,6 +335,37 @@
     --c-danger: #fb7185;
     --c-danger-soft: #4c0519;
     --c-danger-foreground: #fda4af;
+    color-scheme: dark;
+  }
+
+  [data-theme="material"] {
+    --c-bg: #121212;
+    --c-bg-sunken: #0a0a0a;
+    --c-surface: #1d1d1d;
+    --c-surface-hover: #2a2a2a;
+    --c-border: #2c2c2c;
+    --c-border-strong: #3d3d3d;
+    --c-text: #e6e1e5;
+    --c-text-muted: #b3afb6;
+    --c-text-subtle: #837e88;
+    --c-overlay: rgba(0, 0, 0, 0.7);
+    --c-focus-ring: rgba(187, 134, 252, 0.45);
+    --c-shadow-color: 0 0 0;
+    --c-primary: #bb86fc;
+    --c-primary-hover: #a368f7;
+    --c-primary-soft: #2a1f3d;
+    --c-primary-foreground: #1c1024;
+    --c-primary-soft-foreground: #d4bbfd;
+    --c-accent: #03dac6;
+    --c-success: #81c784;
+    --c-success-soft: #1c3a2c;
+    --c-success-foreground: #a5d6a7;
+    --c-warning: #f59e0b;
+    --c-warning-soft: #422006;
+    --c-warning-foreground: #fcd34d;
+    --c-danger: #cf6679;
+    --c-danger-soft: #4c0519;
+    --c-danger-foreground: #f3a4b0;
     color-scheme: dark;
   }
 

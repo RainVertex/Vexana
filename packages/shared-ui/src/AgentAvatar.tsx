@@ -24,7 +24,7 @@ export function AgentAvatar({ name, avatarUrl, size = 40, className }: AgentAvat
   return (
     <span
       style={{ ...dims, fontSize: Math.round(size * 0.4) }}
-      className={`flex shrink-0 items-center justify-center rounded-full bg-app-primary font-semibold text-white ${className ?? ""}`}
+      className={`flex shrink-0 items-center justify-center rounded-full bg-app-primary font-semibold text-app-primary-foreground ${className ?? ""}`}
     >
       {getInitials(name)}
     </span>
