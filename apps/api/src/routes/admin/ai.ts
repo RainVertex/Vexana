@@ -5,6 +5,7 @@ import type {
   AdminAiModelsResponse,
   AdminAiProviderGroup,
   ActiveChatModelDto,
+  ChatSourceRepoDto,
 } from "@internal/shared-types";
 import {
   getSetting,
@@ -16,6 +17,7 @@ import {
   setProviderKey,
   clearProviderKey,
 } from "@internal/llm-core";
+import { isAppConfigured } from "@feature/integrations-backend";
 import { requireAuth, requireRole } from "../../middleware/requireAuth";
 import { adminLimiter } from "../../middleware/rateLimit";
 
@@ -27,6 +29,7 @@ adminAiRouter.use(adminLimiter, requireAuth, requireRole("admin"));
 
 const ACTIVE_KEY = "chat.activeModelId";
 const VISION_KEY = "chat.visionModelId";
+const SOURCE_REPO_KEY = "chat.sourceRepo";
 
 adminAiRouter.get("/models", async (_req, res, next) => {
   try {
@@ -225,6 +228,98 @@ adminAiRouter.put("/active-vision-model", async (req, res, next) => {
       return;
     }
     await setSetting(VISION_KEY, model.id, req.user?.id ?? null);
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Source repository the Platform Assistant reads to answer "how does this app work" questions.
+// Stored as a SystemSetting so an admin (or a fork operator) can repoint it without a code change.
+
+// Mirrors loadSourceRepoClient in the agent-tools platform-source group, an installation is only
+// usable when the App env is configured, otherwise the runtime falls back to the PAT (or none).
+async function resolveCredentialSource(
+  owner: string,
+): Promise<ChatSourceRepoDto["credentialSource"]> {
+  const rows = await prisma.integration.findMany({
+    where: { kind: "github", enabled: true },
+    select: { config: true },
+  });
+  const target = owner.toLowerCase();
+  let hasInstallation = false;
+  for (const row of rows) {
+    const cfg = row.config;
+    if (cfg && typeof cfg === "object" && !Array.isArray(cfg)) {
+      const c = cfg as Record<string, unknown>;
+      const login = typeof c.accountLogin === "string" ? c.accountLogin.toLowerCase() : "";
+      if (login === target && Number.isFinite(Number(c.installationId))) {
+        hasInstallation = true;
+        break;
+      }
+    }
+  }
+  if (hasInstallation && isAppConfigured()) return "github_app";
+  return process.env.GITHUB_TOKEN ? "pat" : "none";
+}
+
+adminAiRouter.get("/source-repo", async (_req, res, next) => {
+  try {
+    const raw = await getSetting<{ owner?: string; repo?: string; ref?: string | null }>(
+      SOURCE_REPO_KEY,
+    );
+    if (!raw || !raw.owner || !raw.repo) {
+      res.json(null);
+      return;
+    }
+    const body: ChatSourceRepoDto = {
+      owner: raw.owner,
+      repo: raw.repo,
+      ref: raw.ref ?? null,
+      credentialSource: await resolveCredentialSource(raw.owner),
+    };
+    res.json(body);
+  } catch (err) {
+    next(err);
+  }
+});
+
+const putSourceRepoSchema = z.object({
+  owner: z
+    .string()
+    .min(1)
+    .max(100)
+    .regex(/^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?$/, "Invalid GitHub owner"),
+  repo: z
+    .string()
+    .min(1)
+    .max(100)
+    .regex(/^[A-Za-z0-9._-]+$/, "Invalid GitHub repo name"),
+  ref: z.string().min(1).max(100).nullable().optional(),
+});
+
+adminAiRouter.put("/source-repo", async (req, res, next) => {
+  try {
+    const parsed = putSourceRepoSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid body" });
+      return;
+    }
+    const { owner, repo } = parsed.data;
+    await setSetting(
+      SOURCE_REPO_KEY,
+      { owner, repo, ref: parsed.data.ref ?? null },
+      req.user?.id ?? null,
+    );
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
+adminAiRouter.delete("/source-repo", async (_req, res, next) => {
+  try {
+    await clearSetting(SOURCE_REPO_KEY);
     res.status(204).end();
   } catch (err) {
     next(err);

@@ -8,6 +8,7 @@ import { orgGroup } from "./groups/org";
 import { notificationsGroup } from "./groups/notifications";
 import { integrationsGroup } from "./groups/integrations";
 import { catalogEnrichGroup } from "./groups/catalog-enrich";
+import { platformSourceGroup } from "./groups/platform-source";
 
 // Read-only groups the Platform Assistant gets by default. The agent-only groups are opt-in per agent.
 const PLATFORM_ASSISTANT_READ_GROUPS: ToolGroup[] = [
@@ -18,6 +19,7 @@ const PLATFORM_ASSISTANT_READ_GROUPS: ToolGroup[] = [
   orgGroup,
   notificationsGroup,
   integrationsGroup,
+  platformSourceGroup,
 ];
 
 const AGENT_GROUPS: ToolGroup[] = [catalogEnrichGroup];

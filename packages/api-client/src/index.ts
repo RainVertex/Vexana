@@ -70,6 +70,7 @@ import type {
   ChatConversationSummaryDto,
   ChatConversationDetailDto,
   ChatConfigDto,
+  ChatSourceRepoDto,
   WorkflowRunRow,
   DeploymentRow,
 } from "@internal/shared-types";
@@ -319,6 +320,13 @@ export function createApiClient(options: ApiClientOptions = {}) {
         request<void>(`/api/admin/ai/providers/${encodeURIComponent(slug)}/key`, {
           method: "DELETE",
         }),
+      getSourceRepo: () => request<ChatSourceRepoDto | null>(`/api/admin/ai/source-repo`),
+      setSourceRepo: (body: { owner: string; repo: string; ref?: string | null }) =>
+        request<void>(`/api/admin/ai/source-repo`, {
+          method: "PUT",
+          body: JSON.stringify(body),
+        }),
+      clearSourceRepo: () => request<void>(`/api/admin/ai/source-repo`, { method: "DELETE" }),
     },
 
     catalog: {

@@ -85,7 +85,7 @@ Aim for at most 8 tool calls. Do not loop.`;
   console.log("Seed complete.");
 }
 
-// Prompt and tool ids mirror features/chat/backend/src/{prompts.ts,tools/index.ts}; keep both in sync.
+// The assistant's effective read tools come live from platformAssistantReadToolIds() (agent-tools registry.ts) plus chatWriteToolIds(), the toolIds persisted here are display-only and the instructions below ARE the live system prompt.
 async function seedPlatformAssistant() {
   // Chat resolves its model from SystemSetting "chat.activeModelId" at request time; this FK value is unused.
   // chat.activeModelId is deliberately left unseeded so the assistant stays not-configured until an admin picks a model.
@@ -108,6 +108,10 @@ async function seedPlatformAssistant() {
     "org_get_department",
     "notifications_my_unread",
     "integrations_list_github",
+    "platform_source_info",
+    "platform_source_search",
+    "platform_source_list_dir",
+    "platform_source_read_file",
   ];
   const writeToolIds = ["team_request_prepare", "team_request_submit"];
   const toolIds = writesEnabled ? [...readToolIds, ...writeToolIds] : [...readToolIds];
@@ -124,6 +128,24 @@ Reads:
 - Call whoami once at the start of a new conversation.
 - Call get_today before any "today/this week" question.
 - Parallelize independent reads.
+
+Platform source code:
+- For questions about how the platform itself works or how to change something in
+  it (branding, a theme, a setting, a page, a route), investigate the platform's
+  own repository with the platform_source_* tools and answer with concrete file
+  paths and the exact edit to make. These tools are read-only, so never ask the
+  user for permission to search, browse, or read, just do it and report findings.
+- platform_source_search greps both file names and file contents and returns the
+  matching files with line numbers. Use it first, with the most specific term you
+  can (for example the brand text, a label, or a component name), then open the
+  top hits with platform_source_read_file. Trust its results instead of listing
+  directories one by one.
+- Only fall back to platform_source_list_dir when search genuinely returns nothing.
+  Do not stop or hand the task back to the user.
+- The brand or name is usually plain text in a header component or the HTML title
+  rather than an image file, so search for the visible name itself.
+- If a tool returns code "not_configured", tell the user an admin must set the
+  source repository in Admin -> AI / Models.
 
 Writes (prepare → confirm → submit):
 1. Ask follow-ups only for missing required slots — one or two questions, not

@@ -37,6 +37,13 @@ export async function octokitAsApp(): Promise<OctokitClient> {
   });
 }
 
+// Plain personal-access-token client, used as a fallback when no GitHub App installation
+// covers the target owner (e.g. a public repo or a self-host fork pointing at its own source).
+export async function octokitForToken(token: string): Promise<OctokitClient> {
+  const Octokit = await loadOctokit();
+  return new Octokit({ auth: token });
+}
+
 export async function octokitForInstallation(installationId: number): Promise<OctokitClient> {
   const cfg = loadGitHubAppConfig();
   if (!cfg.ok) throw new GitHubAppNotConfiguredError(cfg.missing);
