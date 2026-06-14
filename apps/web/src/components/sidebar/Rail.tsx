@@ -1,5 +1,13 @@
 // Collapsible primary navigation rail with hover-peek overlay and a Requests badge.
-import { useMemo, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from "react";
 import { NavLink, Link } from "react-router-dom";
 import { useTranslation } from "@internal/i18n";
 import { useCurrentUser } from "../../auth";
@@ -61,6 +69,24 @@ const FOOTER: Array<{ to: string; key: string; label: string; icon: () => ReactN
   { to: "/settings", key: "settings", label: "Settings", icon: AccountIcon },
 ];
 
+const RAIL_WIDTH_KEY = "mep:sidebar-width";
+const RAIL_MIN_WIDTH = 168;
+const RAIL_MAX_WIDTH = 360;
+const RAIL_DEFAULT_WIDTH = 208;
+
+const clampRailWidth = (w: number) => Math.max(RAIL_MIN_WIDTH, Math.min(RAIL_MAX_WIDTH, w));
+
+function readRailWidth(): number {
+  if (typeof window === "undefined") return RAIL_DEFAULT_WIDTH;
+  try {
+    const raw = window.localStorage.getItem(RAIL_WIDTH_KEY);
+    const n = raw ? Number.parseInt(raw, 10) : Number.NaN;
+    return Number.isFinite(n) ? clampRailWidth(n) : RAIL_DEFAULT_WIDTH;
+  } catch {
+    return RAIL_DEFAULT_WIDTH;
+  }
+}
+
 export function Rail() {
   const me = useCurrentUser();
   const { pinned, togglePinned, peeking, onRailMouseEnter, onRailMouseLeave } = useSidebar();
@@ -73,13 +99,61 @@ export function Rail() {
 
   const sections = useMemo(() => SECTIONS.filter((s) => !s.adminOnly || isAdmin), [isAdmin]);
 
+  const [width, setWidth] = useState<number>(() => readRailWidth());
+  const [dragging, setDragging] = useState(false);
+  const dragRef = useRef<{ startX: number; startW: number } | null>(null);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(RAIL_WIDTH_KEY, String(width));
+    } catch {
+      // ignore persistence failure
+    }
+  }, [width]);
+
+  const onResizeDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    dragRef.current = { startX: e.clientX, startW: width };
+    setDragging(true);
+    e.currentTarget.setPointerCapture(e.pointerId);
+    document.body.style.userSelect = "none";
+    document.body.style.cursor = "col-resize";
+  };
+  const onResizeMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    if (!drag) return;
+    setWidth(clampRailWidth(drag.startW + (e.clientX - drag.startX)));
+  };
+  const onResizeUp = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (!dragRef.current) return;
+    dragRef.current = null;
+    setDragging(false);
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      // pointer already released
+    }
+    document.body.style.userSelect = "";
+    document.body.style.cursor = "";
+  };
+  const onResizeKey = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "ArrowLeft") {
+      setWidth((w) => clampRailWidth(w - 16));
+      e.preventDefault();
+    } else if (e.key === "ArrowRight") {
+      setWidth((w) => clampRailWidth(w + 16));
+      e.preventDefault();
+    }
+  };
+
   return (
     <>
       <div
         onMouseEnter={onRailMouseEnter}
         onMouseLeave={onRailMouseLeave}
-        className={`shrink-0 border-r border-app-border bg-app-surface transition-[width] duration-150 ${
-          pinned ? "w-60" : "w-14"
+        style={pinned ? { width } : undefined}
+        className={`shrink-0 bg-app-surface ${dragging ? "" : "transition-[width] duration-150"} ${
+          pinned ? "" : "w-14 border-r border-app-border"
         }`}
         aria-label="Primary navigation rail"
       >
@@ -96,12 +170,31 @@ export function Rail() {
         )}
       </div>
 
+      {/* Drag handle doubles as the rail's right border while pinned. */}
+      {pinned && (
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize sidebar"
+          tabIndex={0}
+          onPointerDown={onResizeDown}
+          onPointerMove={onResizeMove}
+          onPointerUp={onResizeUp}
+          onKeyDown={onResizeKey}
+          onDoubleClick={() => setWidth(RAIL_DEFAULT_WIDTH)}
+          className="relative z-10 w-px shrink-0 cursor-col-resize bg-app-border transition-colors hover:bg-app-primary focus:outline-none focus-visible:bg-app-primary"
+        >
+          <span className="absolute inset-y-0 -left-1 -right-1" aria-hidden />
+        </div>
+      )}
+
       {/* Overlay must reuse the rail's enter/leave so peek survives crossing the visual boundary. */}
       {peeking && !pinned && (
         <div
           onMouseEnter={onRailMouseEnter}
           onMouseLeave={onRailMouseLeave}
-          className="absolute left-0 top-0 z-40 h-full w-60 border-r border-app-border bg-app-surface shadow-xl"
+          style={{ width }}
+          className="absolute left-0 top-0 z-40 h-full border-r border-app-border bg-app-surface shadow-xl"
         >
           <RailContent
             expanded={true}
@@ -182,7 +275,7 @@ function RailContent({
             className={({ isActive }) =>
               `relative flex h-10 items-center gap-3 rounded-md px-2 transition-colors ${
                 isActive
-                  ? "bg-app-primary-soft text-app-primary-soft-foreground font-medium"
+                  ? "bg-app-primary/15 text-app-primary font-medium"
                   : "text-app-text-muted hover:bg-app-surface-hover hover:text-app-text"
               }`
             }
@@ -190,7 +283,7 @@ function RailContent({
             <span className="relative flex h-6 w-6 shrink-0 items-center justify-center">
               <Icon />
               {badge > 0 && !expanded && (
-                <span className="absolute -right-1.5 -top-1 rounded-full bg-app-primary px-1 text-[9px] font-semibold leading-tight text-">
+                <span className="absolute -right-1.5 -top-1 rounded-full bg-app-primary px-1 text-[9px] font-semibold leading-tight text-app-primary-foreground">
                   {badge > 99 ? "99+" : badge}
                 </span>
               )}
@@ -199,7 +292,7 @@ function RailContent({
               <span className="flex flex-1 items-center justify-between gap-2 truncate text-sm">
                 <span className="truncate">{label}</span>
                 {badge > 0 && (
-                  <span className="rounded-full bg-app-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-">
+                  <span className="rounded-full bg-app-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-app-primary-foreground">
                     {badge > 99 ? "99+" : badge}
                   </span>
                 )}
@@ -221,7 +314,7 @@ function RailContent({
               className={({ isActive }) =>
                 `flex h-10 items-center gap-3 rounded-md px-2 transition-colors ${
                   isActive
-                    ? "bg-app-primary-soft text-app-primary-soft-foreground font-medium"
+                    ? "bg-app-primary/15 text-app-primary font-medium"
                     : "text-app-text-muted hover:bg-app-surface-hover hover:text-app-text"
                 }`
               }

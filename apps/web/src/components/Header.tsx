@@ -4,18 +4,13 @@ import { useTranslation } from "@internal/i18n";
 import { useCurrentUser } from "../auth";
 import { ProfileAvatar } from "../profile";
 import { ThemeSwitcher } from "../theme";
-import { BrandLogo } from "./Brand";
 
 export function Header() {
   const user = useCurrentUser();
   const { t } = useTranslation();
 
   return (
-    <header className="h-14 flex items-center justify-between px-4 border-b border-app-border bg-app-surface">
-      <Link to="/" aria-label="HiveDP" className="transition-opacity hover:opacity-80">
-        <BrandLogo />
-      </Link>
-
+    <header className="h-14 flex items-center justify-end px-4 border-b border-app-border bg-app-surface">
       <div className="flex items-center gap-3">
         <ThemeSwitcher variant="select" />
         <NotificationBell />

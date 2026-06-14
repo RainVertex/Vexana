@@ -465,6 +465,7 @@ function NodeRow(props: NodeRowProps) {
         ) : (
           <NavLink
             to={pageHref(page)}
+            end
             className={({ isActive }) =>
               `flex flex-1 items-center gap-1.5 truncate ${
                 isActive ? rowActive : "text-app-text-muted hover:text-app-text"
@@ -482,7 +483,7 @@ function NodeRow(props: NodeRowProps) {
             </span>
             <span className="truncate">{displayTitle}</span>
             {badgeCount > 0 && (
-              <span className="ml-auto rounded-full bg-app-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-">
+              <span className="ml-auto rounded-full bg-app-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-app-primary-foreground">
                 {badgeCount > 99 ? "99+" : badgeCount}
               </span>
             )}
