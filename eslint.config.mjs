@@ -138,8 +138,6 @@ export default [
       "**/generated/**",
       "**/.turbo/**",
       "packages/db/src/generated/**",
-      "tooling/scaffolder/skeletons/**",
-      "tooling/scaffolder/templates/**",
     ],
   },
   js.configs.recommended,

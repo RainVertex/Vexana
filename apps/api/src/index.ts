@@ -4,7 +4,11 @@ import { resolve } from "node:path";
 
 loadDotenv({ path: resolve(__dirname, "../../../.env") });
 
-import { runBootDriftCheck, seedTemplateAcls } from "@feature/scaffolder-backend";
+import {
+  runBootDriftCheck,
+  seedDefaultTemplates,
+  seedTemplateAcls,
+} from "@feature/scaffolder-backend";
 import { provisionProjectsForInstallation } from "@feature/projects-backend";
 import { reconcileStaleAgentRuns } from "@feature/agents-backend";
 import { runReconciliation } from "@feature/catalog-backend";
@@ -48,12 +52,21 @@ async function bootstrap() {
     logger.error({ err }, "Boot drift check failed");
   });
 
-  seedTemplateAcls()
+  seedDefaultTemplates()
     .then(({ created, skipped }) => {
-      if (created > 0) logger.info({ created, skipped }, "Seeded default TemplateAcl rows");
+      if (created > 0) logger.info({ created, skipped }, "Seeded default scaffolder templates");
     })
     .catch((err) => {
-      logger.error({ err }, "TemplateAcl seeding failed");
+      logger.error({ err }, "Default template seeding failed");
+    })
+    .finally(() => {
+      seedTemplateAcls()
+        .then(({ created, skipped }) => {
+          if (created > 0) logger.info({ created, skipped }, "Seeded default TemplateAcl rows");
+        })
+        .catch((err) => {
+          logger.error({ err }, "TemplateAcl seeding failed");
+        });
     });
 
   // Idempotent backfill that catches repos which missed a webhook or predate auto-provisioning.

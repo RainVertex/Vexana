@@ -84,6 +84,41 @@ function ensureWorkspaceRelative(workspacePath: string, requested: string): stri
   return abs;
 }
 
+export interface RenderSkeletonOptions {
+  skeletonPath: string;
+  values: Record<string, unknown>;
+  skipRender?: string[];
+  pathSubstitutions?: Record<string, string>;
+  workspacePath: string;
+  dryRun: boolean;
+  signal: AbortSignal;
+  logger: { info(msg: string): void };
+}
+
+// Walks a local skeleton dir, renders each file via Nunjucks and writes it into the workspace.
+// Shared by fetch:template and any action that first stages a skeleton onto local disk.
+export async function renderSkeletonInto(opts: RenderSkeletonOptions): Promise<string[]> {
+  const files = await readSkeleton(opts.skeletonPath);
+  const written: string[] = [];
+  for (const f of files) {
+    if (opts.signal.aborted) throw new Error("cancelled");
+    const outRel = renderRelativePath(f.relativePath, opts.values, opts.pathSubstitutions);
+    const outAbs = ensureWorkspaceRelative(opts.workspacePath, outRel);
+    const rendered = shouldSkipRender(f.relativePath, opts.skipRender)
+      ? f.source
+      : renderTemplate(f.source, opts.values);
+    if (opts.dryRun) {
+      opts.logger.info(`[dry-run] render ${outRel}`);
+    } else {
+      await fs.mkdir(dirname(outAbs), { recursive: true });
+      await fs.writeFile(outAbs, rendered, "utf8");
+      opts.logger.info(`render ${outRel}`);
+    }
+    written.push(outRel);
+  }
+  return written;
+}
+
 export const fetchTemplateAction: Action<FetchInput, { files: string[] }> = {
   id: "fetch:template",
   description: "Renders a skeleton directory into the workspace via Nunjucks.",
@@ -109,24 +144,16 @@ export const fetchTemplateAction: Action<FetchInput, { files: string[] }> = {
     return mutations;
   },
   async apply(input, ctx: WriteCtx) {
-    const files = await readSkeleton(input.skeletonPath);
-    const written: string[] = [];
-    for (const f of files) {
-      if (ctx.signal.aborted) throw new Error("cancelled");
-      const outRel = renderRelativePath(f.relativePath, input.values, input.pathSubstitutions);
-      const outAbs = ensureWorkspaceRelative(ctx.workspacePath, outRel);
-      const rendered = shouldSkipRender(f.relativePath, input.skipRender)
-        ? f.source
-        : renderTemplate(f.source, input.values);
-      if (ctx.dryRun) {
-        ctx.logger.info(`[dry-run] fetch:template ${outRel}`);
-      } else {
-        await fs.mkdir(dirname(outAbs), { recursive: true });
-        await fs.writeFile(outAbs, rendered, "utf8");
-        ctx.logger.info(`fetch:template ${outRel}`);
-      }
-      written.push(outRel);
-    }
+    const written = await renderSkeletonInto({
+      skeletonPath: input.skeletonPath,
+      values: input.values,
+      skipRender: input.skipRender,
+      pathSubstitutions: input.pathSubstitutions,
+      workspacePath: ctx.workspacePath,
+      dryRun: ctx.dryRun,
+      signal: ctx.signal,
+      logger: ctx.logger,
+    });
     return {
       output: { files: written },
       // Executor disposes the whole workspace, so no per-file compensation is needed.

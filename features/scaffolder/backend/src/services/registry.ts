@@ -13,6 +13,7 @@ import {
 import { prisma } from "@internal/db";
 import { catalogRegisterAction } from "../actions/catalog";
 import { catalogDiscoverAction } from "../actions/catalog-discover";
+import { fetchRemoteTemplateAction } from "../actions/fetch-remote-template";
 import { bindingWriteAction } from "../actions/binding";
 import { publishGithubAction } from "../actions/publish-github";
 import { publishGithubPrAction } from "../actions/publish-github-pr";
@@ -35,6 +36,7 @@ export function getActionRegistry(): ActionRegistry {
     fsDeleteAction,
     fsRenameAction,
     fetchTemplateAction,
+    fetchRemoteTemplateAction,
     catalogRegisterAction,
     catalogDiscoverAction,
     bindingWriteAction,

@@ -63,7 +63,7 @@ module.exports = {
     },
     includeOnly: "(^|/)(apps|features|packages)/",
     exclude: {
-      path: "(node_modules|/dist/|/build/|/generated/|\\.prisma/|skeletons/|tooling/scaffolder/templates/)",
+      path: "(node_modules|/dist/|/build/|/generated/|\\.prisma/)",
     },
     reporterOptions: {
       text: { highlightFocused: true },

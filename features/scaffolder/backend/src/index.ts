@@ -48,6 +48,7 @@ export {
 } from "./jobs";
 export { runDriftSweep, reconcileTemplateHashSnapshots } from "./services/drift";
 export { seedTemplateAcls, EVERYONE_SUBJECT_ID } from "./services/bootstrap-acl";
+export { seedDefaultTemplates } from "./services/bootstrap-default-templates";
 export { filterByTemplateAcl } from "./services/acl";
 export {
   discoverCatalogYaml,

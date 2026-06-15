@@ -23,7 +23,6 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "create-feature": "node tooling/scaffolder/create-feature.mjs",
     "arch:graph": "depcruise apps features packages --config .dependency-cruiser.cjs",
     "arch:deps": "node scripts/check-workspace-deps.mjs",
     "arch:check": "yarn arch:graph && yarn arch:deps",
