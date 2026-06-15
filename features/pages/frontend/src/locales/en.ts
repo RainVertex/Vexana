@@ -113,7 +113,6 @@ export const en = {
     admin_jobs: "Jobs",
     admin_mcp: "MCP tokens",
     admin_team_requests: "Team requests",
-    admin_team_templates: "Team templates",
   },
 };
 

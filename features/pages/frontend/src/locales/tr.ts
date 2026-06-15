@@ -116,6 +116,5 @@ export const tr: PagesResources = {
     admin_jobs: "İşler",
     admin_mcp: "MCP belirteçleri",
     admin_team_requests: "Takım talepleri",
-    admin_team_templates: "Takım şablonları",
   },
 };

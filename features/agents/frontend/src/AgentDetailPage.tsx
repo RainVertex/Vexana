@@ -3,7 +3,13 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { PageLayout, ConfirmDialog, AgentAvatar } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
-import type { Agent, AgentRun, CurrentUser } from "@internal/shared-types";
+import type {
+  Agent,
+  AgentRun,
+  AgentToolDescriptor,
+  AgentToolGroup,
+  CurrentUser,
+} from "@internal/shared-types";
 import { McpServersEditor } from "./McpServersEditor";
 
 const KIND_LABEL_KEY: Record<string, "custom" | "catalogEnrichment" | "platformAssistant"> = {
@@ -33,6 +39,8 @@ export function AgentDetailPage() {
   const { id = "" } = useParams<{ id: string }>();
   const [agent, setAgent] = useState<AgentDetail | null>(null);
   const [me, setMe] = useState<CurrentUser | null>(null);
+  const [toolGroups, setToolGroups] = useState<AgentToolGroup[]>([]);
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -53,7 +61,15 @@ export function AgentDetailPage() {
       .me()
       .then(setMe)
       .catch(() => setMe(null));
+    api.agents
+      .listTools()
+      .then((res) => setToolGroups(res.groups))
+      .catch(() => {});
   }, [api, load]);
+
+  function toggleGroupOpen(groupId: string) {
+    setOpenGroups((prev) => ({ ...prev, [groupId]: !prev[groupId] }));
+  }
 
   async function onDelete() {
     setDeleting(true);
@@ -98,6 +114,7 @@ export function AgentDetailPage() {
 
   const toolIds = Array.isArray(agent.toolIds) ? agent.toolIds : [];
   const isAdmin = me?.role === "admin";
+  const toolGroupSections = groupSelectedTools(toolIds, toolGroups, t("detail.otherTools"));
 
   return (
     <PageLayout
@@ -159,15 +176,49 @@ export function AgentDetailPage() {
         {toolIds.length === 0 ? (
           <p className="text-sm text-app-text-muted">{t("empty.noTools")}</p>
         ) : (
-          <div className="flex flex-wrap gap-1.5">
-            {toolIds.map((tid) => (
-              <span
-                key={tid}
-                className="rounded-full border border-app-border bg-app-surface px-2 py-0.5 font-mono text-xs text-app-text-muted"
-              >
-                {tid}
-              </span>
-            ))}
+          <div className="grid gap-2">
+            {toolGroupSections.map((group) => {
+              const open = Boolean(openGroups[group.id]);
+              return (
+                <div key={group.id} className="overflow-hidden rounded-md border border-app-border">
+                  <button
+                    type="button"
+                    onClick={() => toggleGroupOpen(group.id)}
+                    aria-expanded={open}
+                    className="flex w-full items-start gap-2 bg-app-surface px-2 py-1.5 text-left text-sm font-medium text-app-text"
+                  >
+                    <span className="mt-0.5 w-3 shrink-0 text-xs text-app-text-muted">
+                      {open ? "▾" : "▸"}
+                    </span>
+                    <span>
+                      {group.label}
+                      <span className="ml-1 text-xs font-normal text-app-text-muted">
+                        ({group.tools.length})
+                      </span>
+                      {group.description && (
+                        <span className="block text-xs font-normal text-app-text-muted">
+                          {group.description}
+                        </span>
+                      )}
+                    </span>
+                  </button>
+                  {open && (
+                    <div className="grid gap-1.5 border-t border-app-border px-2 py-2">
+                      {group.tools.map((tool) => (
+                        <div key={tool.id} className="text-sm text-app-text">
+                          <span className="font-mono text-xs">{tool.id}</span>
+                          {tool.description && (
+                            <span className="block text-xs text-app-text-muted">
+                              {tool.description}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </section>
@@ -288,6 +339,50 @@ export function AgentDetailPage() {
       />
     </PageLayout>
   );
+}
+
+interface ToolGroupSection {
+  id: string;
+  label: string;
+  description: string;
+  tools: AgentToolDescriptor[];
+}
+
+// Buckets the agent's selected tool ids into their registered groups, keeping group order.
+// Tool ids that match no known group fall into a trailing "other" section so nothing is hidden.
+function groupSelectedTools(
+  toolIds: string[],
+  toolGroups: AgentToolGroup[],
+  otherLabel: string,
+): ToolGroupSection[] {
+  const selected = new Set(toolIds);
+  const claimed = new Set<string>();
+  const sections: ToolGroupSection[] = [];
+
+  for (const group of toolGroups) {
+    const tools = group.tools.filter((tool) => selected.has(tool.id));
+    tools.forEach((tool) => claimed.add(tool.id));
+    if (tools.length > 0) {
+      sections.push({
+        id: group.id,
+        label: group.label,
+        description: group.description,
+        tools,
+      });
+    }
+  }
+
+  const orphans = toolIds.filter((tid) => !claimed.has(tid));
+  if (orphans.length > 0) {
+    sections.push({
+      id: "__other__",
+      label: otherLabel,
+      description: "",
+      tools: orphans.map((tid) => ({ id: tid, name: tid, description: "" })),
+    });
+  }
+
+  return sections;
 }
 
 function Field({ label, value }: { label: string; value: string }) {
