@@ -18,7 +18,6 @@ import {
   assistantNotConfiguredMessage,
 } from "@internal/llm-core";
 import { streamAgent } from "./streamExecutor";
-import { composeUserContent, extractAttachmentTexts, visionReady } from "./imageExtraction";
 
 export const chatRouter: Router = Router();
 
@@ -112,25 +111,30 @@ async function loadAgentIdentities(
   return new Map(agents.map((a) => [a.id, { name: a.name, avatarUrl: a.avatarUrl }]));
 }
 
-async function resolveChatReadiness(): Promise<{ ready: boolean; reason: string | null }> {
+// visionReady is true when the assistant's own model is multimodal, image attachments need no separate model.
+async function resolveChatReadiness(): Promise<{
+  ready: boolean;
+  reason: string | null;
+  visionReady: boolean;
+}> {
   const agent = await prisma.agent.findUnique({
     where: { id: PLATFORM_ASSISTANT_AGENT_ID },
     include: { llmModel: { include: { provider: true } } },
   });
   const model = agent?.llmModel ?? null;
   if (!model || !model.enabled || !model.provider.enabled) {
-    return { ready: false, reason: "model_unavailable" };
+    return { ready: false, reason: "model_unavailable", visionReady: false };
   }
   const hasStoredKey = await providerHasStoredKey(model.provider.id);
   if (!isProviderReady(model.provider, hasStoredKey)) {
-    return { ready: false, reason: "model_unavailable" };
+    return { ready: false, reason: "model_unavailable", visionReady: false };
   }
-  return { ready: true, reason: null };
+  return { ready: true, reason: null, visionReady: model.supportsVision };
 }
 
 chatRouter.get("/config", async (_req, res) => {
-  const { ready, reason } = await resolveChatReadiness();
-  const dto: ChatConfigDto = { ready, reason, visionReady: await visionReady() };
+  const { ready, reason, visionReady } = await resolveChatReadiness();
+  const dto: ChatConfigDto = { ready, reason, visionReady };
   res.json(dto);
 });
 
@@ -275,10 +279,10 @@ chatRouter.post("/conversations/:id/messages", async (req, res) => {
   }
 
   const attachments = parsed.attachments ?? [];
-  if (attachments.length > 0 && !(await visionReady())) {
+  if (attachments.length > 0 && !readiness.visionReady) {
     res.status(409).json({
-      error: "Image input is not configured. An admin must select a vision model first.",
-      code: "vision_not_configured",
+      error: "Image input is not supported by the assistant's model.",
+      code: "vision_not_supported",
     });
     return;
   }
@@ -298,9 +302,7 @@ chatRouter.post("/conversations/:id/messages", async (req, res) => {
       role: "user",
       content: parsed.content,
       attachments:
-        attachments.length > 0
-          ? (attachments.map((a) => ({ ...a, extractedText: null })) as Prisma.InputJsonValue)
-          : undefined,
+        attachments.length > 0 ? (attachments as unknown as Prisma.InputJsonValue) : undefined,
     },
   });
 
@@ -331,26 +333,11 @@ chatRouter.post("/conversations/:id/messages", async (req, res) => {
   try {
     const teamIds = await getCallerTeamIds(user.id);
 
-    let effectiveContent = parsed.content;
-    if (attachments.length > 0) {
-      const extracted = await extractAttachmentTexts({
-        attachments,
-        isAdmin: user.role === "admin",
-        signal: controller.signal,
-        onEvent: writeEvent,
-      });
-      const withText = attachments.map((a, i) => ({ ...a, extractedText: extracted[i] ?? null }));
-      await prisma.chatMessage.update({
-        where: { id: userMsg.id },
-        data: { attachments: withText as Prisma.InputJsonValue },
-      });
-      effectiveContent = composeUserContent(parsed.content, withText);
-    }
-
     const result = await streamAgent({
       agentId: PLATFORM_ASSISTANT_AGENT_ID,
       conversationId,
-      userMessageContent: effectiveContent,
+      userMessageContent: parsed.content,
+      attachments: attachments.map((a) => ({ dataUrl: a.dataUrl })),
       currentUserMessageId: userMsg.id,
       callerUserId: user.id,
       callerIsAdmin: user.role === "admin",

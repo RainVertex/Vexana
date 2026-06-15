@@ -17,7 +17,7 @@ import {
 import type { ChatSseEvent, ChatToolCallSummary, ChatPolicyCheck } from "@internal/shared-types";
 import { platformAssistantReadToolIds } from "@feature/agent-tools-backend/contract";
 import { chatWriteToolIds } from "./tools";
-import { composeUserContent } from "./imageExtraction";
+import { buildUserContent } from "./imageContent";
 import { ThinkTagSplitter } from "./thinkTagSplitter";
 
 // SSE streaming chat loop: multi-turn tool dispatch with prepare/submit confirmation, reasoning split, and AgentRun persistence.
@@ -39,6 +39,8 @@ export interface StreamAgentArgs {
   agentId: string;
   conversationId: string;
   userMessageContent: string;
+  // Images for the current turn, sent to the model as native multimodal content.
+  attachments?: { dataUrl: string }[];
   // Excludes the already-persisted current user row from history so it is not sent twice.
   currentUserMessageId?: string;
   callerUserId: string;
@@ -147,7 +149,7 @@ export async function streamAgent(args: StreamAgentArgs): Promise<StreamAgentRes
     { role: "system", content: agent.instructions },
     ...history,
     ...(pendingPreviewNote ? [{ role: "system" as const, content: pendingPreviewNote }] : []),
-    { role: "user", content: args.userMessageContent },
+    { role: "user", content: buildUserContent(args.userMessageContent, args.attachments ?? []) },
   ];
 
   const toolCallSummaries: ChatToolCallSummary[] = [];
@@ -617,11 +619,11 @@ async function loadHistory(
   const out: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [];
   for (const pair of tail) {
     if (pair.user) {
-      // Replays the stored extraction so follow-up questions about an image never re-run the vision model.
+      // Replays stored images so follow-up questions about an image keep their visual context.
       const attachments = Array.isArray(pair.user.attachments)
-        ? (pair.user.attachments as unknown as { extractedText: string | null }[])
+        ? (pair.user.attachments as unknown as { dataUrl: string }[])
         : [];
-      out.push({ role: "user", content: composeUserContent(pair.user.content, attachments) });
+      out.push({ role: "user", content: buildUserContent(pair.user.content, attachments) });
     }
     if (pair.assistant) {
       out.push({ role: "assistant", content: pair.assistant.content });

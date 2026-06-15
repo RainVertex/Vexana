@@ -45,19 +45,6 @@ export function AdminAiModelsPage() {
     }
   }
 
-  async function setActiveVision(modelId: string | null) {
-    setBusy(`vision:${modelId ?? "clear"}`);
-    setError(null);
-    try {
-      await client.adminAi.setActiveVisionModel(modelId);
-      await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to set vision model");
-    } finally {
-      setBusy(null);
-    }
-  }
-
   async function saveKey(slug: string, apiKey: string) {
     setBusy(`key:${slug}`);
     setError(null);
@@ -94,8 +81,6 @@ export function AdminAiModelsPage() {
     );
   }
 
-  const activeVisionId = data?.activeVisionModelId ?? null;
-
   return (
     <PageLayout title={t("admin.aiModelsTitle")} description={t("admin.aiModelsDescription")}>
       {error && (
@@ -103,37 +88,6 @@ export function AdminAiModelsPage() {
           {error}
         </div>
       )}
-
-      <div className="mb-6 grid gap-4">
-        <section className="rounded-lg border border-app-border bg-app-surface p-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <div className="text-xs uppercase tracking-wide text-app-text-muted">
-                Active vision model
-              </div>
-              <div className="text-sm text-app-text">
-                {activeVisionId ? (
-                  findModelName(data, activeVisionId)
-                ) : (
-                  <span className="text-app-text-muted">
-                    Not configured, image input in chat is disabled.
-                  </span>
-                )}
-              </div>
-            </div>
-            {activeVisionId && (
-              <button
-                type="button"
-                disabled={busy === "vision:clear"}
-                onClick={() => void setActiveVision(null)}
-                className="rounded-md border border-app-border bg-app-surface px-3 py-1.5 text-sm text-app-text hover:bg-app-surface-hover disabled:opacity-50"
-              >
-                Clear vision model
-              </button>
-            )}
-          </div>
-        </section>
-      </div>
 
       <SourceRepoSection />
 
@@ -145,10 +99,8 @@ export function AdminAiModelsPage() {
             <ProviderCard
               key={p.slug}
               provider={p}
-              activeVisionId={activeVisionId}
               busy={busy}
               onToggle={toggleEnabled}
-              onSetActiveVision={setActiveVision}
               onSaveKey={saveKey}
               onRemoveKey={removeKey}
             />
@@ -317,29 +269,16 @@ function SourceRepoSection() {
   );
 }
 
-function findModelName(data: AdminAiModelsResponse | null, id: string): string {
-  if (!data) return id;
-  for (const p of data.providers) {
-    const m = p.models.find((x) => x.id === id);
-    if (m) return `${m.displayName} (${p.displayName})`;
-  }
-  return id;
-}
-
 function ProviderCard({
   provider,
-  activeVisionId,
   busy,
   onToggle,
-  onSetActiveVision,
   onSaveKey,
   onRemoveKey,
 }: {
   provider: AdminAiProviderGroup;
-  activeVisionId: string | null;
   busy: string | null;
   onToggle: (m: AdminAiModelRow) => void;
-  onSetActiveVision: (id: string) => void;
   onSaveKey: (slug: string, apiKey: string) => void;
   onRemoveKey: (slug: string) => void;
 }) {
@@ -369,15 +308,6 @@ function ProviderCard({
 
       <div className="grid gap-2">
         {provider.models.map((m) => {
-          const isActiveVision = m.id === activeVisionId;
-          const canActivateVision = provider.ready && m.enabled && m.supportsVision;
-          const activateVisionTitle = !provider.ready
-            ? "Provider is not ready"
-            : !m.enabled
-              ? "Enable the model first"
-              : !m.supportsVision
-                ? "Image extraction needs a vision-capable model"
-                : "Set as active vision model";
           return (
             <div
               key={m.id}
@@ -401,11 +331,6 @@ function ProviderCard({
                       reasoning
                     </span>
                   )}
-                  {isActiveVision && (
-                    <span className="ml-2 rounded-full bg-app-primary/10 px-1.5 py-0.5 text-[10px] text-app-primary">
-                      active vision model
-                    </span>
-                  )}
                 </div>
                 <div className="font-mono text-[11px] text-app-text-muted">{m.modelName}</div>
               </div>
@@ -417,15 +342,6 @@ function ProviderCard({
                   className="rounded-md border border-app-border bg-app-surface px-2.5 py-1 text-xs text-app-text hover:bg-app-surface-hover disabled:opacity-50"
                 >
                   {m.enabled ? "Disable" : "Enable"}
-                </button>
-                <button
-                  type="button"
-                  disabled={!canActivateVision || isActiveVision || busy === `vision:${m.id}`}
-                  title={activateVisionTitle}
-                  onClick={() => onSetActiveVision(m.id)}
-                  className="rounded-md border border-app-border bg-app-surface px-2.5 py-1 text-xs text-app-text hover:bg-app-surface-hover disabled:opacity-50"
-                >
-                  {isActiveVision ? "Vision" : "Set as vision model"}
                 </button>
               </div>
             </div>

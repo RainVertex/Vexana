@@ -12,7 +12,6 @@ async function main() {
 
   // Provider/model registry must exist before any Agent row (Agent.modelId FK).
   await seedLlmProviders();
-  await seedDefaultAiSettings();
 
   await seedDefaultPages();
   await seedTeamPolicies();
@@ -83,15 +82,6 @@ Aim for at most 8 tool calls. Do not loop.`;
   }
 
   console.log("Seed complete.");
-}
-
-// Default vision model for chat image extraction. create-only so re-seeding never overrides an admin's later choice.
-async function seedDefaultAiSettings() {
-  await prisma.systemSetting.upsert({
-    where: { key: "chat.visionModelId" },
-    update: {},
-    create: { key: "chat.visionModelId", value: "llmmodel_openai_o4_mini" },
-  });
 }
 
 // The assistant's effective read tools come live from platformAssistantReadToolIds() (agent-tools registry.ts) plus chatWriteToolIds(), the toolIds persisted here are display-only and the instructions below ARE the live system prompt.

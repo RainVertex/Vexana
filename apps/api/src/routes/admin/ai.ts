@@ -4,7 +4,6 @@ import { prisma } from "@internal/db";
 import type {
   AdminAiModelsResponse,
   AdminAiProviderGroup,
-  ActiveChatModelDto,
   ChatSourceRepoDto,
 } from "@internal/shared-types";
 import {
@@ -13,7 +12,6 @@ import {
   clearSetting,
   isProviderReady,
   getProviderIdsWithStoredKey,
-  providerHasStoredKey,
   setProviderKey,
   clearProviderKey,
 } from "@internal/llm-core";
@@ -21,19 +19,18 @@ import { isAppConfigured } from "@feature/integrations-backend";
 import { requireAuth, requireRole } from "../../middleware/requireAuth";
 import { adminLimiter } from "../../middleware/rateLimit";
 
-// Admin "AI / Models" routes: provider/model readiness, enable/disable, active vision model selection, and provider key management.
+// Admin "AI / Models" routes: provider/model readiness, enable/disable, and provider key management.
 // The chat assistant's model is configured per-agent (Platform Assistant agent's modelId), not here.
+// Image input rides on that same model, so there is no separate vision model to select.
 
 export const adminAiRouter = Router();
 
 adminAiRouter.use(adminLimiter, requireAuth, requireRole("admin"));
 
-const VISION_KEY = "chat.visionModelId";
 const SOURCE_REPO_KEY = "chat.sourceRepo";
 
 adminAiRouter.get("/models", async (_req, res, next) => {
   try {
-    const activeVisionModelId = await getSetting<string>(VISION_KEY);
     const storedKeyProviderIds = await getProviderIdsWithStoredKey();
     const providers = await prisma.llmProvider.findMany({
       orderBy: { slug: "asc" },
@@ -55,13 +52,9 @@ adminAiRouter.get("/models", async (_req, res, next) => {
         supportsVision: m.supportsVision,
         supportsReasoning: m.supportsReasoning,
         enabled: m.enabled,
-        isActiveVisionModel: m.id === activeVisionModelId,
       })),
     }));
-    const body: AdminAiModelsResponse = {
-      providers: groups,
-      activeVisionModelId: activeVisionModelId ?? null,
-    };
+    const body: AdminAiModelsResponse = { providers: groups };
     res.json(body);
   } catch (err) {
     next(err);
@@ -83,80 +76,7 @@ adminAiRouter.patch("/models/:id", async (req, res, next) => {
       res.status(404).json({ error: "Model not found" });
       return;
     }
-    if (!parsed.data.enabled) {
-      const activeVision = await getSetting<string>(VISION_KEY);
-      if (activeVision === id) {
-        res.status(409).json({
-          error: "This model is the active vision model. Select another vision model first.",
-          code: "active_model_in_use",
-        });
-        return;
-      }
-    }
     await prisma.llmModel.update({ where: { id }, data: { enabled: parsed.data.enabled } });
-    res.status(204).end();
-  } catch (err) {
-    next(err);
-  }
-});
-
-const putActiveSchema = z.object({ modelId: z.string().nullable() });
-
-adminAiRouter.get("/active-vision-model", async (_req, res, next) => {
-  try {
-    const modelId = await getSetting<string>(VISION_KEY);
-    const body: ActiveChatModelDto = { modelId: modelId ?? null };
-    res.json(body);
-  } catch (err) {
-    next(err);
-  }
-});
-
-adminAiRouter.put("/active-vision-model", async (req, res, next) => {
-  try {
-    const parsed = putActiveSchema.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(400).json({ error: "Invalid body" });
-      return;
-    }
-    const { modelId } = parsed.data;
-    if (modelId === null) {
-      await clearSetting(VISION_KEY);
-      res.status(204).end();
-      return;
-    }
-    const model = await prisma.llmModel.findUnique({
-      where: { id: modelId },
-      include: { provider: true },
-    });
-    if (!model) {
-      res.status(400).json({ error: "Model not found", code: "model_not_found" });
-      return;
-    }
-    if (!model.enabled) {
-      res.status(400).json({ error: "Model is disabled", code: "model_disabled" });
-      return;
-    }
-    if (!model.provider.enabled) {
-      res.status(400).json({ error: "Provider is disabled", code: "provider_disabled" });
-      return;
-    }
-    const hasStoredKey = await providerHasStoredKey(model.provider.id);
-    if (!isProviderReady(model.provider, hasStoredKey)) {
-      res.status(400).json({
-        error: `Provider is not ready (no in-app key and ${model.provider.apiKeyEnvVar} is unset)`,
-        code: "provider_not_ready",
-      });
-      return;
-    }
-    if (!model.supportsVision) {
-      res.status(400).json({
-        error: "Image extraction needs a vision-capable model.",
-        code: "model_lacks_vision",
-      });
-      return;
-    }
-    await setSetting(VISION_KEY, model.id, req.user?.id ?? null);
     res.status(204).end();
   } catch (err) {
     next(err);

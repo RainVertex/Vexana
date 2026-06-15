@@ -3,7 +3,6 @@ import type {
   AdminUserRow,
   Agent,
   AdminAiModelsResponse,
-  ActiveChatModelDto,
   AiRecommendationsDto,
   AgentRun,
   AgentToolsResponse,
@@ -326,12 +325,6 @@ export function createApiClient(options: ApiClientOptions = {}) {
         request<void>(`/api/admin/ai/models/${encodeURIComponent(id)}`, {
           method: "PATCH",
           body: JSON.stringify({ enabled }),
-        }),
-      getActiveVisionModel: () => request<ActiveChatModelDto>(`/api/admin/ai/active-vision-model`),
-      setActiveVisionModel: (modelId: string | null) =>
-        request<void>(`/api/admin/ai/active-vision-model`, {
-          method: "PUT",
-          body: JSON.stringify({ modelId }),
         }),
       setProviderKey: (slug: string, apiKey: string) =>
         request<void>(`/api/admin/ai/providers/${encodeURIComponent(slug)}/key`, {
