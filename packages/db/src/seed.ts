@@ -283,6 +283,14 @@ async function seedLlmProviders() {
       apiKeyEnvVar: "OPENAI_API_KEY",
       kind: "openai",
     },
+    {
+      id: "llmprov_google_cloud",
+      slug: "google-cloud",
+      displayName: "Google Gemini (cloud)",
+      baseUrl: "https://generativelanguage.googleapis.com/v1beta",
+      apiKeyEnvVar: "GEMINI_API_KEY",
+      kind: "gemini",
+    },
   ];
 
   for (const p of providers) {
@@ -518,6 +526,32 @@ async function seedLlmProviders() {
       supportsReasoning: false,
       costPer1kIn: "0.0001",
       costPer1kOut: "0.0004",
+    },
+    {
+      id: "llmmodel_google_gemini_3_1_pro",
+      slug: "gemini-3.1-pro-preview",
+      displayName: "Gemini 3.1 Pro",
+      providerId: "llmprov_google_cloud",
+      modelName: "gemini-3.1-pro-preview",
+      contextWindow: 1048576,
+      supportsTools: true,
+      supportsVision: true,
+      supportsReasoning: true,
+      costPer1kIn: "0.002",
+      costPer1kOut: "0.012",
+    },
+    {
+      id: "llmmodel_google_gemini_3_5_flash",
+      slug: "gemini-3.5-flash",
+      displayName: "Gemini 3.5 Flash",
+      providerId: "llmprov_google_cloud",
+      modelName: "gemini-3.5-flash",
+      contextWindow: 1048576,
+      supportsTools: true,
+      supportsVision: true,
+      supportsReasoning: true,
+      costPer1kIn: "0.0015",
+      costPer1kOut: "0.009",
     },
   ];
 
