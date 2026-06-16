@@ -32,6 +32,7 @@ export {
   assistantNotConfiguredMessage,
 } from "./readiness";
 export { recommendationsForKind, type KindRecommendation } from "./recommendations";
+export { validateProviderKeyFormat } from "./keyFormat";
 export {
   getProviderIdsWithStoredKey,
   providerHasStoredKey,

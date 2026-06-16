@@ -14,6 +14,7 @@ import {
   getProviderIdsWithStoredKey,
   setProviderKey,
   clearProviderKey,
+  validateProviderKeyFormat,
 } from "@internal/llm-core";
 import { isAppConfigured } from "@feature/integrations-backend";
 import { requireAuth, requireRole } from "../../middleware/requireAuth";
@@ -193,6 +194,11 @@ adminAiRouter.put("/providers/:slug/key", async (req, res, next) => {
     }
     if (!provider.apiKeyEnvVar) {
       res.status(400).json({ error: "This provider needs no API key.", code: "no_key_needed" });
+      return;
+    }
+    const formatError = validateProviderKeyFormat(provider.kind, parsed.data.apiKey);
+    if (formatError) {
+      res.status(400).json({ error: formatError, code: "invalid_key_format" });
       return;
     }
     try {
