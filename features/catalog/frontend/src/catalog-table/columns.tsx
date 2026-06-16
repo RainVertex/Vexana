@@ -29,6 +29,9 @@ export type CatalogColumnId =
 
 export const PINNED_COLUMN: CatalogColumnId = "name";
 
+// Always-visible columns that cannot be toggled off (the star and the pinned name).
+export const LOCKED_COLUMNS: ReadonlySet<CatalogColumnId> = new Set(["star", PINNED_COLUMN]);
+
 export interface CatalogColumnMeta {
   label: string;
   groupable: boolean;

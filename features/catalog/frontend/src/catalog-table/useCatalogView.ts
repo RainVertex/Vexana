@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import type { ColumnFiltersState, SortingState, VisibilityState } from "@tanstack/react-table";
-import { COLUMN_META, COLUMN_ORDER, PINNED_COLUMN, type CatalogColumnId } from "./columns";
+import { COLUMN_META, COLUMN_ORDER, LOCKED_COLUMNS, type CatalogColumnId } from "./columns";
 
 const STORAGE_KEY = "catalog.view";
 
@@ -46,7 +46,7 @@ function asColumnId(v: string | null | undefined): CatalogColumnId | null {
 }
 
 function defaultVisible(): CatalogColumnId[] {
-  return COLUMN_ORDER.filter((id) => COLUMN_META[id].defaultVisible);
+  return COLUMN_ORDER.filter((id) => COLUMN_META[id].defaultVisible || LOCKED_COLUMNS.has(id));
 }
 
 function parseSort(raw: string | null): SortingState {
@@ -64,8 +64,11 @@ function parseColumns(raw: string | null): CatalogColumnId[] | null {
     .map((s) => asColumnId(s.trim()))
     .filter((s): s is CatalogColumnId => s !== null);
   if (ids.length === 0) return null;
-  if (!ids.includes(PINNED_COLUMN)) ids.unshift(PINNED_COLUMN);
-  return ids;
+  // Locked columns (star, name) are always present, in canonical order at the front.
+  return [
+    ...COLUMN_ORDER.filter((c) => LOCKED_COLUMNS.has(c)),
+    ...ids.filter((c) => !LOCKED_COLUMNS.has(c)),
+  ];
 }
 
 function readStorage(): PersistedView {
@@ -155,8 +158,7 @@ export function useCatalogView(): CatalogView {
   const visibility = useMemo<VisibilityState>(() => {
     const set = new Set(visibleColumns);
     const v: VisibilityState = {};
-    for (const id of COLUMN_ORDER) v[id] = set.has(id);
-    v[PINNED_COLUMN] = true;
+    for (const id of COLUMN_ORDER) v[id] = set.has(id) || LOCKED_COLUMNS.has(id);
     return v;
   }, [visibleColumns]);
 
@@ -217,7 +219,7 @@ export function useCatalogView(): CatalogView {
 
   const toggleColumn = useCallback(
     (id: CatalogColumnId) => {
-      if (id === PINNED_COLUMN) return;
+      if (LOCKED_COLUMNS.has(id)) return;
       const isVisible = visibleColumns.includes(id);
       const nextVisible = isVisible
         ? visibleColumns.filter((c) => c !== id)

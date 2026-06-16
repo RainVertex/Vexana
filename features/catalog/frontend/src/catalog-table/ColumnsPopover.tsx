@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "@internal/i18n";
 import {
   COLUMN_ORDER,
+  LOCKED_COLUMNS,
   PINNED_COLUMN,
   useLocalizedColumnMeta,
   type CatalogColumnId,
@@ -53,18 +54,19 @@ export function ColumnsPopover({ visibleColumns, onToggle }: Props) {
           <ul className="max-h-72 overflow-auto">
             {COLUMN_ORDER.map((id) => {
               const isPinned = id === PINNED_COLUMN;
-              const checked = visibleSet.has(id);
+              const isLocked = LOCKED_COLUMNS.has(id);
+              const checked = visibleSet.has(id) || isLocked;
               return (
                 <li key={id}>
                   <label
                     className={`flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm hover:bg-app-surface-hover ${
-                      isPinned ? "cursor-not-allowed opacity-60" : ""
+                      isLocked ? "cursor-not-allowed opacity-60" : ""
                     }`}
                   >
                     <input
                       type="checkbox"
                       checked={checked}
-                      disabled={isPinned}
+                      disabled={isLocked}
                       onChange={() => onToggle(id)}
                       className="h-3.5 w-3.5 rounded border-app-border accent-app-primary"
                     />
