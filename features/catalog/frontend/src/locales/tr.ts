@@ -238,6 +238,7 @@ export const tr: CatalogResources = {
     production: "Üretim",
     experimental: "Deneysel",
     deprecated: "Kullanım dışı",
+    development: "Geliştirme",
   },
   healthStatus: {
     healthy: "Sağlıklı",

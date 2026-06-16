@@ -12,7 +12,7 @@ export type CatalogEntityKind =
   | "database"
   | "infrastructure";
 
-export type Lifecycle = "experimental" | "production" | "deprecated";
+export type Lifecycle = "experimental" | "production" | "deprecated" | "development";
 
 export type CatalogEntitySource = "manual" | "scaffolder" | "discovery" | "agent" | "seed";
 

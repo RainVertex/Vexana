@@ -1,6 +1,6 @@
 // Parses and validates catalog-info.yaml in two flavors (flat preferred, plus Backstage Component); best-effort, never throws.
 import { parse as parseYaml } from "yaml";
-import type { CatalogEntityKind } from "@internal/db";
+import type { CatalogEntityKind, Lifecycle } from "@internal/db";
 import type { RegisterCatalogEntityInput } from "../service";
 
 export const VALID_KINDS: ReadonlyArray<CatalogEntityKind> = [
@@ -10,6 +10,13 @@ export const VALID_KINDS: ReadonlyArray<CatalogEntityKind> = [
   "website",
   "database",
   "infrastructure",
+];
+
+export const VALID_LIFECYCLES: ReadonlyArray<Lifecycle> = [
+  "experimental",
+  "production",
+  "deprecated",
+  "development",
 ];
 
 export type ParseResult =
@@ -44,6 +51,12 @@ export function parseCatalogInfo(path: string, raw: string): ParseResult {
   return { kind: "ok", input: candidate, yamlSpec: doc };
 }
 
+function readLifecycle(value: unknown): Lifecycle | undefined {
+  return typeof value === "string" && (VALID_LIFECYCLES as readonly string[]).includes(value)
+    ? (value as Lifecycle)
+    : undefined;
+}
+
 function readOwnerTeamIds(doc: Record<string, unknown>): string[] {
   if (Array.isArray(doc.ownerTeamIds)) {
     return doc.ownerTeamIds.filter((t): t is string => typeof t === "string");
@@ -58,6 +71,7 @@ function normalizeFlat(doc: Record<string, unknown>): RegisterCatalogEntityInput
     kind: doc.kind as CatalogEntityKind,
     name: doc.name,
     description: typeof doc.description === "string" ? doc.description : null,
+    lifecycle: readLifecycle(doc.lifecycle),
     ownerTeamIds: readOwnerTeamIds(doc),
     repoUrl: typeof doc.repoUrl === "string" ? doc.repoUrl : null,
     tags: Array.isArray(doc.tags) ? doc.tags.filter((t): t is string => typeof t === "string") : [],
@@ -74,6 +88,7 @@ function normalizeBackstage(doc: Record<string, unknown>): RegisterCatalogEntity
     kind: spec.type as CatalogEntityKind,
     name: metadata.name,
     description: typeof metadata.description === "string" ? metadata.description : null,
+    lifecycle: readLifecycle(spec.lifecycle),
     ownerTeamIds: typeof spec.owner === "string" ? [spec.owner] : [],
     repoUrl: null,
     tags: Array.isArray(metadata.tags)

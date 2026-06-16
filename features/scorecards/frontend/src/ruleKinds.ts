@@ -10,7 +10,7 @@ export const ENTITY_KINDS = [
   "infrastructure",
 ] as const;
 
-export const LIFECYCLES = ["experimental", "production", "deprecated"] as const;
+export const LIFECYCLES = ["experimental", "production", "deprecated", "development"] as const;
 
 export const STAGE_TIERS = ["bronze", "silver", "gold"] as const;
 export const THRESHOLD_TIERS = ["red", "orange", "yellow", "green"] as const;

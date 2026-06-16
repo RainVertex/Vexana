@@ -32,6 +32,8 @@ function lifecycleStyle(value: Lifecycle): string {
       return "bg-app-warning-soft text-app-warning-foreground";
     case "deprecated":
       return "bg-app-surface-hover text-app-text-muted line-through";
+    case "development":
+      return "bg-app-primary-soft text-app-primary-soft-foreground";
   }
 }
 

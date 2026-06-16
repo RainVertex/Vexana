@@ -8,7 +8,7 @@ import { PageLayout } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
 import type { ScaffolderTemplateDetail } from "@internal/api-client";
-import type { CatalogEntityWithOwners } from "@internal/shared-types";
+import type { CatalogEntityWithOwners, TeamSummary } from "@internal/shared-types";
 import { TemplateDriftBadge } from "./TemplateDriftBadge";
 import { themeTemplates, themeWidgets } from "./rjsfTheme";
 import {
@@ -16,6 +16,7 @@ import {
   schemaUsesGithubOrgs,
   withGithubOrgEnum,
 } from "./githubOrgField";
+import { schemaUsesPlatformTeams, withPlatformTeamsOneOf } from "./platformTeamsField";
 
 export function TemplatePage() {
   const { templateId } = useParams<{ templateId: string }>();
@@ -29,13 +30,18 @@ export function TemplatePage() {
   const [entities, setEntities] = useState<CatalogEntityWithOwners[] | null>(null);
   const [entityId, setEntityId] = useState<string>("");
   const [orgLogins, setOrgLogins] = useState<string[] | null>(null);
+  const [teams, setTeams] = useState<TeamSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const needsOrgs = useMemo(() => schemaUsesGithubOrgs(schema), [schema]);
+  const needsTeams = useMemo(() => schemaUsesPlatformTeams(schema), [schema]);
+  const selectedOrg =
+    typeof formData.org === "string" && formData.org.length > 0 ? formData.org : null;
   const effectiveSchema = useMemo(
-    () => withGithubOrgEnum(schema, orgLogins ?? []),
-    [schema, orgLogins],
+    () =>
+      withPlatformTeamsOneOf(withGithubOrgEnum(schema, orgLogins ?? []), teams ?? [], selectedOrg),
+    [schema, orgLogins, teams, selectedOrg],
   );
 
   useEffect(() => {
@@ -68,6 +74,26 @@ export function TemplatePage() {
       .catch(() => setOrgLogins([]));
   }, [api, needsOrgs, orgLogins]);
 
+  useEffect(() => {
+    if (!needsTeams || teams !== null) return;
+    api.teams
+      .list()
+      .then((res) => setTeams(res.items))
+      .catch(() => setTeams([]));
+  }, [api, needsTeams, teams]);
+
+  // Drop owners that do not belong to the selected org so the submitted ids never span orgs.
+  useEffect(() => {
+    if (!needsTeams || teams === null) return;
+    const current = Array.isArray(formData.owners) ? (formData.owners as string[]) : [];
+    if (current.length === 0) return;
+    const valid = new Set(teams.filter((tm) => tm.accountLogin === selectedOrg).map((tm) => tm.id));
+    const filtered = current.filter((id) => valid.has(id));
+    if (filtered.length !== current.length) {
+      setFormData((prev) => ({ ...prev, owners: filtered }));
+    }
+  }, [needsTeams, teams, selectedOrg, formData.owners]);
+
   async function handleSubmit(e: IChangeEvent<Record<string, unknown>>) {
     if (!template) return;
     setError(null);
@@ -92,7 +118,7 @@ export function TemplatePage() {
         <p className="text-sm text-red-600">{error}</p>
       </PageLayout>
     );
-  if (!template || !schema || (needsOrgs && orgLogins === null))
+  if (!template || !schema || (needsOrgs && orgLogins === null) || (needsTeams && teams === null))
     return (
       <PageLayout title={t("page.createTitle")}>
         <p className="text-sm text-app-text-muted">{t("loading.generic")}</p>

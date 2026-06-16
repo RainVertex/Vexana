@@ -11,6 +11,7 @@ enum Lifecycle {
   experimental
   production
   deprecated
+  development
 }
 
 enum ServiceStatus {

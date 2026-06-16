@@ -113,6 +113,7 @@ export const tr: ScorecardsResources = {
     experimental: "Deneysel",
     production: "Üretim",
     deprecated: "Kullanımdan kalkmış",
+    development: "Geliştirme",
   },
   doraMetricLabel: {
     deployFrequencyPerDay: "Dağıtım sıklığı (günlük)",

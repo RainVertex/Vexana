@@ -234,6 +234,7 @@ export const en = {
     production: "Production",
     experimental: "Experimental",
     deprecated: "Deprecated",
+    development: "Development",
   },
   healthStatus: {
     healthy: "Healthy",

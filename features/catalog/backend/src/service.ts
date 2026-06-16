@@ -5,12 +5,14 @@ import {
   type CatalogEntity,
   type CatalogEntityKind,
   type CatalogEntitySource,
+  type Lifecycle,
 } from "@internal/db";
 import { evaluateScorecardsForEntity } from "./scorecards/evaluator";
 import { syncDevDocsForEntity } from "./devdocs/sync";
 
 export type RegisterCatalogEntityInput = {
   kind: CatalogEntityKind;
+  lifecycle?: Lifecycle;
   name: string;
   description?: string | null;
   ownerTeamIds?: string[] | null;
@@ -77,6 +79,7 @@ export async function registerCatalogEntity(
     const created = await prisma.catalogEntity.create({
       data: {
         kind: input.kind,
+        lifecycle: input.lifecycle,
         name: input.name,
         description: input.description ?? null,
         repoUrl: input.repoUrl ?? null,
@@ -108,6 +111,7 @@ export async function registerCatalogEntity(
     staleSince: null,
   };
   if (input.description !== undefined) patch.description = input.description;
+  if (input.lifecycle !== undefined) patch.lifecycle = input.lifecycle;
   if (input.repoUrl !== undefined) patch.repoUrl = input.repoUrl;
   if (input.tags !== undefined) patch.tags = input.tags;
   if (input.yamlSpec !== undefined) {
@@ -201,6 +205,7 @@ function isNoopUpdate(
     return false;
   }
   if (input.description !== undefined && input.description !== existing.description) return false;
+  if (input.lifecycle !== undefined && input.lifecycle !== existing.lifecycle) return false;
   if (input.ownerTeamIds !== undefined) {
     const existingIds = existing.owners.map((o) => o.teamId).sort();
     const desiredIds = [...(input.ownerTeamIds ?? [])].sort();

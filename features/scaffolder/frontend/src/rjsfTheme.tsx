@@ -154,6 +154,34 @@ function CheckboxWidget(props: WidgetProps) {
   );
 }
 
+function CheckboxesWidget(props: WidgetProps) {
+  const { options, value, disabled, readonly, onChange } = props;
+  const { enumOptions = [] } = options;
+  const selected: unknown[] = Array.isArray(value) ? value : [];
+  function toggle(optionValue: unknown, checked: boolean) {
+    onChange(checked ? [...selected, optionValue] : selected.filter((v) => v !== optionValue));
+  }
+  if (enumOptions.length === 0) {
+    return <p className="text-sm text-app-text-muted">—</p>;
+  }
+  return (
+    <div className="flex flex-col gap-1">
+      {enumOptions.map((option, index) => (
+        <label key={index} className="flex items-center gap-2 text-sm text-app-text">
+          <input
+            type="checkbox"
+            className="h-4 w-4 rounded border-app-border accent-app-primary"
+            checked={selected.includes(option.value)}
+            disabled={disabled || readonly}
+            onChange={(e) => toggle(option.value, e.target.checked)}
+          />
+          {option.label}
+        </label>
+      ))}
+    </div>
+  );
+}
+
 function FieldTemplate(props: FieldTemplateProps) {
   const { id, label, required, description, errors, help, children, hidden, displayLabel } = props;
   if (hidden) return <div className="hidden">{children}</div>;
@@ -223,4 +251,5 @@ export const themeWidgets = {
   SelectWidget,
   TextareaWidget,
   CheckboxWidget,
+  CheckboxesWidget,
 };

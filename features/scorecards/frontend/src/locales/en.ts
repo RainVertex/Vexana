@@ -110,6 +110,7 @@ export const en = {
     experimental: "Experimental",
     production: "Production",
     deprecated: "Deprecated",
+    development: "Development",
   },
   doraMetricLabel: {
     deployFrequencyPerDay: "Deploy frequency (per day)",

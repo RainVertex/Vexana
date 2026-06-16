@@ -60,6 +60,15 @@ spec:
             - private
             - public
           default: private
+        owners:
+          type: array
+          title: Owner team(s)
+          description: Teams that will own the new catalog entity.
+          uniqueItems: true
+          default: []
+          x-platform-teams: true
+          items:
+            type: string
   steps:
     - id: render
       name: Render skeleton
@@ -85,10 +94,12 @@ spec:
       action: catalog:register
       input:
         kind: ${t.catalogKind}
+        lifecycle: development
         name: \${{ parameters.name }}
         description: \${{ parameters.description }}
         repoUrl: \${{ steps.publish.output.remoteUrl }}
         githubRepoId: \${{ steps.publish.output.repoId }}
+        ownerTeamIds: \${{ parameters.owners | dump }}
   output:
     repoUrl: \${{ steps.publish.output.remoteUrl }}
     entityId: \${{ steps.register.output.entityId }}

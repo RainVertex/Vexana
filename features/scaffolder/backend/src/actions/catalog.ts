@@ -7,6 +7,10 @@ const catalogRegisterInput = z.object({
   kind: z
     .enum(["service", "api", "library", "website", "database", "infrastructure"])
     .describe("Catalog entity kind"),
+  lifecycle: z
+    .enum(["experimental", "production", "deprecated", "development"])
+    .optional()
+    .describe("Catalog lifecycle stage"),
   name: z.string().min(1).describe("Unique entity name, usually the repo name"),
   description: z.string().optional().describe("Entity description"),
   ownerTeamIds: z.array(z.string().min(1)).optional().describe("Owning team ids"),
