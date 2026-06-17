@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Group, Panel, Separator, useDefaultLayout } from "react-resizable-panels";
-import { useApi } from "@internal/api-client/react";
 import type {
   ChatConversationDetailDto,
   ChatConversationSummaryDto,
   ChatMessageDto,
-} from "@internal/shared-types";
+} from "@feature/chat-shared";
 import { useTranslation } from "@internal/i18n";
+import { useChatApi } from "./client";
 import { ConversationList } from "./ConversationList";
 import { MessageList } from "./MessageList";
 import { Composer } from "./Composer";
@@ -41,7 +41,7 @@ interface ChatPageProps {
 // Stop is disabled during a *_submit (stream.submitInFlight) so we don't orphan a GitHub team mid-approval.
 export function ChatPage({ userName, userAvatarUrl }: ChatPageProps = {}) {
   const { t } = useTranslation("chat");
-  const api = useApi();
+  const api = useChatApi();
   const navigate = useNavigate();
   const { conversationId } = useParams<{ conversationId: string }>();
   const isMobile = useIsMobile();
@@ -71,7 +71,7 @@ export function ChatPage({ userName, userAvatarUrl }: ChatPageProps = {}) {
   const { visionReady } = useChatConfig();
 
   useEffect(() => {
-    api.chat.listConversations().then(setConversations).catch(console.error);
+    api.listConversations().then(setConversations).catch(console.error);
   }, [api]);
 
   // Load messages on navigation, but skip when already loaded or a stream is in flight so we don't clobber optimistic/live state.
@@ -87,7 +87,7 @@ export function ChatPage({ userName, userAvatarUrl }: ChatPageProps = {}) {
       return;
     }
     setLoading(true);
-    api.chat
+    api
       .getConversation(conversationId)
       .then((c) => {
         setActive(c);
@@ -102,7 +102,7 @@ export function ChatPage({ userName, userAvatarUrl }: ChatPageProps = {}) {
   // On stream end, refresh persisted history then reset the stream; without the reset the live bubble double-renders.
   useEffect(() => {
     if (stream.status !== "done" || !conversationId) return;
-    Promise.all([api.chat.getConversation(conversationId), api.chat.listConversations()])
+    Promise.all([api.getConversation(conversationId), api.listConversations()])
       .then(([detail, list]) => {
         setActive(detail);
         setConversations(list);
@@ -127,7 +127,7 @@ export function ChatPage({ userName, userAvatarUrl }: ChatPageProps = {}) {
 
   const handleConfirmDelete = useCallback(
     async (id: string) => {
-      await api.chat.deleteConversation(id);
+      await api.deleteConversation(id);
       setConversations((prev) => prev.filter((c) => c.id !== id));
       if (conversationId === id) navigate("/chat");
       setPendingDeleteId(null);
@@ -140,7 +140,7 @@ export function ChatPage({ userName, userAvatarUrl }: ChatPageProps = {}) {
       let convId = conversationId;
       if (!convId) {
         // Auto-create when none selected; the ref (not setActive) reliably tells the load effect to skip refetching this new conv.
-        const conv = await api.chat.createConversation();
+        const conv = await api.createConversation();
         skipNextLoadRef.current = conv.id;
         setConversations((prev) => [conv, ...prev]);
         setActive({ ...conv, messages: [] });

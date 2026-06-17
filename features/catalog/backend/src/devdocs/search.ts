@@ -1,6 +1,7 @@
 // Full-text DevDocs search over DocPage via Postgres tsvector/ts_rank.
 import { Prisma, prisma } from "@internal/db";
-import type { DocSearchHit, SearchHit } from "@internal/shared-types";
+import type { DocSearchHit } from "@feature/devdocs-shared";
+import type { SearchHit } from "@feature/search-shared";
 
 export interface DevDocsSearchOpts {
   entityId?: string;

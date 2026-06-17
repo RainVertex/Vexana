@@ -1,19 +1,19 @@
 import { useEffect, useState } from "react";
-import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
 import type { AuditEventRow } from "@internal/shared-types";
+import { useCatalogApi } from "../../client";
 import { useEntityContext } from "../outletContext";
 
 export function AuditTab() {
   const { data } = useEntityContext();
-  const api = useApi();
+  const api = useCatalogApi();
   const { t } = useTranslation("catalog");
   const [rows, setRows] = useState<AuditEventRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    api.catalog
+    api
       .auditFor(data.entity.id, 200)
       .then((res) => {
         if (!cancelled) setRows(res.items);

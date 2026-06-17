@@ -2,7 +2,7 @@
 import { Router, type Request } from "express";
 import { Prisma, prisma } from "@internal/db";
 import type { UserTask } from "@internal/db";
-import type { UserTaskDto } from "@internal/shared-types";
+import type { UserTaskDto } from "@feature/onboarding-shared";
 import { SEED_TASKS } from "./seeds";
 
 export const onboardingRouter: Router = Router();

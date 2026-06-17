@@ -3,11 +3,14 @@ import { Link, useNavigate } from "react-router-dom";
 import { PageLayout } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
-import type { CurrentUser, TeamSummary } from "@internal/shared-types";
+import type { CurrentUser } from "@internal/shared-types";
+import type { TeamSummary } from "@feature/teams-shared";
+import { useTeamsApi } from "./client";
 import { RequestTeamDialog } from "./RequestTeamDialog";
 
 export function TeamsPage() {
   const api = useApi();
+  const teamsApi = useTeamsApi();
   const navigate = useNavigate();
   const { t } = useTranslation("teams");
   const [items, setItems] = useState<TeamSummary[] | null>(null);
@@ -18,13 +21,13 @@ export function TeamsPage() {
 
   const load = useCallback(async () => {
     try {
-      const res = await api.teams.list({ allOrgs: showAllOrgs });
+      const res = await teamsApi.teams.list({ allOrgs: showAllOrgs });
       setItems(res.items);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("errors.failedToLoadTeams"));
     }
-  }, [api, showAllOrgs, t]);
+  }, [teamsApi, showAllOrgs, t]);
 
   useEffect(() => {
     void load();

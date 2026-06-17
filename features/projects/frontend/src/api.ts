@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
+import type { UserSummaryDto } from "@internal/shared-types";
 import type {
-  UserSummaryDto,
   ProjectDto,
   BucketDto,
   LabelDto,
   TaskDto,
   TaskCommentDto,
   ProjectShareDto,
-} from "@internal/shared-types";
+} from "@feature/projects-shared";
 
 interface FetchState<T> {
   data: T | null;

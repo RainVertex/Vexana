@@ -1,6 +1,6 @@
 import { Prisma, prisma } from "@internal/db";
 import { resolveOrgScope } from "@feature/catalog-backend/contract";
-import type { SearchHit } from "@internal/shared-types";
+import type { SearchHit } from "@feature/search-shared";
 import type { SearchSource } from "./types";
 
 interface Row {

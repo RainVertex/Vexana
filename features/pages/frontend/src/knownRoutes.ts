@@ -1,5 +1,5 @@
 // Static registry of app routes plus a prefix/substring search helper.
-import type { PageSection } from "@internal/shared-types";
+import type { PageSection } from "@feature/pages-shared";
 
 export interface KnownRoute {
   path: string;

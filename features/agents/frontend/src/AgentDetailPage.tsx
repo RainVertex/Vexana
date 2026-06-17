@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { PageLayout, ConfirmDialog, AgentAvatar } from "@internal/shared-ui";
-import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
-import type { Agent, AgentRun, CurrentUser, SkillSummary } from "@internal/shared-types";
+import type { CurrentUser } from "@internal/shared-types";
+import type { Agent, AgentRun, SkillSummary } from "@feature/agents-shared";
+import { useApi } from "@internal/api-client/react";
+import { useAgentsApi } from "./client";
 import { McpServersEditor } from "./McpServersEditor";
 
 const KIND_LABEL_KEY: Record<string, "custom" | "catalogEnrichment" | "platformAssistant"> = {
@@ -27,7 +29,8 @@ interface TestResult {
 }
 
 export function AgentDetailPage() {
-  const api = useApi();
+  const api = useAgentsApi();
+  const shellApi = useApi();
   const navigate = useNavigate();
   const { t } = useTranslation("agents");
   const { id = "" } = useParams<{ id: string }>();
@@ -51,7 +54,7 @@ export function AgentDetailPage() {
 
   useEffect(() => {
     void load();
-    api.auth
+    shellApi.auth
       .me()
       .then(setMe)
       .catch(() => setMe(null));
@@ -59,7 +62,7 @@ export function AgentDetailPage() {
       .list()
       .then((res) => setSkills(res.items))
       .catch(() => {});
-  }, [api, load]);
+  }, [api, load, shellApi]);
 
   function toggleSkillOpen(skillId: string) {
     setOpenSkills((prev) => ({ ...prev, [skillId]: !prev[skillId] }));

@@ -1,5 +1,5 @@
 import { useTranslation } from "@internal/i18n";
-import type { DocFreshness } from "@internal/shared-types";
+import type { DocFreshness } from "@feature/devdocs-shared";
 
 export interface FreshnessBannerProps {
   freshness: DocFreshness;

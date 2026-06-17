@@ -1,16 +1,16 @@
 // Admin queue to approve, reject, or propose changes to pending team-creation requests.
 import { useCallback, useEffect, useState } from "react";
 import { PageLayout } from "@internal/shared-ui";
-import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
-import type { TeamRequestDto } from "@internal/shared-types";
+import type { TeamRequestDto } from "@feature/teams-shared";
+import { useTeamsApi } from "./client";
 import { RejectTeamRequestDialog } from "./RejectTeamRequestDialog";
 import { ProposeChangesDialog } from "./ProposeChangesDialog";
 import { ProposedMembersList } from "./ProposedMembersList";
 import { RequestDiff } from "./RequestDiff";
 
 export function AdminTeamRequestsPage() {
-  const api = useApi();
+  const api = useTeamsApi();
   const { t } = useTranslation("teams");
   const [items, setItems] = useState<TeamRequestDto[] | null>(null);
   const [error, setError] = useState<string | null>(null);

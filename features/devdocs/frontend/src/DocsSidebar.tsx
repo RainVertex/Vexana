@@ -1,7 +1,7 @@
 // DevDocs sidebar: builds a collapsible page tree with per-entity persisted expand state.
 import { useEffect, useState } from "react";
 import { useTranslation } from "@internal/i18n";
-import type { DocPageSummary } from "@internal/shared-types";
+import type { DocPageSummary } from "@feature/devdocs-shared";
 
 export interface DocsSidebarProps {
   entityId: string;

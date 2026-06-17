@@ -1,15 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ConfirmDialog, PageLayout } from "@internal/shared-ui";
-import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
-import { ProposedMembersList } from "@feature/teams-frontend";
+import { ProposedMembersList, useTeamsApi } from "@feature/teams-frontend";
 import type {
   MaintainerRequestDto,
   MaintainerRequestStatus,
   TeamRequestDto,
   TeamRequestStatus,
-} from "@internal/shared-types";
+} from "@feature/teams-shared";
 
 const PENDING_TEAM_STATUSES: ReadonlySet<TeamRequestStatus> = new Set([
   "pending",
@@ -28,7 +27,7 @@ function timeRemaining(iso: string, t: ReturnType<typeof useTranslation>["t"]): 
 // Combined "My Requests" page listing the user's team-creation and maintainer requests.
 export function MyRequestsTeamPage() {
   const { t } = useTranslation("requests");
-  const api = useApi();
+  const api = useTeamsApi();
   const [teamRequests, setTeamRequests] = useState<TeamRequestDto[] | null>(null);
   const [maintainerRequests, setMaintainerRequests] = useState<MaintainerRequestDto[] | null>(null);
   const [error, setError] = useState<string | null>(null);

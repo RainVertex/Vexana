@@ -1,5 +1,5 @@
 import { prisma } from "@internal/db";
-import type { SearchHit } from "@internal/shared-types";
+import type { SearchHit } from "@feature/search-shared";
 import type { SearchSource } from "./types";
 
 // Owned, non-deleted, non-folder pages. Dashboards open in-app, link pages route to their url.

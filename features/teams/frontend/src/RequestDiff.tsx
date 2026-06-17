@@ -1,6 +1,6 @@
 // Compact per-field diff between a team request's original submission and its current values.
 import { useTranslation } from "@internal/i18n";
-import type { TeamRequestDto } from "@internal/shared-types";
+import type { TeamRequestDto } from "@feature/teams-shared";
 
 interface RequestDiffProps {
   request: TeamRequestDto;

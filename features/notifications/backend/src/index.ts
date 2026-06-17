@@ -1,7 +1,7 @@
 // Notifications REST API plus the transactional notify() fan-out helper.
 import { Router } from "express";
 import { Prisma, prisma } from "@internal/db";
-import type { NotificationDto } from "@internal/shared-types";
+import type { NotificationDto } from "@feature/notifications-shared";
 
 export const notificationsRouter: Router = Router();
 

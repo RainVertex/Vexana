@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { PageLayout, AgentAvatar } from "@internal/shared-ui";
-import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
-import type { Agent, CurrentUser } from "@internal/shared-types";
+import type { CurrentUser } from "@internal/shared-types";
+import type { Agent } from "@feature/agents-shared";
+import { useApi } from "@internal/api-client/react";
+import { useAgentsApi } from "./client";
 
 const CATEGORY_ORDER = [
   "Plan & Coordinate",
@@ -41,7 +43,8 @@ function orderCategories(cats: string[], uncategorized: string): string[] {
 }
 
 export function AgentsPage() {
-  const api = useApi();
+  const api = useAgentsApi();
+  const shellApi = useApi();
   const { t } = useTranslation("agents");
   const [items, setItems] = useState<Agent[] | null>(null);
   const [me, setMe] = useState<CurrentUser | null>(null);
@@ -55,11 +58,11 @@ export function AgentsPage() {
       .list()
       .then((res) => setItems(res.items))
       .catch((err) => setError(err.message ?? t("errors.failedToLoadAgents")));
-    api.auth
+    shellApi.auth
       .me()
       .then(setMe)
       .catch(() => setMe(null));
-  }, [api, t]);
+  }, [api, t, shellApi]);
 
   const groups = useMemo(() => {
     if (!items) return [];

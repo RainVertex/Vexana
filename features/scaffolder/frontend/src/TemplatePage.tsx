@@ -5,10 +5,13 @@ import validator from "@rjsf/validator-ajv8";
 import type { IChangeEvent } from "@rjsf/core";
 import type { RJSFSchema, UiSchema } from "@rjsf/utils";
 import { PageLayout } from "@internal/shared-ui";
-import { useApi } from "@internal/api-client/react";
+import { useCatalogApi } from "@feature/catalog-frontend";
+import { useIntegrationsApi } from "@feature/integrations-frontend";
+import { useTeamsApi } from "@feature/teams-frontend";
 import { useTranslation } from "@internal/i18n";
-import type { ScaffolderTemplateDetail } from "@internal/api-client";
-import type { CatalogEntityWithOwners, TeamSummary } from "@internal/shared-types";
+import type { CatalogEntityWithOwners } from "@feature/catalog-shared";
+import type { TeamSummary } from "@feature/teams-shared";
+import { useScaffolderApi, type ScaffolderTemplateDetail } from "./client";
 import { TemplateDriftBadge } from "./TemplateDriftBadge";
 import { themeTemplates, themeWidgets } from "./rjsfTheme";
 import {
@@ -24,7 +27,10 @@ import {
 
 export function TemplatePage() {
   const { templateId } = useParams<{ templateId: string }>();
-  const api = useApi();
+  const catalogApi = useCatalogApi();
+  const scaffolderApi = useScaffolderApi();
+  const integrations = useIntegrationsApi();
+  const teamsApi = useTeamsApi();
   const navigate = useNavigate();
   const { t } = useTranslation("scaffolder");
   const [template, setTemplate] = useState<ScaffolderTemplateDetail | null>(null);
@@ -54,7 +60,7 @@ export function TemplatePage() {
 
   useEffect(() => {
     if (!templateId) return;
-    api.scaffolder
+    scaffolderApi
       .getTemplate(templateId)
       .then((tpl) => {
         setTemplate(tpl);
@@ -62,33 +68,33 @@ export function TemplatePage() {
         setUiSchema(tpl.uiSchema ?? {});
       })
       .catch((err) => setError(err.message ?? t("errors.loadTemplate")));
-  }, [api, templateId, t]);
+  }, [scaffolderApi, templateId, t]);
 
   const needsEntity = template !== null && template.operation !== "create";
 
   useEffect(() => {
     if (!needsEntity || entities !== null) return;
-    api.catalog
+    catalogApi
       .list()
       .then((res) => setEntities(res.items.filter((i) => i.accessible)))
       .catch(() => setEntities([]));
-  }, [api, needsEntity, entities]);
+  }, [catalogApi, needsEntity, entities]);
 
   useEffect(() => {
     if (!needsOrgs || orgLogins !== null) return;
-    api.integrations
+    integrations
       .githubInstallations()
       .then((res) => setOrgLogins(orgLoginsFromInstallations(res.items)))
       .catch(() => setOrgLogins([]));
-  }, [api, needsOrgs, orgLogins]);
+  }, [integrations, needsOrgs, orgLogins]);
 
   useEffect(() => {
     if (!needsTeams || teams !== null) return;
-    api.teams
+    teamsApi.teams
       .list()
       .then((res) => setTeams(res.items))
       .catch(() => setTeams([]));
-  }, [api, needsTeams, teams]);
+  }, [teamsApi, needsTeams, teams]);
 
   // Drop owners that do not belong to the selected org so the submitted ids never span orgs.
   useEffect(() => {
@@ -107,7 +113,7 @@ export function TemplatePage() {
     setError(null);
     setSubmitting(true);
     try {
-      const plan = await api.scaffolder.createPlan({
+      const plan = await scaffolderApi.createPlan({
         templateId: template.id,
         params: e.formData ?? {},
         ...(entityId ? { catalogEntityId: entityId } : {}),

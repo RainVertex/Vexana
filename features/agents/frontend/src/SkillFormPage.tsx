@@ -2,12 +2,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { PageLayout } from "@internal/shared-ui";
-import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
-import type { AgentToolGroup } from "@internal/shared-types";
+import type { AgentToolGroup } from "@feature/agents-shared";
+import { useAgentsApi } from "./client";
 
 export function SkillFormPage() {
-  const api = useApi();
+  const api = useAgentsApi();
   const navigate = useNavigate();
   const { t } = useTranslation("agents");
   const { id } = useParams<{ id?: string }>();

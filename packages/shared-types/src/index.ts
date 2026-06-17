@@ -1,20 +1,9 @@
+// Cross-cutting core types only. Feature wire DTOs now live in each feature's
+// @feature/<name>-shared package (consumed by both that feature's frontend and backend).
 export * from "./common";
+export * from "./catalog-kind";
+export * from "./observability-wire";
 export * from "./user";
-export * from "./team";
-export * from "./integration";
-export * from "./notification";
-export * from "./page";
-export * from "./user-task";
-export * from "./webhook";
-export * from "./observability";
-export * from "./scorecard";
-export * from "./catalog";
 export * from "./agent";
 export * from "./audit";
 export * from "./job";
-export * from "./search";
-export * from "./devdocs";
-export * from "./scaffolder";
-export * from "./chat";
-export * from "./pipelines";
-export * from "./projects";

@@ -7,7 +7,7 @@ import {
   toMcpServerConfig,
   type McpProbeResult,
 } from "@internal/llm-core";
-import type { AgentMcpServerSummary, McpAuthKind } from "@internal/shared-types";
+import type { AgentMcpServerSummary, McpAuthKind } from "@feature/agents-shared";
 import type { CreateMcpServerInput, UpdateMcpServerInput } from "../dto";
 import { NotFoundError } from "../errors";
 import { agentRepository } from "../repositories/agents";

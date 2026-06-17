@@ -1,6 +1,6 @@
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useTranslation } from "@internal/i18n";
-import type { DoraMetricsSnapshot } from "@internal/shared-types";
+import type { DoraMetricsSnapshot } from "@feature/observability-shared";
 import { useEntityOverviewContext } from "../EntityOverviewContext";
 
 export function DoraChartWidget() {

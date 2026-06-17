@@ -11,6 +11,9 @@
     }
   },
   "dependencies": {
+    "@feature/scorecards-shared": "0.1.0",
+    "@feature/teams-frontend": "0.1.0",
+    "@feature/teams-shared": "0.1.0",
     "@internal/api-client": "0.1.0",
     "@internal/i18n": "0.1.0",
     "@internal/shared-types": "0.1.0",

@@ -1,7 +1,7 @@
 // Catalog of integration providers; entries without a ConnectDialog render as "Coming soon" cards.
 
 import type { ComponentType } from "react";
-import type { IntegrationDetail, IntegrationKind } from "@internal/shared-types";
+import type { IntegrationDetail, IntegrationKind } from "@feature/integrations-shared";
 import { GithubConnectDialog } from "./GithubConnectDialog";
 import { GithubManagePanel } from "./GithubManagePanel";
 import { GrafanaConnectDialog } from "./GrafanaConnectDialog";

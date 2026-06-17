@@ -2,9 +2,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DriftBadge } from "@internal/shared-ui";
-import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
-import type { ScaffolderDriftSummaryDto } from "@internal/shared-types";
+import type { ScaffolderDriftSummaryDto } from "@feature/scaffolder-shared";
+import { useScaffolderApi } from "./client";
 
 export interface TemplateDriftBadgeProps {
   /** Filter to a single binding (badge on BindingsPage rows). */
@@ -14,7 +14,7 @@ export interface TemplateDriftBadgeProps {
 }
 
 export function TemplateDriftBadge({ bindingId, templateId }: TemplateDriftBadgeProps) {
-  const api = useApi();
+  const api = useScaffolderApi();
   const navigate = useNavigate();
   const { t } = useTranslation("scaffolder");
   const [data, setData] = useState<ScaffolderDriftSummaryDto | null>(null);
@@ -23,7 +23,7 @@ export function TemplateDriftBadge({ bindingId, templateId }: TemplateDriftBadge
 
   const load = useCallback(async () => {
     try {
-      const res = await api.scaffolder.driftSummary({ bindingId, templateId });
+      const res = await api.driftSummary({ bindingId, templateId });
       setData(res);
     } catch {
       setData(null);
@@ -40,7 +40,7 @@ export function TemplateDriftBadge({ bindingId, templateId }: TemplateDriftBadge
     setBusy(bId);
     setError(null);
     try {
-      const plan = await api.scaffolder.replanBinding(bId);
+      const plan = await api.replanBinding(bId);
       navigate(`/scaffolder/plans/${plan.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("errors.replanFailed"));
@@ -53,7 +53,7 @@ export function TemplateDriftBadge({ bindingId, templateId }: TemplateDriftBadge
     setBusy(driftId);
     setError(null);
     try {
-      await api.scaffolder.updateDrift(driftId, "ignored");
+      await api.updateDrift(driftId, "ignored");
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : t("errors.updateFailed"));

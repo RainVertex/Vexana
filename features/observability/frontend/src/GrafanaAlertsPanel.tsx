@@ -1,8 +1,8 @@
 // Lists recent Grafana alert notifications from the notifications feed.
 
 import { useEffect, useState } from "react";
-import type { NotificationDto } from "@internal/shared-types";
-import { useApi } from "@internal/api-client/react";
+import type { NotificationDto } from "@feature/notifications-shared";
+import { useNotificationsApi } from "@feature/notifications-frontend";
 import { useTranslation } from "@internal/i18n";
 
 export interface GrafanaAlertsPanelProps {
@@ -24,7 +24,7 @@ interface AlertPayload {
 }
 
 export function GrafanaAlertsPanel({ limit = 25 }: GrafanaAlertsPanelProps) {
-  const api = useApi();
+  const notifications = useNotificationsApi();
   const { t } = useTranslation("observability");
   const [items, setItems] = useState<NotificationDto[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +33,7 @@ export function GrafanaAlertsPanel({ limit = 25 }: GrafanaAlertsPanelProps) {
     let cancelled = false;
     setItems(null);
     setError(null);
-    api.notifications
+    notifications
       .list({ limit: 200 })
       .then((res) => {
         if (cancelled) return;
@@ -45,7 +45,7 @@ export function GrafanaAlertsPanel({ limit = 25 }: GrafanaAlertsPanelProps) {
     return () => {
       cancelled = true;
     };
-  }, [api, limit, t]);
+  }, [notifications, limit, t]);
 
   if (error) return <p className="text-xs text-app-danger">{error}</p>;
   if (items === null) return <p className="text-xs text-app-text-muted">{t("errors.loading")}</p>;

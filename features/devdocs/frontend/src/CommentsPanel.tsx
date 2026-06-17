@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "@internal/i18n";
-import type { CurrentUser, DocCommentRow } from "@internal/shared-types";
+import type { CurrentUser } from "@internal/shared-types";
+import type { DocCommentRow } from "@feature/devdocs-shared";
 
 export interface CommentsPanelProps {
   comments: DocCommentRow[];

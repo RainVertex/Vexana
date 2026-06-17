@@ -1,12 +1,12 @@
 // Admin page to toggle and configure the hard team-request policies.
 import { useCallback, useEffect, useState } from "react";
 import { PageLayout } from "@internal/shared-ui";
-import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
-import type { TeamPolicyDto, TeamPolicyKind } from "@internal/shared-types";
+import type { TeamPolicyDto, TeamPolicyKind } from "@feature/teams-shared";
+import { useTeamsApi } from "./client";
 
 export function AdminTeamPoliciesPage() {
-  const api = useApi();
+  const api = useTeamsApi();
   const { t } = useTranslation("teams");
   const [items, setItems] = useState<TeamPolicyDto[] | null>(null);
   const [error, setError] = useState<string | null>(null);

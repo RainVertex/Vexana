@@ -1,5 +1,5 @@
 import { getRegisteredTools, type RegisteredTool } from "@internal/llm-core";
-import type { AgentToolDescriptor, SkillSummary } from "@internal/shared-types";
+import type { AgentToolDescriptor, SkillSummary } from "@feature/agents-shared";
 import type { CreateSkillInput, UpdateSkillInput } from "../dto";
 import { BadRequestError, NotFoundError } from "../errors";
 import { skillRepository, type SkillRow } from "../repositories/skills";

@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { DriftBadge } from "@internal/shared-ui";
-import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
-import type { GithubDriftSummaryDto } from "@internal/shared-types";
+import type { GithubDriftSummaryDto } from "@feature/integrations-shared";
+import { useIntegrationsApi } from "./client";
 
 export interface IntegrationDriftBadgeProps {
   integrationId: string;
@@ -12,7 +12,7 @@ export interface IntegrationDriftBadgeProps {
 }
 
 export function IntegrationDriftBadge({ integrationId, kind }: IntegrationDriftBadgeProps) {
-  const api = useApi();
+  const api = useIntegrationsApi();
   const { t } = useTranslation("integrations");
   const [data, setData] = useState<GithubDriftSummaryDto | null>(null);
   const [resyncing, setResyncing] = useState(false);
@@ -21,7 +21,7 @@ export function IntegrationDriftBadge({ integrationId, kind }: IntegrationDriftB
   const load = useCallback(async () => {
     if (kind !== "github") return;
     try {
-      const res = await api.integrations.githubDrift(integrationId);
+      const res = await api.githubDrift(integrationId);
       setData(res);
     } catch {
       setData(null);
@@ -40,7 +40,7 @@ export function IntegrationDriftBadge({ integrationId, kind }: IntegrationDriftB
     setResyncing(true);
     setError(null);
     try {
-      await api.integrations.githubResync(integrationId);
+      await api.githubResync(integrationId);
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : t("errors.resyncFailed"));

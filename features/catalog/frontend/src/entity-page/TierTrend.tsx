@@ -1,17 +1,17 @@
 import { useEffect, useState } from "react";
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { useApi } from "@internal/api-client/react";
+import { useScorecardsApi } from "@feature/scorecards-frontend";
 import { useTranslation } from "@internal/i18n";
-import type { ScorecardHistoryPoint } from "@internal/shared-types";
+import type { ScorecardHistoryPoint } from "@feature/scorecards-shared";
 
 // Weighted score over time for one scorecard on one entity; hidden until there are two points.
 export function TierTrend({ scorecardId, entityId }: { scorecardId: string; entityId: string }) {
-  const api = useApi();
+  const api = useScorecardsApi();
   const { t } = useTranslation("catalog");
   const [points, setPoints] = useState<ScorecardHistoryPoint[] | null>(null);
 
   useEffect(() => {
-    api.scorecards
+    api
       .history(scorecardId, entityId)
       .then((res) => setPoints(res.items))
       .catch(() => setPoints([]));

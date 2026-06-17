@@ -1,9 +1,9 @@
 // Drawer that fetches a Tempo trace by id and renders a CSS-bar span waterfall.
 
 import { useEffect, useMemo, useState } from "react";
-import type { TempoSpan, TempoTrace } from "@internal/shared-types";
-import { useApi } from "@internal/api-client/react";
+import type { TempoSpan, TempoTrace } from "@feature/observability-shared";
 import { useTranslation } from "@internal/i18n";
+import { useObservabilityApi } from "./client";
 
 export interface TraceDrawerProps {
   traceId: string;
@@ -36,7 +36,7 @@ function withDepths(spans: TempoSpan[]): SpanWithDepth[] {
 }
 
 export function TraceDrawer({ traceId, entityId, onClose }: TraceDrawerProps) {
-  const api = useApi();
+  const api = useObservabilityApi();
   const { t } = useTranslation("observability");
   const [trace, setTrace] = useState<TempoTrace | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +45,7 @@ export function TraceDrawer({ traceId, entityId, onClose }: TraceDrawerProps) {
     let cancelled = false;
     setTrace(null);
     setError(null);
-    api.observability
+    api
       .trace(traceId, { entityId })
       .then((res) => {
         if (!cancelled) setTrace(res);

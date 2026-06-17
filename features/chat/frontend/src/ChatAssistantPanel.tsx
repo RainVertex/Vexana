@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useApi } from "@internal/api-client/react";
-import type { ChatConversationDetailDto } from "@internal/shared-types";
+import type { ChatConversationDetailDto } from "@feature/chat-shared";
 import { useTranslation } from "@internal/i18n";
+import { useChatApi } from "./client";
 import { MessageList } from "./MessageList";
 import { Composer } from "./Composer";
 import { useChatStream } from "./chatStream";
@@ -19,7 +19,7 @@ interface Props {
 
 // Homepage widget chat surface; scopes to one persisted conversation id in localStorage so the thread survives reloads.
 export function ChatAssistantPanel({ userId, userName, userAvatarUrl }: Props) {
-  const api = useApi();
+  const api = useChatApi();
   const navigate = useNavigate();
   const { t } = useTranslation("chat");
   const storageKey = KEY_CONV(userId);
@@ -44,7 +44,7 @@ export function ChatAssistantPanel({ userId, userName, userAvatarUrl }: Props) {
       return;
     }
     let cancelled = false;
-    api.chat
+    api
       .getConversation(conversationId)
       .then((c) => {
         if (!cancelled) setActive(c);
@@ -62,7 +62,7 @@ export function ChatAssistantPanel({ userId, userName, userAvatarUrl }: Props) {
 
   useEffect(() => {
     if (stream.status !== "done" || !conversationId) return;
-    api.chat
+    api
       .getConversation(conversationId)
       .then((c) => {
         setActive(c);
@@ -75,7 +75,7 @@ export function ChatAssistantPanel({ userId, userName, userAvatarUrl }: Props) {
     async (text: string, attachments: ChatImageAttachment[]) => {
       let convId = conversationId;
       if (!convId) {
-        const conv = await api.chat.createConversation();
+        const conv = await api.createConversation();
         setConversationId(conv.id);
         setActive({ ...conv, messages: [] });
         convId = conv.id;

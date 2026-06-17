@@ -11,7 +11,7 @@ import type {
   ChatToolCallSummary,
   ChatRole,
   ChatSseEvent,
-} from "@internal/shared-types";
+} from "@feature/chat-shared";
 import {
   isProviderReady,
   providerHasStoredKey,

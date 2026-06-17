@@ -1,19 +1,19 @@
 import { useEffect, useState } from "react";
 import { ChatPage } from "@feature/chat-frontend";
 import { PageLayout } from "@internal/shared-ui";
-import type { ChatConfigDto } from "@internal/shared-types";
-import { useApi } from "@internal/api-client/react";
+import type { ChatConfigDto } from "@feature/chat-shared";
+import { useChatApi } from "@feature/chat-frontend";
 import { useCurrentUser } from "../../auth";
 
 // Apps-web /chat wrapper: gates the assistant until its agent model is enabled and its provider has a key.
 export function ChatRoute() {
   const me = useCurrentUser();
-  const api = useApi();
+  const api = useChatApi();
   const [config, setConfig] = useState<ChatConfigDto | null>(null);
 
   useEffect(() => {
     // On transient error fall back to ready; the send-time 409 is the backstop.
-    api.chat
+    api
       .getConfig()
       .then(setConfig)
       .catch(() => setConfig({ ready: true, reason: null, visionReady: false }));

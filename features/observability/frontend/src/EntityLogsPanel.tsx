@@ -1,10 +1,10 @@
 // Panel of recent Loki log lines for an entity; lines with a trace ID open a Tempo trace drawer.
 
 import { useEffect, useState } from "react";
-import type { LokiLogLine } from "@internal/shared-types";
-import { useApi } from "@internal/api-client/react";
+import type { LokiLogLine } from "@feature/observability-shared";
 import { useTranslation } from "@internal/i18n";
 import { TraceDrawer } from "./TraceDrawer";
+import { useObservabilityApi } from "./client";
 
 export interface EntityLogsPanelProps {
   entityId: string;
@@ -24,7 +24,7 @@ export function EntityLogsPanel({
   minutes: initialMinutes,
   limit,
 }: EntityLogsPanelProps) {
-  const api = useApi();
+  const api = useObservabilityApi();
   const { t } = useTranslation("observability");
   const [minutes, setMinutes] = useState(initialMinutes ?? 15);
   const [items, setItems] = useState<LokiLogLine[] | null>(null);
@@ -36,7 +36,7 @@ export function EntityLogsPanel({
     let cancelled = false;
     setItems(null);
     setError(null);
-    api.observability
+    api
       .logs(entityId, { minutes, limit })
       .then((res) => {
         if (!cancelled) setItems(res.items);

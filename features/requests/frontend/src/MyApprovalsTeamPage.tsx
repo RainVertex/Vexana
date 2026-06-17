@@ -2,14 +2,14 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ApiError } from "@internal/api-client";
 import { PageLayout } from "@internal/shared-ui";
-import { useApi } from "@internal/api-client/react";
+import { useTeamsApi } from "@feature/teams-frontend";
 import { useTranslation } from "@internal/i18n";
 import type {
   MaintainerRequestDto,
   MaintainerRequestStatus,
   TeamRequestDto,
   TeamRequestStatus,
-} from "@internal/shared-types";
+} from "@feature/teams-shared";
 import { ProposedMembersList, RejectMaintainerRequestDialog } from "@feature/teams-frontend";
 
 const PENDING_TEAM_STATUSES: ReadonlySet<TeamRequestStatus> = new Set([
@@ -20,7 +20,7 @@ const PENDING_TEAM_STATUSES: ReadonlySet<TeamRequestStatus> = new Set([
 /** Combined "My Approvals" page, pending + history of requests where I'm authorized to act. */
 export function MyApprovalsTeamPage() {
   const { t } = useTranslation("requests");
-  const api = useApi();
+  const api = useTeamsApi();
   const navigate = useNavigate();
   const [maintainerRows, setMaintainerRows] = useState<MaintainerRequestDto[] | null>(null);
   const [teamRows, setTeamRows] = useState<TeamRequestDto[] | null>(null);

@@ -1,9 +1,9 @@
 // Onboarding checklist widget: lists tasks with complete/dismiss actions.
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
-import type { UserTaskDto } from "@internal/shared-types";
+import { useOnboardingApi } from "./client";
+import type { UserTaskDto } from "@feature/onboarding-shared";
 
 interface TaskPresenter {
   title: string;
@@ -47,14 +47,14 @@ function usePresenters(): (kind: string) => TaskPresenter {
 
 export function OnboardingWidget() {
   const { t } = useTranslation("onboarding");
-  const api = useApi();
+  const api = useOnboardingApi();
   const [tasks, setTasks] = useState<UserTaskDto[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const presenterFor = usePresenters();
 
   useEffect(() => {
     let cancelled = false;
-    api.onboarding
+    api
       .listTasks()
       .then((res) => {
         if (!cancelled) setTasks(res.items);
@@ -79,7 +79,7 @@ export function OnboardingWidget() {
         : prev,
     );
     try {
-      await api.onboarding.completeTask(id);
+      await api.completeTask(id);
     } catch (err) {
       console.error("Failed to complete task", err);
       if (previous) setTasks(previous);
@@ -92,7 +92,7 @@ export function OnboardingWidget() {
       prev ? prev.map((task) => (task.id === id ? { ...task, status: "dismissed" } : task)) : prev,
     );
     try {
-      await api.onboarding.dismissTask(id);
+      await api.dismissTask(id);
     } catch (err) {
       console.error("Failed to dismiss task", err);
       if (previous) setTasks(previous);

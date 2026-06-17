@@ -1,4 +1,4 @@
-import type { DocFreshness } from "@internal/shared-types";
+import type { DocFreshness } from "@feature/devdocs-shared";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

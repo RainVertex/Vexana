@@ -4,7 +4,7 @@ import type {
   DoraMetricsSnapshot,
   Lifecycle,
 } from "@internal/db";
-import type { ScorecardRuleKind } from "@internal/shared-types";
+import type { ScorecardRuleKind } from "@feature/scorecards-shared";
 
 export interface RuleContext {
   entity: CatalogEntity;

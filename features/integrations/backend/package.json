@@ -15,10 +15,10 @@
     }
   },
   "dependencies": {
+    "@feature/integrations-shared": "0.1.0",
     "@internal/db": "0.1.0",
     "@internal/feature-host": "0.1.0",
     "@internal/grafana-client": "0.1.0",
-    "@internal/shared-types": "0.1.0",
     "@octokit/auth-app": "^8.2.0",
     "express": "^5.2.1",
     "octokit": "^5.0.5"

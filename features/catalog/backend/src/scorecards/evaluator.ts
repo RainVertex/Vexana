@@ -6,7 +6,7 @@ import type {
   ScorecardSummary,
   ScorecardTier,
   ScorecardTierStyle,
-} from "@internal/shared-types";
+} from "@feature/scorecards-shared";
 import { appliesToKind, evaluateRule, type RuleContext } from "./rules";
 
 const STAGE_ORDER: Array<"bronze" | "silver" | "gold"> = ["bronze", "silver", "gold"];

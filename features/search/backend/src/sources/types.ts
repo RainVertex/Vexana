@@ -1,4 +1,4 @@
-import type { SearchHit } from "@internal/shared-types";
+import type { SearchHit } from "@feature/search-shared";
 
 export interface SourceContext {
   userId: string;

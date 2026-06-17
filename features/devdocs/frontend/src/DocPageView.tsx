@@ -4,13 +4,14 @@ import remarkGfm from "remark-gfm";
 import rehypeSlug from "rehype-slug";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypeHighlight from "rehype-highlight";
-import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
-import type { CurrentUser, DocPageDetail } from "@internal/shared-types";
+import type { CurrentUser } from "@internal/shared-types";
+import type { DocPageDetail } from "@feature/devdocs-shared";
 import { FreshnessBanner } from "./FreshnessBanner";
 import { ReportStaleDialog } from "./ReportStaleDialog";
 import { CommentsPanel } from "./CommentsPanel";
 import { useComments } from "./useDevDocs";
+import { useDevdocsApi } from "./client";
 
 export interface DocPageViewProps {
   page: DocPageDetail;
@@ -19,7 +20,7 @@ export interface DocPageViewProps {
 }
 
 export function DocPageView({ page, currentUser, onChanged }: DocPageViewProps) {
-  const api = useApi();
+  const api = useDevdocsApi();
   const { t } = useTranslation("devdocs");
   const [verifying, setVerifying] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
@@ -31,7 +32,7 @@ export function DocPageView({ page, currentUser, onChanged }: DocPageViewProps) 
     setVerifying(true);
     setActionError(null);
     try {
-      await api.devdocs.verify(page.id);
+      await api.verify(page.id);
       onChanged();
     } catch (err) {
       setActionError(err instanceof Error ? err.message : t("errors.failedVerify"));
@@ -44,7 +45,7 @@ export function DocPageView({ page, currentUser, onChanged }: DocPageViewProps) 
     setSubmittingReport(true);
     setActionError(null);
     try {
-      await api.devdocs.reportStale(page.id, reason || undefined);
+      await api.reportStale(page.id, reason || undefined);
       setReportOpen(false);
     } catch (err) {
       setActionError(err instanceof Error ? err.message : t("errors.failedReport"));

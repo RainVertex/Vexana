@@ -2,9 +2,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { PageLayout } from "@internal/shared-ui";
-import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
-import type { AgentRun } from "@internal/shared-types";
+import type { AgentRun } from "@feature/agents-shared";
+import { useAgentsApi } from "./client";
 
 interface RunToolCall {
   name: string;
@@ -72,7 +72,7 @@ function formatInput(input: unknown): string {
 }
 
 export function AgentRunPage() {
-  const api = useApi();
+  const api = useAgentsApi();
   const { t } = useTranslation("agents");
   const { id = "", runId = "" } = useParams<{ id: string; runId: string }>();
   const [run, setRun] = useState<AgentRun | null>(null);

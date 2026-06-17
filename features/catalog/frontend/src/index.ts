@@ -10,3 +10,5 @@ export { RunsTab as EntityRunsTab } from "./entity-page/tabs/RunsTab";
 export { AuditTab as EntityAuditTab } from "./entity-page/tabs/AuditTab";
 
 export { featureRoutes } from "./routes";
+export { useCatalogApi, createCatalogClient } from "./client";
+export { StarredProvider, useStarred } from "./starred";

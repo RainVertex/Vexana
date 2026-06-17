@@ -7,9 +7,9 @@ import {
   WidgetGrid,
   useRemoteGridLayout,
 } from "@internal/shared-ui";
-import { useApi } from "@internal/api-client/react";
+import { usePagesApi } from "@feature/pages-frontend";
 import { useTranslation } from "@internal/i18n";
-import type { PageDto, PageWidgetInstance } from "@internal/shared-types";
+import type { PageDto, PageWidgetInstance } from "@feature/pages-shared";
 import { useCurrentUser } from "../auth";
 import { useSidebar } from "../components/sidebar/SidebarContext";
 import { useLocalizedWidgets } from "../widgets";
@@ -22,7 +22,7 @@ type LoadState =
 
 export function DashboardPage() {
   const { pageId } = useParams<{ pageId: string }>();
-  const api = useApi();
+  const api = usePagesApi();
   const me = useCurrentUser();
   const { t } = useTranslation();
   const [state, setState] = useState<LoadState>({ kind: "loading" });
@@ -31,7 +31,7 @@ export function DashboardPage() {
     if (!pageId) return;
     let cancelled = false;
     setState({ kind: "loading" });
-    api.pages
+    api
       .get(pageId)
       .then((page) => {
         if (!cancelled) setState({ kind: "loaded", page });
@@ -73,7 +73,7 @@ function DashboardView({
   currentUserId: string;
   currentUserRole: string;
 }) {
-  const api = useApi();
+  const api = usePagesApi();
   const { t } = useTranslation();
   const { registry, dashboardList } = useLocalizedWidgets();
   const { setRouteSection } = useSidebar();
@@ -101,7 +101,7 @@ function DashboardView({
     registry: DASHBOARD_WIDGETS,
     readOnly: !canEdit,
     onSave: async (widgets) => {
-      await api.pages.updateLayout(page.id, widgets);
+      await api.updateLayout(page.id, widgets);
     },
   });
 

@@ -1,18 +1,18 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { PageLayout } from "@internal/shared-ui";
-import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
 import type {
   ScaffolderMutation,
   ScaffolderPlan,
   ScaffolderPlanStep,
-} from "@internal/shared-types";
+} from "@feature/scaffolder-shared";
+import { useScaffolderApi } from "./client";
 import { DiffView } from "./components/DiffView";
 
 export function PlanPage() {
   const { planId } = useParams<{ planId: string }>();
-  const api = useApi();
+  const api = useScaffolderApi();
   const navigate = useNavigate();
   const { t } = useTranslation("scaffolder");
   const [plan, setPlan] = useState<ScaffolderPlan | null>(null);
@@ -21,7 +21,7 @@ export function PlanPage() {
 
   useEffect(() => {
     if (!planId) return;
-    api.scaffolder
+    api
       .getPlan(planId)
       .then(setPlan)
       .catch((err) => setError(err.message ?? t("errors.loadPlan")));
@@ -32,7 +32,7 @@ export function PlanPage() {
     setApplying(true);
     setError(null);
     try {
-      const result = await api.scaffolder.applyPlan(plan.id, { dryRun });
+      const result = await api.applyPlan(plan.id, { dryRun });
       navigate(`/scaffolder/tasks/${result.taskId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("errors.applyFailed"));

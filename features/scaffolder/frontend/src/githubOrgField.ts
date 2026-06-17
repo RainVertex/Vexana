@@ -1,7 +1,7 @@
 // Resolves a wizard string param marked with `x-github-orgs` into a dropdown of the
 // GitHub App org/user logins the platform is connected to. The marker is always stripped
 // before the schema reaches RJSF/AJV; the enum is only added once the logins are known.
-import type { GithubInstallationSummary } from "@internal/shared-types";
+import type { GithubInstallationSummary } from "@feature/integrations-shared";
 
 const MARKER = "x-github-orgs";
 

@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
-import { useApi } from "@internal/api-client/react";
+import { useChatApi } from "./client";
 
 // Composer-side vision flag, the full ready/reason gate stays in the shell's ChatRoute.
 export function useChatConfig(): { visionReady: boolean } {
-  const api = useApi();
+  const api = useChatApi();
   const [visionReady, setVisionReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    api.chat
+    api
       .getConfig()
       .then((c) => {
         if (!cancelled) setVisionReady(c.visionReady);

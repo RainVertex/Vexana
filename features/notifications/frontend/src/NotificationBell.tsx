@@ -1,9 +1,9 @@
 // Header notification bell: polls unread count and renders a dropdown inbox.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { useApi } from "@internal/api-client/react";
+import { useNotificationsApi } from "./client";
 import { useTranslation } from "@internal/i18n";
-import type { NotificationDto } from "@internal/shared-types";
+import type { NotificationDto } from "@feature/notifications-shared";
 import type { TFunction } from "i18next";
 
 const POLL_INTERVAL_MS = 30_000;
@@ -106,7 +106,7 @@ function BellIcon({ className }: { className?: string }) {
 }
 
 export function NotificationBell() {
-  const api = useApi();
+  const api = useNotificationsApi();
   const { t } = useTranslation("notifications");
   const [unread, setUnread] = useState<number>(0);
   const [open, setOpen] = useState(false);
@@ -115,7 +115,7 @@ export function NotificationBell() {
 
   const refreshCount = useCallback(async () => {
     try {
-      const res = await api.notifications.unreadCount();
+      const res = await api.unreadCount();
       setUnread(res.count);
     } catch {
       // network blip, leave previous count
@@ -143,7 +143,7 @@ export function NotificationBell() {
     setOpen((prev) => !prev);
     if (!open) {
       try {
-        const res = await api.notifications.list({ limit: 20 });
+        const res = await api.list({ limit: 20 });
         setItems(res.items);
       } catch {
         setItems([]);
@@ -153,7 +153,7 @@ export function NotificationBell() {
 
   async function markAllRead() {
     try {
-      await api.notifications.markAllRead();
+      await api.markAllRead();
       setUnread(0);
       setItems(
         (prev) =>
@@ -174,7 +174,7 @@ export function NotificationBell() {
     );
     setUnread((prev) => Math.max(0, prev - 1));
     try {
-      await api.notifications.markRead(n.id);
+      await api.markRead(n.id);
     } catch {
       // Revert and resync if the server rejected our optimistic update.
       void refreshCount();

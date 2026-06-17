@@ -1,6 +1,6 @@
 // Renders one chat message (user or assistant), wiring up reasoning, tool calls, attachments, and avatars.
 import { useState } from "react";
-import type { ChatAttachmentDto, ChatMessageDto } from "@internal/shared-types";
+import type { ChatAttachmentDto, ChatMessageDto } from "@feature/chat-shared";
 import { ProfileAvatar, AgentAvatar } from "@internal/shared-ui";
 import { useTranslation } from "@internal/i18n";
 import { ToolCallChip } from "./ToolCallChip";

@@ -1,5 +1,5 @@
 import { createContext, useContext, type PropsWithChildren } from "react";
-import type { CatalogEntityOverview } from "@internal/shared-types";
+import type { CatalogEntityOverview } from "@feature/catalog-shared";
 
 interface EntityOverviewContextValue {
   data: CatalogEntityOverview;

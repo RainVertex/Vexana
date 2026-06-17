@@ -18,9 +18,9 @@
     "@feature/catalog-backend": "0.1.0",
     "@feature/integrations-backend": "0.1.0",
     "@feature/notifications-backend": "0.1.0",
+    "@feature/teams-shared": "0.1.0",
     "@internal/db": "0.1.0",
     "@internal/feature-host": "0.1.0",
-    "@internal/shared-types": "0.1.0",
     "express": "^5.2.1",
     "zod": "^4.3.6"
   },

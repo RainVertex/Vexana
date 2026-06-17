@@ -1,18 +1,18 @@
 import { useEffect, useState } from "react";
 import { PageLayout } from "@internal/shared-ui";
-import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
-import type { ScaffolderBinding } from "@internal/shared-types";
+import type { ScaffolderBinding } from "@feature/scaffolder-shared";
+import { useScaffolderApi } from "./client";
 import { TemplateDriftBadge } from "./TemplateDriftBadge";
 
 export function BindingsPage() {
-  const api = useApi();
+  const api = useScaffolderApi();
   const { t } = useTranslation("scaffolder");
   const [items, setItems] = useState<ScaffolderBinding[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api.scaffolder
+    api
       .listBindings()
       .then((res) => setItems(res.items))
       .catch((err) => setError(err.message ?? t("errors.loadTemplates")));

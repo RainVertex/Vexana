@@ -3,12 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { PageLayout } from "@internal/shared-ui";
 import { useTranslation, Trans } from "@internal/i18n";
-import type {
-  CatalogEntityWithOwners,
-  EntityObservabilityConfigDto,
-  Integration,
-} from "@internal/shared-types";
-import { useApi } from "@internal/api-client/react";
+import type { CatalogEntityWithOwners } from "@feature/catalog-shared";
+import type { EntityObservabilityConfigDto } from "@feature/observability-shared";
+import type { Integration } from "@feature/integrations-shared";
+import { useCatalogApi } from "@feature/catalog-frontend";
+import { useIntegrationsApi } from "@feature/integrations-frontend";
+import { useObservabilityApi } from "./client";
 
 interface RowDraft {
   integrationId: string;
@@ -58,7 +58,9 @@ function placeholders(entityName: string) {
 }
 
 export function ObservabilityConfigPage() {
-  const api = useApi();
+  const catalogApi = useCatalogApi();
+  const integrationsApi = useIntegrationsApi();
+  const obsApi = useObservabilityApi();
   const { t } = useTranslation("observability");
   const [entities, setEntities] = useState<CatalogEntityWithOwners[]>([]);
   const [integrations, setIntegrations] = useState<Integration[]>([]);
@@ -73,7 +75,7 @@ export function ObservabilityConfigPage() {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([api.catalog.list(), api.integrations.list()])
+    Promise.all([catalogApi.list(), integrationsApi.list()])
       .then(async ([entitiesRes, integrationsRes]) => {
         if (cancelled) return;
         const accessibleItems = entitiesRes.items.filter((i) => i.accessible);
@@ -82,7 +84,7 @@ export function ObservabilityConfigPage() {
 
         const initial: Record<string, RowDraft> = {};
         const configs = await Promise.all(
-          accessibleItems.map((e) => api.observability.getEntityConfig(e.id).catch(() => null)),
+          accessibleItems.map((e) => obsApi.getEntityConfig(e.id).catch(() => null)),
         );
         if (cancelled) return;
         for (const [idx, entity] of accessibleItems.entries()) {
@@ -103,7 +105,7 @@ export function ObservabilityConfigPage() {
     return () => {
       cancelled = true;
     };
-  }, [api, t]);
+  }, [catalogApi, integrationsApi, obsApi, t]);
 
   function updateRow(entityId: string, patch: Partial<RowDraft>) {
     setRows((prev) => ({
@@ -120,7 +122,7 @@ export function ObservabilityConfigPage() {
     }
     setRows((prev) => ({ ...prev, [entityId]: { ...prev[entityId], status: "saving" } }));
     try {
-      const dto = await api.observability.putEntityConfig(entityId, {
+      const dto = await obsApi.putEntityConfig(entityId, {
         integrationId: row.integrationId,
         upQuery: row.upQuery || null,
         latencyQuery: row.latencyQuery || null,

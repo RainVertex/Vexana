@@ -9,7 +9,7 @@ import type {
   PageSection,
   PageType,
   PageWidgetInstance,
-} from "@internal/shared-types";
+} from "@feature/pages-shared";
 
 export const pagesRouter: Router = Router();
 

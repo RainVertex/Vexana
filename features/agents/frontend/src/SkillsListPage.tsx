@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { PageLayout, ConfirmDialog } from "@internal/shared-ui";
-import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
-import type { CurrentUser, SkillSummary } from "@internal/shared-types";
+import type { CurrentUser } from "@internal/shared-types";
+import type { SkillSummary } from "@feature/agents-shared";
+import { useApi } from "@internal/api-client/react";
+import { useAgentsApi } from "./client";
 
 export function SkillsListPage() {
-  const api = useApi();
+  const api = useAgentsApi();
+  const shellApi = useApi();
   const { t } = useTranslation("agents");
   const [items, setItems] = useState<SkillSummary[] | null>(null);
   const [me, setMe] = useState<CurrentUser | null>(null);
@@ -25,11 +28,11 @@ export function SkillsListPage() {
 
   useEffect(() => {
     load();
-    api.auth
+    shellApi.auth
       .me()
       .then(setMe)
       .catch(() => setMe(null));
-  }, [api, load]);
+  }, [api, load, shellApi]);
 
   async function onDelete() {
     if (!confirmDelete) return;

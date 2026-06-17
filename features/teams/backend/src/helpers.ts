@@ -7,7 +7,7 @@ import type {
   TeamMembership,
   TeamSummary,
   TeamRequestDto,
-} from "@internal/shared-types";
+} from "@feature/teams-shared";
 
 export const TEAM_DETAIL_INCLUDE = {
   memberships: { include: { user: true }, orderBy: { joinedAt: "asc" } },

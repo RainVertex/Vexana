@@ -3,7 +3,7 @@ import type {
   ChatToolCallStartEvent,
   ChatToolCallEndEvent,
   ChatOAuthRequiredEvent,
-} from "@internal/shared-types";
+} from "@feature/chat-shared";
 
 // React hook that consumes the chat SSE stream via fetch (EventSource lacks POST bodies).
 

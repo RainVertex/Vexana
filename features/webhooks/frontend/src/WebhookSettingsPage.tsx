@@ -2,9 +2,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { PageLayout } from "@internal/shared-ui";
-import { useApi } from "@internal/api-client/react";
+import { useWebhooksApi } from "./client";
 import { useTranslation } from "@internal/i18n";
-import type { WebhookSubscriptionDto } from "@internal/shared-types";
+import type { WebhookSubscriptionDto } from "@feature/webhooks-shared";
 
 const KNOWN_EVENT_KINDS = [
   "team.member.added",
@@ -28,7 +28,7 @@ export function WebhookSettingsPage({ scope = "user" }: WebhookSettingsPageProps
   const { t } = useTranslation("webhooks");
   const params = useParams<{ slug?: string }>();
   const teamSlug = scope === "team" ? params.slug : undefined;
-  const api = useApi();
+  const api = useWebhooksApi();
   const [items, setItems] = useState<WebhookSubscriptionDto[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -39,7 +39,7 @@ export function WebhookSettingsPage({ scope = "user" }: WebhookSettingsPageProps
 
   const load = useCallback(async () => {
     try {
-      const res = await api.webhooks.list({ teamSlug });
+      const res = await api.list({ teamSlug });
       setItems(res.items);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("errors.loadFailed"));
@@ -60,7 +60,7 @@ export function WebhookSettingsPage({ scope = "user" }: WebhookSettingsPageProps
     setBusy(true);
     setError(null);
     try {
-      const created = await api.webhooks.create({ url, eventKinds: selectedKinds, teamSlug });
+      const created = await api.create({ url, eventKinds: selectedKinds, teamSlug });
       if (created.secret) setShowSecret({ id: created.id, secret: created.secret });
       setUrl("");
       setSelectedKinds([]);
@@ -76,7 +76,7 @@ export function WebhookSettingsPage({ scope = "user" }: WebhookSettingsPageProps
     if (!confirm(t("alerts.deleteConfirm"))) return;
     setBusy(true);
     try {
-      await api.webhooks.delete(id);
+      await api.delete(id);
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : t("errors.deleteFailed"));
@@ -88,7 +88,7 @@ export function WebhookSettingsPage({ scope = "user" }: WebhookSettingsPageProps
   async function handleTest(id: string) {
     setBusy(true);
     try {
-      await api.webhooks.test(id);
+      await api.test(id);
       alert(t("alerts.pingEnqueued"));
     } catch (err) {
       setError(err instanceof Error ? err.message : t("errors.testFailed"));

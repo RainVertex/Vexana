@@ -11,7 +11,7 @@ import type {
   DocSyncStateRow,
   DocsTabResponse,
   DocSyncStatus,
-} from "@internal/shared-types";
+} from "@feature/devdocs-shared";
 import { canViewEntityDetails, getVisibleOrgLogins } from "../access";
 import { computeFreshness } from "./freshness";
 import { syncDevDocsForEntity } from "./sync";

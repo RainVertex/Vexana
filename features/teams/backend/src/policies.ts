@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { Prisma, prisma, type TeamPolicyKind } from "@internal/db";
-import type { TeamPolicyDto, TeamPolicyViolation } from "@internal/shared-types";
+import type { TeamPolicyDto, TeamPolicyViolation } from "@feature/teams-shared";
 // Team naming/policy registry plus admin CRUD routes; validators live in code (no DB-driven eval/JSON-DSL).
 import { audit } from "./helpers";
 

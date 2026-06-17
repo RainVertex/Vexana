@@ -1,5 +1,5 @@
 import { useOutletContext } from "react-router-dom";
-import type { CatalogEntityOverview } from "@internal/shared-types";
+import type { CatalogEntityOverview } from "@feature/catalog-shared";
 
 export interface EntityOutletContext {
   data: CatalogEntityOverview;

@@ -2,9 +2,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { PageLayout, AgentAvatar } from "@internal/shared-ui";
-import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
-import type { Agent, ApprovalMode, LlmModelSummary, SkillSummary } from "@internal/shared-types";
+import type { Agent, ApprovalMode, LlmModelSummary, SkillSummary } from "@feature/agents-shared";
+import { useAgentsApi } from "./client";
 import { fileToAvatarDataUrl } from "./avatarImage";
 import { AvatarPickerDialog } from "./AvatarPickerDialog";
 import type { AvatarPreset } from "./avatarPresets";
@@ -19,7 +19,7 @@ const KIND_OPTIONS: {
 ];
 
 export function AgentFormPage({ avatarPresets = [] }: { avatarPresets?: AvatarPreset[] }) {
-  const api = useApi();
+  const api = useAgentsApi();
   const navigate = useNavigate();
   const { t } = useTranslation("agents");
   const { id } = useParams<{ id?: string }>();

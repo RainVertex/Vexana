@@ -1,7 +1,8 @@
 // Cell renderers for the catalog table (badges, owner/tags/repo/date/name cells).
 import { Link } from "react-router-dom";
 import { useTranslation } from "@internal/i18n";
-import type { CatalogEntityKind, Lifecycle, Team } from "@internal/shared-types";
+import type { CatalogEntityKind, Lifecycle } from "@feature/catalog-shared";
+import type { Team } from "@feature/teams-shared";
 
 export function KindBadge({ value }: { value: CatalogEntityKind }) {
   const { t } = useTranslation("catalog");

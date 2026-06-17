@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { useApi } from "@internal/api-client/react";
 import { Trans, useTranslation } from "@internal/i18n";
-import type { MaintainerRequestDto } from "@internal/shared-types";
+import type { MaintainerRequestDto } from "@feature/teams-shared";
+import { useTeamsApi } from "./client";
 
 interface RequestMaintainerDialogProps {
   open: boolean;
@@ -18,7 +18,7 @@ export function RequestMaintainerDialog({
   onClose,
   onSubmitted,
 }: RequestMaintainerDialogProps) {
-  const api = useApi();
+  const api = useTeamsApi();
   const { t } = useTranslation("teams");
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);

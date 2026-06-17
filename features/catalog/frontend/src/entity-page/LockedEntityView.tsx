@@ -1,6 +1,6 @@
 // Read-only header shown when the viewer is not a member of the entity's GitHub org.
 import { useTranslation } from "@internal/i18n";
-import type { CatalogEntityLocked } from "@internal/shared-types";
+import type { CatalogEntityLocked } from "@feature/catalog-shared";
 import { KindBadge, LifecycleBadge } from "../catalog-table/cells";
 
 export function LockedEntityView({ entity }: { entity: CatalogEntityLocked }) {

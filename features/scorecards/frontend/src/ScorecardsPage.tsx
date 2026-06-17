@@ -1,19 +1,19 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { PageLayout } from "@internal/shared-ui";
-import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
-import type { Scorecard } from "@internal/shared-types";
+import type { Scorecard } from "@feature/scorecards-shared";
+import { useScorecardsApi } from "./client";
 
 export function ScorecardsPage() {
   const { t } = useTranslation("scorecards");
-  const api = useApi();
+  const api = useScorecardsApi();
   const nav = useNavigate();
   const [items, setItems] = useState<Scorecard[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api.scorecards
+    api
       .list()
       .then((res) => setItems(res.items))
       .catch((err) => setError(err instanceof Error ? err.message : t("errors.loadFailed")));
@@ -22,7 +22,7 @@ export function ScorecardsPage() {
   async function createBlank() {
     try {
       const slug = `new-scorecard-${Date.now()}`;
-      const created = await api.scorecards.create({
+      const created = await api.create({
         slug,
         name: t("page.newScorecardDefaultName"),
         appliesTo: [],

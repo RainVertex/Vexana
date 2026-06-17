@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { PageLayout } from "@internal/shared-ui";
-import { useApi } from "@internal/api-client/react";
+import { useTeamsApi } from "@feature/teams-frontend";
 import { useTranslation } from "@internal/i18n";
+import type { TeamSummary } from "@feature/teams-shared";
 import type {
   ScorecardReport,
   ScorecardTier,
   ScorecardTierStyle,
-  TeamSummary,
-} from "@internal/shared-types";
+} from "@feature/scorecards-shared";
+import { useScorecardsApi } from "./client";
 import { ENTITY_KINDS } from "./ruleKinds";
 
 const STAGE_STYLES: Record<string, string> = {
@@ -45,7 +46,8 @@ const selectClass =
 export function ScorecardReportPage() {
   const { t } = useTranslation("scorecards");
   const { id = "" } = useParams<{ id: string }>();
-  const api = useApi();
+  const api = useTeamsApi();
+  const scorecardsApi = useScorecardsApi();
   const [report, setReport] = useState<ScorecardReport | null>(null);
   const [teams, setTeams] = useState<TeamSummary[]>([]);
   const [kind, setKind] = useState<string>("");
@@ -63,12 +65,12 @@ export function ScorecardReportPage() {
   useEffect(() => {
     setLoading(true);
     setError(null);
-    api.scorecards
+    scorecardsApi
       .report(id, { kind: kind || undefined, ownerTeamId: ownerTeamId || undefined })
       .then((r) => setReport(r))
       .catch((err) => setError(err instanceof Error ? err.message : t("errors.loadFailed")))
       .finally(() => setLoading(false));
-  }, [api, id, kind, ownerTeamId, t]);
+  }, [scorecardsApi, id, kind, ownerTeamId, t]);
 
   const teamName = useMemo(() => {
     const byId = new Map(teams.map((tm) => [tm.id, tm.name]));

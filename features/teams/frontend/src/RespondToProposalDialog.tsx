@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
-import type { TeamRequestDto } from "@internal/shared-types";
+import type { TeamRequestDto } from "@feature/teams-shared";
+import { useTeamsApi } from "./client";
 import { RequestEditForm, toEditError, type RequestEdit } from "./RequestEditForm";
 
 interface RespondToProposalDialogProps {
@@ -16,7 +16,7 @@ export function RespondToProposalDialog({
   onClose,
   onResponded,
 }: RespondToProposalDialogProps) {
-  const api = useApi();
+  const api = useTeamsApi();
   const { t } = useTranslation("teams");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ReturnType<typeof toEditError> | null>(null);

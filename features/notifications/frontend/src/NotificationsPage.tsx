@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { PageLayout } from "@internal/shared-ui";
-import { useApi } from "@internal/api-client/react";
+import { useNotificationsApi } from "./client";
 import { useTranslation } from "@internal/i18n";
-import type { NotificationDto } from "@internal/shared-types";
+import type { NotificationDto } from "@feature/notifications-shared";
 import type { TFunction } from "i18next";
 
 function summary(n: NotificationDto, t: TFunction): string {
@@ -68,7 +68,7 @@ function summary(n: NotificationDto, t: TFunction): string {
 }
 
 export function NotificationsPage() {
-  const api = useApi();
+  const api = useNotificationsApi();
   const { t } = useTranslation("notifications");
   const [items, setItems] = useState<NotificationDto[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -76,7 +76,7 @@ export function NotificationsPage() {
 
   const load = useCallback(async () => {
     try {
-      const res = await api.notifications.list({ unread: unreadOnly, limit: 200 });
+      const res = await api.list({ unread: unreadOnly, limit: 200 });
       setItems(res.items);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("page.errorLoad"));
@@ -88,12 +88,12 @@ export function NotificationsPage() {
   }, [load]);
 
   async function markRead(id: string) {
-    await api.notifications.markRead(id);
+    await api.markRead(id);
     await load();
   }
 
   async function markAll() {
-    await api.notifications.markAllRead();
+    await api.markAllRead();
     await load();
   }
 

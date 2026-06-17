@@ -1,7 +1,7 @@
 // Admin integrations router (list/get/patch/delete) plus GitHub App helper re-exports.
 import { Router } from "express";
 import { prisma } from "@internal/db";
-import type { IntegrationKind, IntegrationDetail } from "@internal/shared-types";
+import type { IntegrationKind, IntegrationDetail } from "@feature/integrations-shared";
 import { disconnectGitHubInstallation } from "./github-app/install";
 import { grafanaConnectRouter } from "./grafana/connect";
 

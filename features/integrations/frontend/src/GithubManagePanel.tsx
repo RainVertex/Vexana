@@ -1,9 +1,9 @@
 // GitHub configure surface showing install identity and a manual Resync trigger.
 
 import { useState } from "react";
-import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
-import type { IntegrationDetail } from "@internal/shared-types";
+import type { IntegrationDetail } from "@feature/integrations-shared";
+import { useIntegrationsApi } from "./client";
 
 export interface GithubManagePanelProps {
   integration: IntegrationDetail;
@@ -11,7 +11,7 @@ export interface GithubManagePanelProps {
 }
 
 export function GithubManagePanel({ integration, onChanged }: GithubManagePanelProps) {
-  const api = useApi();
+  const api = useIntegrationsApi();
   const { t } = useTranslation("integrations");
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -25,7 +25,7 @@ export function GithubManagePanel({ integration, onChanged }: GithubManagePanelP
     setStatus(null);
     setError(null);
     try {
-      const res = await api.integrations.githubResync(integration.id);
+      const res = await api.githubResync(integration.id);
       setStatus(
         t("githubManage.resyncStatusTemplate", {
           teamsCreated: res.teamsCreated,

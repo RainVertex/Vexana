@@ -1,7 +1,7 @@
 // Overview details panel: renders entity metadata, links, health, and DORA tier from the yamlSpec.
 import { Link } from "react-router-dom";
 import { useTranslation } from "@internal/i18n";
-import type { DoraMetricsSnapshot, ServiceHealthSample } from "@internal/shared-types";
+import type { DoraMetricsSnapshot, ServiceHealthSample } from "@feature/observability-shared";
 import { DateCell, KindBadge, LifecycleBadge, TagsCell } from "../../catalog-table/cells";
 import { TierPill } from "../TierPill";
 import { useEntityOverviewContext } from "../EntityOverviewContext";

@@ -1,13 +1,13 @@
 // Cross-entity leaderboard and per-entity history for a scorecard.
 
 import { prisma } from "@internal/db";
+import type { CatalogEntityKind } from "@feature/catalog-shared";
 import type {
-  CatalogEntityKind,
   ScorecardHistoryPoint,
   ScorecardReport,
   ScorecardReportRow,
   ScorecardTier,
-} from "@internal/shared-types";
+} from "@feature/scorecards-shared";
 import { appliesToKind } from "./rules";
 import { computeScorePercent, rollupTier } from "./evaluator";
 

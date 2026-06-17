@@ -1,6 +1,6 @@
 // ChatActionPreview lifecycle helpers used by the *_prepare and *_submit tools.
 import { prisma, Prisma } from "@internal/db";
-import type { ChatPolicyCheck } from "@internal/shared-types";
+import type { ChatPolicyCheck } from "@feature/chat-shared";
 import type { PrepareReturnEnvelope } from "./streamExecutor";
 
 const PREVIEW_TTL_MS = 10 * 60 * 1000; // 10 min

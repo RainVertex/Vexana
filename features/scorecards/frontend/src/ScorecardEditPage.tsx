@@ -1,9 +1,9 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { PageLayout } from "@internal/shared-ui";
-import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
-import type { Scorecard, ScorecardRuleKind, ScorecardTierStyle } from "@internal/shared-types";
+import type { Scorecard, ScorecardRuleKind, ScorecardTierStyle } from "@feature/scorecards-shared";
+import { useScorecardsApi } from "./client";
 import {
   DORA_METRICS,
   DORA_OPS,
@@ -73,7 +73,7 @@ function toPayload(draft: Draft): Partial<Scorecard> {
 export function ScorecardEditPage() {
   const { t } = useTranslation("scorecards");
   const { id = "" } = useParams<{ id: string }>();
-  const api = useApi();
+  const api = useScorecardsApi();
   const nav = useNavigate();
   const [draft, setDraft] = useState<Draft | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -81,7 +81,7 @@ export function ScorecardEditPage() {
   const [evalResult, setEvalResult] = useState<string | null>(null);
 
   useEffect(() => {
-    api.scorecards
+    api
       .get(id)
       .then((sc) => setDraft(toDraft(sc)))
       .catch((err) => setError(err instanceof Error ? err.message : t("errors.loadFailed")));
@@ -149,7 +149,7 @@ export function ScorecardEditPage() {
     setSaving(true);
     setError(null);
     try {
-      const updated = await api.scorecards.update(id, toPayload(draft));
+      const updated = await api.update(id, toPayload(draft));
       setDraft(toDraft(updated));
     } catch (err) {
       setError(err instanceof Error ? err.message : t("errors.saveFailed"));
@@ -161,7 +161,7 @@ export function ScorecardEditPage() {
   async function evaluate() {
     setEvalResult(null);
     try {
-      const res = await api.scorecards.evaluate(id);
+      const res = await api.evaluate(id);
       setEvalResult(t("edit.evalResult", { entities: res.entities, results: res.results }));
     } catch (err) {
       setError(err instanceof Error ? err.message : t("errors.evaluateFailed"));
@@ -171,7 +171,7 @@ export function ScorecardEditPage() {
   async function destroy() {
     if (!confirm(t("edit.deleteConfirm"))) return;
     try {
-      await api.scorecards.delete(id);
+      await api.delete(id);
       nav("/scorecards");
     } catch (err) {
       setError(err instanceof Error ? err.message : t("errors.deleteFailed"));

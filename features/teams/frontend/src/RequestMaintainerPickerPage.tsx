@@ -3,17 +3,15 @@ import { useNavigate } from "react-router-dom";
 import { PageLayout } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
-import type {
-  CurrentUser,
-  MaintainerRequestDto,
-  TeamDetail,
-  TeamSummary,
-} from "@internal/shared-types";
+import type { CurrentUser } from "@internal/shared-types";
+import type { MaintainerRequestDto, TeamDetail, TeamSummary } from "@feature/teams-shared";
+import { useTeamsApi } from "./client";
 import { RequestMaintainerDialog } from "./RequestMaintainerDialog";
 
 // Self-service page to request maintainership on a team where I'm a member but not lead.
 export function RequestMaintainerPickerPage() {
   const api = useApi();
+  const teamsApi = useTeamsApi();
   const navigate = useNavigate();
   const { t } = useTranslation("teams");
   const [me, setMe] = useState<CurrentUser | null>(null);
@@ -28,8 +26,8 @@ export function RequestMaintainerPickerPage() {
     try {
       const [meRes, teamsRes, mineRes] = await Promise.all([
         api.auth.me(),
-        api.teams.list(),
-        api.maintainerRequests.list(),
+        teamsApi.teams.list(),
+        teamsApi.maintainerRequests.list(),
       ]);
       setMe(meRes);
       setTeams(teamsRes.items);
@@ -38,7 +36,7 @@ export function RequestMaintainerPickerPage() {
       const detailEntries = await Promise.all(
         teamsRes.items.map(async (t) => {
           try {
-            const detail = await api.teams.get(t.slug);
+            const detail = await teamsApi.teams.get(t.slug);
             return [t.slug, detail] as const;
           } catch {
             return null;
@@ -53,7 +51,7 @@ export function RequestMaintainerPickerPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : t("errors.failedToLoad"));
     }
-  }, [api, t]);
+  }, [api, teamsApi, t]);
 
   useEffect(() => {
     void load();

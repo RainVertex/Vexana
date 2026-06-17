@@ -1,8 +1,11 @@
 // Modal dialog for manually registering an existing service into the catalog.
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useApi } from "@internal/api-client/react";
+import { useIntegrationsApi } from "@feature/integrations-frontend";
+import { useTeamsApi } from "@feature/teams-frontend";
 import { useTranslation } from "@internal/i18n";
-import type { CatalogEntityKind, TeamSummary } from "@internal/shared-types";
+import type { CatalogEntityKind } from "@feature/catalog-shared";
+import type { TeamSummary } from "@feature/teams-shared";
+import { useCatalogApi } from "./client";
 
 interface OrgOption {
   accountLogin: string;
@@ -25,7 +28,9 @@ interface Props {
 }
 
 export function RegisterEntityDialog({ open, onClose, onCreated }: Props) {
-  const api = useApi();
+  const api = useCatalogApi();
+  const integrations = useIntegrationsApi();
+  const teamsApi = useTeamsApi();
   const { t } = useTranslation("catalog");
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [kind, setKind] = useState<CatalogEntityKind>("service");
@@ -43,11 +48,11 @@ export function RegisterEntityDialog({ open, onClose, onCreated }: Props) {
   useEffect(() => {
     if (!open) return;
     // Load teams across all orgs so the owner dropdown can be filtered client-side after org pick.
-    api.teams
+    teamsApi.teams
       .list({ allOrgs: true })
       .then((res) => setTeams(res.items))
       .catch(() => setTeams([]));
-    api.integrations
+    integrations
       .githubInstallations()
       .then((res) => {
         const opts = res.items.map((i) => ({ accountLogin: i.accountLogin, name: i.name }));
@@ -100,7 +105,7 @@ export function RegisterEntityDialog({ open, onClose, onCreated }: Props) {
     setSubmitting(true);
     setError(null);
     try {
-      await api.catalog.create({
+      await api.create({
         kind,
         name: name.trim(),
         description: description.trim() || undefined,

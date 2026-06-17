@@ -3,13 +3,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ConfirmDialog, PageLayout } from "@internal/shared-ui";
-import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
-import type { IntegrationDetail } from "@internal/shared-types";
+import type { IntegrationDetail } from "@feature/integrations-shared";
+import { useIntegrationsApi } from "./client";
 import { findProvider } from "./providerRegistry";
 
 export function IntegrationManagePage() {
-  const api = useApi();
+  const api = useIntegrationsApi();
   const navigate = useNavigate();
   const { t } = useTranslation("integrations");
   const params = useParams<{ id: string }>();
@@ -23,7 +23,7 @@ export function IntegrationManagePage() {
   const load = useCallback(async () => {
     if (!id) return;
     try {
-      const res = await api.integrations.get(id);
+      const res = await api.get(id);
       setDetail(res);
       setError(null);
     } catch (err) {
@@ -39,7 +39,7 @@ export function IntegrationManagePage() {
     if (!detail) return;
     setBusy(true);
     try {
-      await api.integrations.setEnabled(detail.id, !detail.enabled);
+      await api.setEnabled(detail.id, !detail.enabled);
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : t("errors.toggleFailed"));
@@ -52,7 +52,7 @@ export function IntegrationManagePage() {
     if (!detail) return;
     setConfirmDisconnect(false);
     try {
-      await api.integrations.disconnect(detail.id);
+      await api.disconnect(detail.id);
       navigate("/integrations");
     } catch (err) {
       setError(err instanceof Error ? err.message : t("errors.disconnectFailed"));

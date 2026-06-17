@@ -4,20 +4,21 @@ import { useParams, useNavigate } from "react-router-dom";
 import { PageLayout } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
+import type { CurrentUser, UserSummary } from "@internal/shared-types";
 import type {
-  CurrentUser,
   MaintainerRequestDto,
   TeamDetail,
   TeamMemberRole,
   TeamSummary,
-  UserSummary,
-} from "@internal/shared-types";
+} from "@feature/teams-shared";
+import { useTeamsApi } from "./client";
 import { UserPicker } from "./UserPicker";
 import { RequestMaintainerDialog } from "./RequestMaintainerDialog";
 
 export function TeamDetailPage() {
   const { slug = "" } = useParams<{ slug: string }>();
   const api = useApi();
+  const teamsApi = useTeamsApi();
   const navigate = useNavigate();
   const { t } = useTranslation("teams");
   const [team, setTeam] = useState<TeamDetail | null>(null);
@@ -33,17 +34,17 @@ export function TeamDetailPage() {
   const load = useCallback(async () => {
     setError(null);
     try {
-      const res = await api.teams.get(slug);
+      const res = await teamsApi.teams.get(slug);
       setTeam(res);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("errors.failedToLoad"));
     }
-  }, [api, slug, t]);
+  }, [teamsApi, slug, t]);
 
   const loadMyMaintainerRequest = useCallback(
     async (currentSlug: string) => {
       try {
-        const r = await api.maintainerRequests.list();
+        const r = await teamsApi.maintainerRequests.list();
         const open =
           r.items.find((m) => m.teamSlug === currentSlug && m.status === "pending") ?? null;
         setPendingMaintainerRequest(open);
@@ -51,7 +52,7 @@ export function TeamDetailPage() {
         setPendingMaintainerRequest(null);
       }
     },
-    [api],
+    [teamsApi],
   );
 
   useEffect(() => {
@@ -61,11 +62,11 @@ export function TeamDetailPage() {
       .me()
       .then(setMe)
       .catch(() => setMe(null));
-    api.teams
+    teamsApi.teams
       .list()
       .then((r) => setAllTeams(r.items))
       .catch(() => setAllTeams([]));
-  }, [api, load, loadMyMaintainerRequest, slug]);
+  }, [api, teamsApi, load, loadMyMaintainerRequest, slug]);
 
   if (error) {
     return (
@@ -92,7 +93,7 @@ export function TeamDetailPage() {
   async function addMember(user: UserSummary) {
     setBusy(true);
     try {
-      const updated = await api.teams.addMember(team!.slug, { userId: user.id });
+      const updated = await teamsApi.teams.addMember(team!.slug, { userId: user.id });
       setTeam(updated);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("errors.addFailed"));
@@ -104,7 +105,7 @@ export function TeamDetailPage() {
   async function changeRole(userId: string, role: TeamMemberRole) {
     setBusy(true);
     try {
-      const updated = await api.teams.setMemberRole(team!.slug, userId, role);
+      const updated = await teamsApi.teams.setMemberRole(team!.slug, userId, role);
       setTeam(updated);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("errors.updateFailed"));
@@ -116,7 +117,7 @@ export function TeamDetailPage() {
   async function removeMember(userId: string) {
     setBusy(true);
     try {
-      await api.teams.removeMember(team!.slug, userId);
+      await teamsApi.teams.removeMember(team!.slug, userId);
       if (userId === me!.id) {
         navigate("/teams");
         return;
@@ -133,7 +134,7 @@ export function TeamDetailPage() {
     if (!transferTarget || transferTarget === team!.slug) return;
     setBusy(true);
     try {
-      const result = await api.teams.transferOwnership(team!.slug, transferTarget);
+      const result = await teamsApi.teams.transferOwnership(team!.slug, transferTarget);
       alert(t("confirm.transferResult", { count: result.entityCount, slug: result.to.slug }));
       await load();
     } catch (err) {
@@ -147,7 +148,7 @@ export function TeamDetailPage() {
     if (!confirm(t("confirm.deleteTeam", { name: team!.name }))) return;
     setBusy(true);
     try {
-      await api.teams.delete(team!.slug);
+      await teamsApi.teams.delete(team!.slug);
       navigate("/teams");
     } catch (err) {
       setError(err instanceof Error ? err.message : t("errors.deleteFailed"));

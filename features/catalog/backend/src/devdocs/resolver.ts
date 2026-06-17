@@ -1,5 +1,5 @@
 // Pure logic for deciding where an entity's docs live (spec override, /docs dir, README, or none).
-import type { DocResolvedSource } from "@internal/shared-types";
+import type { DocResolvedSource } from "@feature/devdocs-shared";
 
 interface EntityForResolve {
   repoUrl: string | null;

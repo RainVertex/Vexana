@@ -1,13 +1,13 @@
 import type { Project, ProjectMember, Bucket, Task, Label, TaskComment, User } from "@internal/db";
+import type { UserSummaryDto } from "@internal/shared-types";
 import type {
-  UserSummaryDto,
   ProjectDto,
   BucketDto,
   LabelDto,
   TaskDto,
   TaskCommentDto,
   ProjectShareDto,
-} from "@internal/shared-types";
+} from "@feature/projects-shared";
 import { roleToNumeric } from "./permissions";
 
 export type {

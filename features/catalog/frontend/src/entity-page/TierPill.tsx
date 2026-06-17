@@ -1,5 +1,5 @@
 import { useTranslation } from "@internal/i18n";
-import type { ScorecardTier, ScorecardTierStyle } from "@internal/shared-types";
+import type { ScorecardTier, ScorecardTierStyle } from "@feature/scorecards-shared";
 
 const STAGE_STYLES: Record<string, string> = {
   bronze: "bg-amber-700/20 text-amber-800 dark:text-amber-300",

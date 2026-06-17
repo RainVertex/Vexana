@@ -2,9 +2,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { PageLayout } from "@internal/shared-ui";
-import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
-import type { ScaffolderTask, ScaffolderTaskStatus } from "@internal/shared-types";
+import type { ScaffolderTask, ScaffolderTaskStatus } from "@feature/scaffolder-shared";
+import { useScaffolderApi } from "./client";
 
 type StepEvent =
   | { kind: "task.started"; taskId: string }
@@ -46,7 +46,7 @@ interface LogView {
 
 export function TaskPage() {
   const { taskId } = useParams<{ taskId: string }>();
-  const api = useApi();
+  const api = useScaffolderApi();
   const { t } = useTranslation("scaffolder");
   const [task, setTask] = useState<ScaffolderTask | null>(null);
   const [steps, setSteps] = useState<StepView[]>([]);
@@ -57,7 +57,7 @@ export function TaskPage() {
 
   useEffect(() => {
     if (!taskId) return;
-    api.scaffolder
+    api
       .getTask(taskId)
       .then((taskData) => {
         setTask(taskData);
@@ -85,7 +85,7 @@ export function TaskPage() {
   useEffect(() => {
     if (!taskId || terminalStatus) return;
     if (task && task.finishedAt) return;
-    const url = api.scaffolder.taskEventsUrl(taskId);
+    const url = api.taskEventsUrl(taskId);
     const source = new EventSource(url, { withCredentials: true });
     source.onmessage = (msg) => {
       try {

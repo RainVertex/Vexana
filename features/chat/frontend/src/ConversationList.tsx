@@ -1,6 +1,6 @@
 // Sidebar list of conversations with inline new-chat and delete-confirm controls.
 import { NavLink } from "react-router-dom";
-import type { ChatConversationSummaryDto } from "@internal/shared-types";
+import type { ChatConversationSummaryDto } from "@feature/chat-shared";
 import { useTranslation } from "@internal/i18n";
 import { TrashIcon, PlusIcon, CheckIcon, CrossIcon } from "./icons";
 

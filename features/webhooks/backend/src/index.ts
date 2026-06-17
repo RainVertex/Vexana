@@ -2,7 +2,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { Prisma, prisma } from "@internal/db";
-import type { WebhookSubscriptionDto, WebhookDeliveryDto } from "@internal/shared-types";
+import type { WebhookSubscriptionDto, WebhookDeliveryDto } from "@feature/webhooks-shared";
 import { enqueuePing, generateWebhookSecret } from "./delivery";
 
 export {

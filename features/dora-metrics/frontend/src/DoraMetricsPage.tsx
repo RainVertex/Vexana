@@ -1,17 +1,17 @@
 import { useEffect, useState } from "react";
 import { PageLayout } from "@internal/shared-ui";
-import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
-import type { DoraMetricsSnapshot } from "@internal/shared-types";
+import type { DoraMetricsSnapshot } from "@feature/observability-shared";
+import { useDoraMetricsApi } from "./client";
 
 export function DoraMetricsPage() {
-  const api = useApi();
+  const api = useDoraMetricsApi();
   const { t } = useTranslation("dora-metrics");
   const [items, setItems] = useState<DoraMetricsSnapshot[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api.doraMetrics
+    api
       .list()
       .then((res) => setItems(res.items))
       .catch((err) => setError(err.message ?? t("errors.loadFailed")));

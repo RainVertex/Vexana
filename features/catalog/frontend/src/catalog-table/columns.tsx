@@ -1,6 +1,6 @@
 // TanStack column defs and metadata for the catalog table.
 import type { ColumnDef } from "@tanstack/react-table";
-import type { CatalogListItem } from "@internal/shared-types";
+import type { CatalogListItem } from "@feature/catalog-shared";
 import { useTranslation } from "@internal/i18n";
 import {
   DateCell,

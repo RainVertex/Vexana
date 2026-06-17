@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { PageLayout, ConfirmDialog } from "@internal/shared-ui";
-import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
-import type { Integration, IntegrationKind } from "@internal/shared-types";
+import type { Integration, IntegrationKind } from "@feature/integrations-shared";
+import { useIntegrationsApi } from "./client";
 import { IntegrationDriftBadge } from "./IntegrationDriftBadge";
 import { PROVIDERS, findProvider } from "./providerRegistry";
 
 export function IntegrationsPage() {
-  const api = useApi();
+  const api = useIntegrationsApi();
   const { t } = useTranslation("integrations");
   const [items, setItems] = useState<Integration[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -17,7 +17,7 @@ export function IntegrationsPage() {
 
   const load = useCallback(async () => {
     try {
-      const res = await api.integrations.list();
+      const res = await api.list();
       setItems(res.items);
       setError(null);
     } catch (err) {
@@ -133,7 +133,7 @@ export function IntegrationsPage() {
         onConfirm={async () => {
           if (!pendingDelete) return;
           try {
-            await api.integrations.disconnect(pendingDelete.id);
+            await api.disconnect(pendingDelete.id);
             setPendingDelete(null);
             await load();
           } catch (err) {

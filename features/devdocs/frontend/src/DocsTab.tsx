@@ -3,7 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
-import type { CurrentUser, DocResolvedSource } from "@internal/shared-types";
+import type { CurrentUser } from "@internal/shared-types";
+import type { DocResolvedSource } from "@feature/devdocs-shared";
+import { useDevdocsApi } from "./client";
 import { useDocPage, useDocsList, useDocsSearch } from "./useDevDocs";
 import { DocsSidebar } from "./DocsSidebar";
 import { DocPageView } from "./DocPageView";
@@ -13,6 +15,7 @@ import { DocsSearchBox } from "./DocsSearchBox";
 
 export function DocsTab() {
   const api = useApi();
+  const devdocs = useDevdocsApi();
   const { t } = useTranslation("devdocs");
   const { id: entityId = "" } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -53,7 +56,7 @@ export function DocsTab() {
     setSyncing(true);
     setSyncError(null);
     try {
-      await api.devdocs.sync(entityId);
+      await devdocs.sync(entityId);
       docs.reload();
     } catch (err) {
       setSyncError(err instanceof Error ? err.message : t("errors.syncFailed"));

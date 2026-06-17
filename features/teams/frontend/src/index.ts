@@ -15,4 +15,6 @@ export { RequestMaintainerPickerPage } from "./RequestMaintainerPickerPage";
 export { UserPicker } from "./UserPicker";
 export { ProposedMembersList } from "./ProposedMembersList";
 
+export { useTeamsApi, createTeamsClient } from "./client";
+
 export { featureRoutes } from "./routes";

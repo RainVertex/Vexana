@@ -3,12 +3,15 @@ import { Link } from "react-router-dom";
 import { PageLayout } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
-import type { CurrentUser, ScaffolderTemplateSummary } from "@internal/shared-types";
+import type { CurrentUser } from "@internal/shared-types";
+import type { ScaffolderTemplateSummary } from "@feature/scaffolder-shared";
+import { useScaffolderApi } from "./client";
 
 const TAG_FILTERS = ["recommended", "service", "github"] as const;
 
 export function ScaffolderPage() {
   const api = useApi();
+  const scaffolderApi = useScaffolderApi();
   const { t } = useTranslation("scaffolder");
   const [items, setItems] = useState<ScaffolderTemplateSummary[] | null>(null);
   const [me, setMe] = useState<CurrentUser | null>(null);
@@ -16,7 +19,7 @@ export function ScaffolderPage() {
   const [activeTag, setActiveTag] = useState<string | null>("recommended");
 
   useEffect(() => {
-    api.scaffolder
+    scaffolderApi
       .listTemplates()
       .then((res) => setItems(res.items))
       .catch((err) => setError(err.message ?? t("errors.loadTemplates")));
@@ -24,7 +27,7 @@ export function ScaffolderPage() {
       .me()
       .then(setMe)
       .catch(() => setMe(null));
-  }, [api, t]);
+  }, [api, scaffolderApi, t]);
 
   const filtered =
     items && activeTag ? items.filter((item) => item.tags.includes(activeTag)) : items;

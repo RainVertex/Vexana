@@ -4,3 +4,5 @@ export { ScorecardEditPage } from "./ScorecardEditPage";
 export { ScorecardReportPage } from "./ScorecardReportPage";
 
 export { featureRoutes } from "./routes";
+
+export { useScorecardsApi, createScorecardsClient } from "./client";

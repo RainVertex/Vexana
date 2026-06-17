@@ -1,6 +1,6 @@
 // Scrollable message log: persisted messages, optimistic/live turn, errors, and autoscroll.
 import { useEffect, useRef } from "react";
-import type { ChatMessageDto } from "@internal/shared-types";
+import type { ChatMessageDto } from "@feature/chat-shared";
 import { useTranslation } from "@internal/i18n";
 import { MessageBubble } from "./MessageBubble";
 import type { ChatStreamState } from "./chatStream";

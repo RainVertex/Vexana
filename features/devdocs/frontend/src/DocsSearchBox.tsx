@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "@internal/i18n";
-import type { DocSearchHit } from "@internal/shared-types";
+import type { DocSearchHit } from "@feature/devdocs-shared";
 
 export interface DocsSearchBoxProps {
   hits: DocSearchHit[];

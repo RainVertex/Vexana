@@ -1,11 +1,8 @@
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "@internal/db";
-import type {
-  AdminAiModelsResponse,
-  AdminAiProviderGroup,
-  ChatSourceRepoDto,
-} from "@internal/shared-types";
+import type { AdminAiModelsResponse, AdminAiProviderGroup } from "@feature/agents-shared";
+import type { ChatSourceRepoDto } from "@feature/chat-shared";
 import {
   getSetting,
   setSetting,

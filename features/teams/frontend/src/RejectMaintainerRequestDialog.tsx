@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "@internal/i18n";
-import type { MaintainerRequestDto } from "@internal/shared-types";
+import type { MaintainerRequestDto } from "@feature/teams-shared";
 
 export interface RejectMaintainerRequestDialogProps {
   open: boolean;

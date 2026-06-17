@@ -1,5 +1,5 @@
 import { Router } from "express";
-import type { SearchHit, SearchResults } from "@internal/shared-types";
+import type { SearchHit, SearchResults } from "@feature/search-shared";
 import { rankHits } from "./ranking";
 import type { SearchSource, SourceContext } from "./sources/types";
 import { catalog } from "./sources/catalog";

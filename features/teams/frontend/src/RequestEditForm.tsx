@@ -1,13 +1,10 @@
 // Shared edit form body for team-request proposals plus its API error mapper.
 import { useEffect, useMemo, useState } from "react";
 import { ApiError } from "@internal/api-client";
-import { useApi } from "@internal/api-client/react";
+import { useIntegrationsApi } from "@feature/integrations-frontend";
 import { useTranslation } from "@internal/i18n";
-import type {
-  GithubInstallationSummary,
-  TeamPolicyViolation,
-  TeamRequestDto,
-} from "@internal/shared-types";
+import type { GithubInstallationSummary } from "@feature/integrations-shared";
+import type { TeamPolicyViolation, TeamRequestDto } from "@feature/teams-shared";
 
 export type RequestEdit = {
   slug?: string;
@@ -30,7 +27,7 @@ interface RequestEditFormProps {
 
 export function RequestEditForm(props: RequestEditFormProps) {
   const { request, busy, nextRound, onSubmit, onCancel, submitLabel, error } = props;
-  const api = useApi();
+  const api = useIntegrationsApi();
   const { t } = useTranslation("teams");
 
   const [slug, setSlug] = useState(request.slug);
@@ -43,7 +40,7 @@ export function RequestEditForm(props: RequestEditFormProps) {
   const [installationsLoaded, setInstallationsLoaded] = useState(false);
 
   useEffect(() => {
-    api.integrations
+    api
       .githubInstallations()
       .then((res) => setInstallations(res.items))
       .catch(() => setInstallations([]))

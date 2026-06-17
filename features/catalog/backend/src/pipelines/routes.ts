@@ -8,7 +8,7 @@ import type {
   WorkflowRunStatus,
   DeploymentRow,
   DeploymentState,
-} from "@internal/shared-types";
+} from "@feature/dora-metrics-shared";
 import { requireEntityOrgAccess } from "../access";
 import { syncEntityPipelines } from "./sync";
 

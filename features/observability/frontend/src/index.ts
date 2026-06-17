@@ -6,5 +6,6 @@ export { TraceDrawer } from "./TraceDrawer";
 export { GrafanaDashboardEmbed } from "./GrafanaDashboardEmbed";
 export { ServiceHealthPanel } from "./ServiceHealthPanel";
 export { GrafanaAlertsPanel } from "./GrafanaAlertsPanel";
+export { useObservabilityApi, createObservabilityClient } from "./client";
 
 export { featureRoutes } from "./routes";

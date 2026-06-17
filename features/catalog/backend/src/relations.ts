@@ -6,7 +6,7 @@ import type {
   CatalogRelation,
   CatalogRelationType,
   CatalogRelationsResponse,
-} from "@internal/shared-types";
+} from "@feature/catalog-shared";
 
 const VALID_KINDS: ReadonlyArray<CatalogEntityKind> = [
   "service",

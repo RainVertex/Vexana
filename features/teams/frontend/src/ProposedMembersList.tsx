@@ -1,6 +1,6 @@
 // Read-only chips for the maintainers and members chosen on a team request.
 import { useTranslation } from "@internal/i18n";
-import type { TeamRequestDto } from "@internal/shared-types";
+import type { TeamRequestDto } from "@feature/teams-shared";
 
 interface ProposedMembersListProps {
   request: Pick<TeamRequestDto, "proposedMaintainers" | "proposedMembers">;

@@ -1,5 +1,5 @@
 import { useTranslation } from "@internal/i18n";
-import type { DocSyncStateRow } from "@internal/shared-types";
+import type { DocSyncStateRow } from "@feature/devdocs-shared";
 
 export interface EmptyStateProps {
   syncState: DocSyncStateRow | null;

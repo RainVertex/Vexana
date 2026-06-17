@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ConfirmDialog } from "@internal/shared-ui";
-import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
 import type {
   AgentMcpServerSummary,
@@ -11,7 +10,8 @@ import type {
   McpAuthKind,
   McpProbeResult,
   McpToolInfo,
-} from "@internal/shared-types";
+} from "@feature/agents-shared";
+import { useAgentsApi } from "./client";
 
 const inputCls =
   "w-full rounded-md border border-app-border bg-app-surface px-2 py-1.5 text-sm text-app-text focus:outline-none focus:ring-2 focus:ring-app-primary";
@@ -22,7 +22,7 @@ interface ProbeState {
 }
 
 export function McpServersEditor({ agentId }: { agentId: string }) {
-  const api = useApi();
+  const api = useAgentsApi();
   const { t } = useTranslation("agents");
   const [searchParams, setSearchParams] = useSearchParams();
   const [servers, setServers] = useState<AgentMcpServerSummary[] | null>(null);

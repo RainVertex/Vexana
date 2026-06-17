@@ -1,4 +1,4 @@
-import type { SearchHit } from "@internal/shared-types";
+import type { SearchHit } from "@feature/search-shared";
 
 // Exact title match ranks highest, then prefix, then substring; a body-only match ranks below any title match.
 export function scoreHit(query: string, title: string, body?: string): number {

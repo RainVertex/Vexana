@@ -1,8 +1,8 @@
 // Overview widget that renders an entity's catalog relations as an SVG star graph.
 import { useEffect, useState } from "react";
-import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
-import type { CatalogRelation, CatalogRelationsResponse } from "@internal/shared-types";
+import type { CatalogRelation, CatalogRelationsResponse } from "@feature/catalog-shared";
+import { useCatalogApi } from "../../client";
 import { useEntityOverviewContext } from "../EntityOverviewContext";
 
 const RELATION_COLOR: Record<string, string> = {
@@ -22,7 +22,7 @@ export function RelationsGraphWidget() {
   const { data } = useEntityOverviewContext();
   const entityId = data.entity.id;
   const entityName = data.entity.name;
-  const api = useApi();
+  const api = useCatalogApi();
   const { t } = useTranslation("catalog");
   const [relations, setRelations] = useState<CatalogRelationsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +31,7 @@ export function RelationsGraphWidget() {
     let cancelled = false;
     setRelations(null);
     setError(null);
-    api.catalog
+    api
       .relations(entityId)
       .then((res) => {
         if (!cancelled) setRelations(res);

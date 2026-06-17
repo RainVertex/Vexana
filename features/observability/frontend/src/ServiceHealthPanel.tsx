@@ -1,9 +1,9 @@
 // Compact list of the most recent ServiceHealthSample rows.
 
 import { useEffect, useState } from "react";
-import type { ServiceHealthSample } from "@internal/shared-types";
-import { useApi } from "@internal/api-client/react";
+import type { ServiceHealthSample } from "@feature/observability-shared";
 import { useTranslation } from "@internal/i18n";
+import { useObservabilityApi } from "./client";
 
 export interface ServiceHealthPanelProps {
   entityId?: string;
@@ -17,7 +17,7 @@ const STATUS_STYLE: Record<ServiceHealthSample["status"], string> = {
 };
 
 export function ServiceHealthPanel({ entityId, limit = 50 }: ServiceHealthPanelProps) {
-  const api = useApi();
+  const api = useObservabilityApi();
   const { t } = useTranslation("observability");
   const [items, setItems] = useState<ServiceHealthSample[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -26,9 +26,7 @@ export function ServiceHealthPanel({ entityId, limit = 50 }: ServiceHealthPanelP
     let cancelled = false;
     setItems(null);
     setError(null);
-    const fetcher = entityId
-      ? api.observability.healthSamplesForEntity(entityId)
-      : api.observability.healthSamples();
+    const fetcher = entityId ? api.healthSamplesForEntity(entityId) : api.healthSamples();
     fetcher
       .then((res) => {
         if (!cancelled) setItems(res.items.slice(0, limit));

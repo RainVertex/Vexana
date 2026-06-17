@@ -7,12 +7,14 @@ import validator from "@rjsf/validator-ajv8";
 import type { RJSFSchema, UiSchema } from "@rjsf/utils";
 import { PageLayout, codeMirrorTheme } from "@internal/shared-ui";
 import { useApi } from "@internal/api-client/react";
+import { useIntegrationsApi } from "@feature/integrations-frontend";
 import { useTranslation } from "@internal/i18n";
+import type { CurrentUser } from "@internal/shared-types";
 import type {
-  CurrentUser,
   ScaffolderTemplateDefPreview,
   ScaffolderTemplateDefRow,
-} from "@internal/shared-types";
+} from "@feature/scaffolder-shared";
+import { useScaffolderApi } from "./client";
 import { themeTemplates, themeWidgets } from "./rjsfTheme";
 import { ActionsDocDrawer } from "./ActionsDocDrawer";
 import { orgLoginsFromInstallations, withGithubOrgEnum } from "./githubOrgField";
@@ -87,6 +89,8 @@ class PreviewErrorBoundary extends Component<PreviewBoundaryProps, PreviewBounda
 
 export function TemplateEditorPage() {
   const api = useApi();
+  const scaffolderApi = useScaffolderApi();
+  const integrations = useIntegrationsApi();
   const { t } = useTranslation("scaffolder");
   const [me, setMe] = useState<CurrentUser | null | undefined>(undefined);
   const [defs, setDefs] = useState<ScaffolderTemplateDefRow[] | null>(null);
@@ -114,26 +118,26 @@ export function TemplateEditorPage() {
 
   useEffect(() => {
     if (!isAdmin || defs !== null) return;
-    api.scaffolder
+    scaffolderApi
       .listTemplateDefs()
       .then((res) => setDefs(res.items))
       .catch((err) => setError(err instanceof Error ? err.message : String(err)));
-  }, [api, isAdmin, defs]);
+  }, [scaffolderApi, isAdmin, defs]);
 
   useEffect(() => {
     if (!isAdmin) return;
-    api.integrations
+    integrations
       .githubInstallations()
       .then((res) => setOrgLogins(orgLoginsFromInstallations(res.items)))
       .catch(() => setOrgLogins([]));
-  }, [api, isAdmin]);
+  }, [integrations, isAdmin]);
 
   // Live validation of the draft template.yaml plus the resolved wizard form.
   useEffect(() => {
     if (!isAdmin) return;
     const seq = ++previewSeq.current;
     const handle = setTimeout(() => {
-      api.scaffolder
+      scaffolderApi
         .previewTemplateDef({ source })
         .then((result) => {
           if (previewSeq.current !== seq) return;
@@ -146,7 +150,7 @@ export function TemplateEditorPage() {
         });
     }, PREVIEW_DEBOUNCE_MS);
     return () => clearTimeout(handle);
-  }, [api, isAdmin, source]);
+  }, [scaffolderApi, isAdmin, source]);
 
   function selectDef(row: ScaffolderTemplateDefRow) {
     setSelectedId(row.id);
@@ -172,9 +176,9 @@ export function TemplateEditorPage() {
     setNotice(null);
     try {
       const row = selectedId
-        ? await api.scaffolder.updateTemplateDef(selectedId, { source, enabled })
-        : await api.scaffolder.createTemplateDef({ source });
-      const refreshed = await api.scaffolder.listTemplateDefs();
+        ? await scaffolderApi.updateTemplateDef(selectedId, { source, enabled })
+        : await scaffolderApi.createTemplateDef({ source });
+      const refreshed = await scaffolderApi.listTemplateDefs();
       setDefs(refreshed.items);
       setSelectedId(row.id);
       setEnabled(row.enabled);
@@ -192,8 +196,8 @@ export function TemplateEditorPage() {
     setBusy(true);
     setError(null);
     try {
-      await api.scaffolder.deleteTemplateDef(selectedId);
-      const refreshed = await api.scaffolder.listTemplateDefs();
+      await scaffolderApi.deleteTemplateDef(selectedId);
+      const refreshed = await scaffolderApi.listTemplateDefs();
       setDefs(refreshed.items);
       newDraft();
     } catch (err) {

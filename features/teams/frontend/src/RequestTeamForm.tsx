@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { ApiError } from "@internal/api-client";
-import { useApi } from "@internal/api-client/react";
+import { useIntegrationsApi } from "@feature/integrations-frontend";
 import { useTranslation } from "@internal/i18n";
-import type {
-  GithubInstallationSummary,
-  TeamPolicyViolation,
-  UserSummary,
-} from "@internal/shared-types";
+import type { GithubInstallationSummary } from "@feature/integrations-shared";
+import type { UserSummary } from "@internal/shared-types";
+import type { TeamPolicyViolation } from "@feature/teams-shared";
+import { useTeamsApi } from "./client";
 import { UserPicker } from "./UserPicker";
 
 // Shared "Request a team" form body, used by both the dialog and the full page.
@@ -27,7 +26,8 @@ export function RequestTeamForm({
   onCancel,
   variant = "dialog",
 }: RequestTeamFormProps) {
-  const api = useApi();
+  const teamsApi = useTeamsApi();
+  const integrations = useIntegrationsApi();
   const { t } = useTranslation("teams");
   const [slug, setSlug] = useState("");
   const [name, setName] = useState("");
@@ -43,12 +43,12 @@ export function RequestTeamForm({
 
   useEffect(() => {
     setInstallationsLoaded(false);
-    api.integrations
+    integrations
       .githubInstallations()
       .then((res) => setInstallations(res.items))
       .catch(() => setInstallations([]))
       .finally(() => setInstallationsLoaded(true));
-  }, [api]);
+  }, [integrations]);
 
   const slugError = error?.policyViolation?.field === "slug" ? error.policyViolation.message : null;
   const nameError = error?.policyViolation?.field === "name" ? error.policyViolation.message : null;
@@ -64,7 +64,7 @@ export function RequestTeamForm({
     setBusy(true);
     setError(null);
     try {
-      const res = await api.teamRequests.submit({
+      const res = await teamsApi.teamRequests.submit({
         slug,
         name,
         description: description || undefined,

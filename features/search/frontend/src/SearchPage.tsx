@@ -2,8 +2,8 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { PageLayout } from "@internal/shared-ui";
-import { useApi } from "@internal/api-client/react";
-import type { SearchHit, SearchResults } from "@internal/shared-types";
+import { useSearchApi } from "./client";
+import type { SearchHit, SearchResults } from "@feature/search-shared";
 import { useTranslation } from "@internal/i18n";
 
 type Kind = SearchHit["kind"];
@@ -63,7 +63,7 @@ function groupByKind(hits: SearchHit[]): Array<{ kind: Kind; hits: SearchHit[] }
 
 export function SearchPage() {
   const { t } = useTranslation("search");
-  const api = useApi();
+  const api = useSearchApi();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialQuery = searchParams.get("q") ?? "";
   const [query, setQuery] = useState(initialQuery);
@@ -76,7 +76,7 @@ export function SearchPage() {
     setLoading(true);
     setError(null);
     try {
-      setResults(await api.search.query(q));
+      setResults(await api.query(q));
     } catch (err) {
       setError(err instanceof Error ? err.message : t("errors.searchFailed"));
     } finally {

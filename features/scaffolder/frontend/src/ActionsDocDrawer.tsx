@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
-import type { ScaffolderActionDoc } from "@internal/shared-types";
+import type { ScaffolderActionDoc } from "@feature/scaffolder-shared";
+import { useScaffolderApi } from "./client";
 
 interface FieldRow {
   name: string;
@@ -31,7 +31,7 @@ function fieldsOf(schema: Record<string, unknown>): FieldRow[] {
 }
 
 export function ActionsDocDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const api = useApi();
+  const api = useScaffolderApi();
   const { t } = useTranslation("scaffolder");
   const [actions, setActions] = useState<ScaffolderActionDoc[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +39,7 @@ export function ActionsDocDrawer({ open, onClose }: { open: boolean; onClose: ()
 
   useEffect(() => {
     if (!open || actions !== null) return;
-    api.scaffolder
+    api
       .listActions()
       .then((res) => setActions(res.items))
       .catch((err) => setError(err instanceof Error ? err.message : t("errors.loadActions")));

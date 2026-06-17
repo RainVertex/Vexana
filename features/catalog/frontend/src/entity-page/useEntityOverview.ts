@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { useApi } from "@internal/api-client/react";
-import type { CatalogEntityOverviewResponse } from "@internal/shared-types";
+import type { CatalogEntityOverviewResponse } from "@feature/catalog-shared";
+import { useCatalogApi } from "../client";
 
 export interface UseEntityOverviewResult {
   data: CatalogEntityOverviewResponse | null;
@@ -10,7 +10,7 @@ export interface UseEntityOverviewResult {
 }
 
 export function useEntityOverview(id: string): UseEntityOverviewResult {
-  const api = useApi();
+  const api = useCatalogApi();
   const [data, setData] = useState<CatalogEntityOverviewResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -18,7 +18,7 @@ export function useEntityOverview(id: string): UseEntityOverviewResult {
   const load = useCallback(() => {
     let cancelled = false;
     setLoading(true);
-    api.catalog
+    api
       .overview(id)
       .then((res) => {
         if (cancelled) return;

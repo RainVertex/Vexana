@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useState } from "react";
 import { PageLayout } from "@internal/shared-ui";
 import { Trans, useTranslation } from "@internal/i18n";
-import { useApi } from "@internal/api-client/react";
+import { useAdminAiApi } from "./adminAiClient";
 import type {
   AdminAiModelsResponse,
   AdminAiProviderGroup,
   AdminAiModelRow,
-  ChatSourceRepoDto,
-} from "@internal/shared-types";
+} from "@feature/agents-shared";
+import type { ChatSourceRepoDto } from "@feature/chat-shared";
 import { useCurrentUser } from "../auth";
 
 export function AdminAiModelsPage() {
-  const client = useApi();
+  const client = useAdminAiApi();
   const me = useCurrentUser();
   const { t } = useTranslation();
   const [data, setData] = useState<AdminAiModelsResponse | null>(null);
@@ -20,7 +20,7 @@ export function AdminAiModelsPage() {
 
   const load = useCallback(async () => {
     try {
-      const res = await client.adminAi.listModels();
+      const res = await client.listModels();
       setData(res);
       setError(null);
     } catch (err) {
@@ -36,7 +36,7 @@ export function AdminAiModelsPage() {
     setBusy(model.id);
     setError(null);
     try {
-      await client.adminAi.setModelEnabled(model.id, !model.enabled);
+      await client.setModelEnabled(model.id, !model.enabled);
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Update failed");
@@ -49,7 +49,7 @@ export function AdminAiModelsPage() {
     setBusy(`key:${slug}`);
     setError(null);
     try {
-      await client.adminAi.setProviderKey(slug, apiKey);
+      await client.setProviderKey(slug, apiKey);
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save key");
@@ -62,7 +62,7 @@ export function AdminAiModelsPage() {
     setBusy(`key:${slug}`);
     setError(null);
     try {
-      await client.adminAi.clearProviderKey(slug);
+      await client.clearProviderKey(slug);
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to remove key");
@@ -117,7 +117,7 @@ const CREDENTIAL_HINT: Record<ChatSourceRepoDto["credentialSource"], string> = {
 };
 
 function SourceRepoSection() {
-  const client = useApi();
+  const client = useAdminAiApi();
   const [config, setConfig] = useState<ChatSourceRepoDto | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [owner, setOwner] = useState("");
@@ -128,7 +128,7 @@ function SourceRepoSection() {
 
   const load = useCallback(async () => {
     try {
-      const res = await client.adminAi.getSourceRepo();
+      const res = await client.getSourceRepo();
       setConfig(res);
       setOwner(res?.owner ?? "");
       setRepo(res?.repo ?? "");
@@ -149,7 +149,7 @@ function SourceRepoSection() {
     setBusy(true);
     setError(null);
     try {
-      await client.adminAi.setSourceRepo({
+      await client.setSourceRepo({
         owner: owner.trim(),
         repo: repo.trim(),
         ref: ref.trim() || null,
@@ -166,7 +166,7 @@ function SourceRepoSection() {
     setBusy(true);
     setError(null);
     try {
-      await client.adminAi.clearSourceRepo();
+      await client.clearSourceRepo();
       setConfig(null);
       setOwner("");
       setRepo("");

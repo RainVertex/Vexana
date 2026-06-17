@@ -15,8 +15,13 @@
     }
   },
   "dependencies": {
+    "@feature/catalog-shared": "0.1.0",
+    "@feature/devdocs-shared": "0.1.0",
+    "@feature/dora-metrics-shared": "0.1.0",
     "@feature/integrations-backend": "0.1.0",
     "@feature/projects-backend": "0.1.0",
+    "@feature/scorecards-shared": "0.1.0",
+    "@feature/search-shared": "0.1.0",
     "@internal/db": "0.1.0",
     "@internal/feature-host": "0.1.0",
     "@internal/shared-types": "0.1.0",

@@ -5,7 +5,7 @@ import {
   octokitForInstallation,
 } from "@feature/integrations-backend/contract";
 import matter from "gray-matter";
-import type { DocResolvedSource } from "@internal/shared-types";
+import type { DocResolvedSource } from "@feature/devdocs-shared";
 import { parseGithubUrl, readSpecDocs, resolveDocSource } from "./resolver";
 import { RepoFetchClient } from "./repo-fetch";
 

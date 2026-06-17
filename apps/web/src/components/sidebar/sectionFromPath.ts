@@ -1,4 +1,4 @@
-import type { PageSection } from "@internal/shared-types";
+import type { PageSection } from "@feature/pages-shared";
 
 export type SidebarSection = PageSection | "home" | "account" | "integrations" | "chat" | "skills";
 

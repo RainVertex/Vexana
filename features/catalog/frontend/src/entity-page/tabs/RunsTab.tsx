@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
-import type { DeploymentRow, WorkflowRunRow } from "@internal/shared-types";
+import type { DeploymentRow, WorkflowRunRow } from "@feature/dora-metrics-shared";
+import { useCatalogApi } from "../../client";
 import { useEntityContext } from "../outletContext";
 
 // Pipelines tab: workflow runs and deployments, populated by webhooks plus a 15-min cron sweep.
@@ -47,7 +47,7 @@ function fmtDuration(start: string | null, end: string | null): string {
 
 export function RunsTab() {
   const { data } = useEntityContext();
-  const api = useApi();
+  const api = useCatalogApi();
   const { t } = useTranslation("catalog");
   const entityId = data.entity.id;
   const hasInstallation = data.entity.installationId != null;
@@ -62,8 +62,8 @@ export function RunsTab() {
     let cancelled = false;
     setError(null);
     Promise.all([
-      api.catalog.pipelineRuns(entityId, { limit: 50 }),
-      api.catalog.deployments(entityId, { limit: 50 }),
+      api.pipelineRuns(entityId, { limit: 50 }),
+      api.deployments(entityId, { limit: 50 }),
     ])
       .then(([r, d]) => {
         if (!cancelled) {
@@ -93,7 +93,7 @@ export function RunsTab() {
     setRefreshing(true);
     setRefreshNote(null);
     try {
-      const res = await api.catalog.refreshPipelines(entityId);
+      const res = await api.refreshPipelines(entityId);
       setRefreshNote(
         res.error
           ? t("runs.syncError", { error: res.error })

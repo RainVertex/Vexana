@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "@internal/i18n";
-import type { ScorecardSummary } from "@internal/shared-types";
+import type { ScorecardSummary } from "@feature/scorecards-shared";
 import { TierPill } from "../TierPill";
 import { useEntityOverviewContext } from "../EntityOverviewContext";
 

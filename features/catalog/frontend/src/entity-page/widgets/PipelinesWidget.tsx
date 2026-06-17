@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
-import type { DeploymentRow, WorkflowRunRow } from "@internal/shared-types";
+import type { DeploymentRow, WorkflowRunRow } from "@feature/dora-metrics-shared";
+import { useCatalogApi } from "../../client";
 import { useEntityOverviewContext } from "../EntityOverviewContext";
 
 // Compact Overview CI/CD widget: recent workflow runs plus latest deploy per environment.
@@ -40,7 +40,7 @@ function latestPerEnvironment(deploys: DeploymentRow[]): DeploymentRow[] {
 
 export function PipelinesWidget() {
   const { data } = useEntityOverviewContext();
-  const api = useApi();
+  const api = useCatalogApi();
   const { t } = useTranslation("catalog");
   const entityId = data.entity.id;
   const hasInstallation = data.entity.installationId != null;
@@ -57,8 +57,8 @@ export function PipelinesWidget() {
     }
     let cancelled = false;
     Promise.all([
-      api.catalog.pipelineRuns(entityId, { limit: 5 }),
-      api.catalog.deployments(entityId, { limit: 20 }),
+      api.pipelineRuns(entityId, { limit: 5 }),
+      api.deployments(entityId, { limit: 20 }),
     ])
       .then(([r, d]) => {
         if (cancelled) return;

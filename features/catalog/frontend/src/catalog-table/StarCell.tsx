@@ -1,4 +1,4 @@
-import { useStarred } from "@internal/api-client/react";
+import { useStarred } from "../starred";
 import { useTranslation } from "@internal/i18n";
 
 interface Props {

@@ -19,7 +19,7 @@ import type {
   CatalogEntityWithOwners,
   CatalogListItem,
   Lifecycle,
-} from "@internal/shared-types";
+} from "@feature/catalog-shared";
 import type { User } from "@internal/db";
 import {
   canViewEntityDetails,

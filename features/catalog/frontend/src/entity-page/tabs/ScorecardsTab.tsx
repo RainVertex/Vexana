@@ -1,14 +1,14 @@
 import { useState } from "react";
-import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
-import type { ScorecardSummary } from "@internal/shared-types";
+import type { ScorecardSummary } from "@feature/scorecards-shared";
+import { useCatalogApi } from "../../client";
 import { useEntityContext } from "../outletContext";
 import { TierPill } from "../TierPill";
 import { TierTrend } from "../TierTrend";
 
 export function ScorecardsTab() {
   const { data, reload } = useEntityContext();
-  const api = useApi();
+  const api = useCatalogApi();
   const { t } = useTranslation("catalog");
   const [items, setItems] = useState<ScorecardSummary[]>(data.scorecards);
   const [recomputing, setRecomputing] = useState(false);
@@ -18,7 +18,7 @@ export function ScorecardsTab() {
     setRecomputing(true);
     setError(null);
     try {
-      const res = await api.catalog.recomputeScorecards(data.entity.id);
+      const res = await api.recomputeScorecards(data.entity.id);
       setItems(res.items);
       reload();
     } catch (err) {

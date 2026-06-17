@@ -1,9 +1,9 @@
 // Sidebar rendering a section's page tree with create, rename, move, and delete.
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { NavLink } from "react-router-dom";
-import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
-import type { PageDto, PageScope, PageSection, PageType } from "@internal/shared-types";
+import type { PageDto, PageScope, PageSection, PageType } from "@feature/pages-shared";
+import { usePagesApi } from "./client";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -108,7 +108,7 @@ function SectionTree({
   requestsSummary: PageTreeRequestsSummary | null;
 }) {
   const { t } = useTranslation("pages");
-  const api = useApi();
+  const api = usePagesApi();
   const me = currentUser;
   const isAdmin = me.role === "admin";
   const summary = requestsSummary;
@@ -122,7 +122,7 @@ function SectionTree({
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    api.pages
+    api
       .list(section)
       .then((res) => {
         if (!cancelled) setPages(res.items);
@@ -173,7 +173,7 @@ function SectionTree({
 
   const submitCreate = async (input: CreateModalSubmit, req: CreateRequest) => {
     try {
-      const created = await api.pages.create({
+      const created = await api.create({
         section,
         parentId: req.parentId,
         title: input.title,
@@ -205,7 +205,7 @@ function SectionTree({
     if (!original) return;
     setPages((prev) => prev.map((p) => (p.id === id ? { ...p, title: trimmed } : p)));
     try {
-      await api.pages.update(id, { title: trimmed });
+      await api.update(id, { title: trimmed });
     } catch (err) {
       console.error("Failed to rename page", err);
       setPages((prev) => prev.map((p) => (p.id === id ? original : p)));
@@ -220,7 +220,7 @@ function SectionTree({
     const toRemove = collectDescendants(pages, id);
     setPages((prev) => prev.filter((p) => !toRemove.has(p.id)));
     try {
-      await api.pages.delete(id);
+      await api.delete(id);
     } catch (err) {
       console.error("Failed to delete page", err);
       setPages(snapshot);
@@ -240,7 +240,7 @@ function SectionTree({
     const neighbour = siblings[swapIdx]!;
     const body = direction === "up" ? { beforeId: neighbour.id } : { afterId: neighbour.id };
     try {
-      const updated = await api.pages.move(id, body);
+      const updated = await api.move(id, body);
       setPages((prev) => prev.map((p) => (p.id === id ? updated : p)));
     } catch (err) {
       console.error("Failed to move page", err);

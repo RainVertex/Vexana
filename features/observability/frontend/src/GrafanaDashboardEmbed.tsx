@@ -1,7 +1,7 @@
 // Renders a single Grafana panel PNG via the backend proxy (keeps the SA token server-side).
 
-import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
+import { useObservabilityApi } from "./client";
 
 export interface GrafanaDashboardEmbedProps {
   dashboardUid: string;
@@ -25,9 +25,9 @@ export function GrafanaDashboardEmbed({
   title,
   entityId,
 }: GrafanaDashboardEmbedProps) {
-  const api = useApi();
+  const api = useObservabilityApi();
   const { t } = useTranslation("observability");
-  const src = api.observability.dashboardImageUrl({
+  const src = api.dashboardImageUrl({
     dashboardUid,
     panelId,
     ...(from ? { from } : {}),

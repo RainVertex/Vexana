@@ -1,10 +1,10 @@
 // Post-connect Grafana configure surface: rotate token/webhook secret, edit datasources, edit suppression.
 
 import { useEffect, useState } from "react";
-import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
-import type { IntegrationDetail } from "@internal/shared-types";
+import type { IntegrationDetail } from "@feature/integrations-shared";
 import { ConfirmDialog } from "@internal/shared-ui";
+import { useIntegrationsApi } from "./client";
 import { DatasourceSelect, pickDefaultUid, type DatasourceCandidate } from "./DatasourceSelect";
 
 export interface GrafanaManagePanelProps {
@@ -22,7 +22,7 @@ interface ProbeResult {
 }
 
 export function GrafanaManagePanel({ integration, onChanged }: GrafanaManagePanelProps) {
-  const api = useApi();
+  const api = useIntegrationsApi();
   const { t } = useTranslation("integrations");
   const [error, setError] = useState<string | null>(null);
   const [rotateTokenOpen, setRotateTokenOpen] = useState(false);
@@ -151,7 +151,7 @@ export function GrafanaManagePanel({ integration, onChanged }: GrafanaManagePane
           setConfirmRotateWebhook(false);
           setError(null);
           try {
-            const res = await api.integrations.rotateGrafanaWebhookSecret(integration.id);
+            const res = await api.rotateGrafanaWebhookSecret(integration.id);
             setNewWebhookSecret(res.webhookSecret);
             onChanged();
           } catch (err) {
@@ -201,7 +201,7 @@ function SuppressionSection({
   onSaved: () => void;
   onError: (msg: string | null) => void;
 }) {
-  const api = useApi();
+  const api = useIntegrationsApi();
   const { t } = useTranslation("integrations");
   const [minutes, setMinutes] = useState<string>(() => String(Math.round(initialMs / 60_000)));
   const [busy, setBusy] = useState(false);
@@ -214,7 +214,7 @@ function SuppressionSection({
     setBusy(true);
     onError(null);
     try {
-      await api.integrations.updateGrafanaConfig(integrationId, {
+      await api.updateGrafanaConfig(integrationId, {
         alertRefireSuppressionMs: Math.floor(parsed * 60_000),
       });
       onSaved();
@@ -260,7 +260,7 @@ function RotateTokenDialog({
   onClose: () => void;
   onRotated: () => void;
 }) {
-  const api = useApi();
+  const api = useIntegrationsApi();
   const { t } = useTranslation("integrations");
   const [apiToken, setApiToken] = useState("");
   const [busy, setBusy] = useState(false);
@@ -271,7 +271,7 @@ function RotateTokenDialog({
     setBusy(true);
     setError(null);
     try {
-      await api.integrations.rotateGrafanaToken(integrationId, { apiToken: apiToken.trim() });
+      await api.rotateGrafanaToken(integrationId, { apiToken: apiToken.trim() });
       onRotated();
     } catch (err) {
       setError(err instanceof Error ? err.message : t("errors.rotateFailed"));
@@ -332,7 +332,7 @@ function EditDatasourcesDialog({
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const api = useApi();
+  const api = useIntegrationsApi();
   const { t } = useTranslation("integrations");
   const [probe, setProbe] = useState<ProbeResult | null>(null);
   const [promUid, setPromUid] = useState(currentDsUid.prometheus);
@@ -344,7 +344,7 @@ function EditDatasourcesDialog({
   useEffect(() => {
     let cancelled = false;
     setBusy(true);
-    api.integrations
+    api
       .reprobeGrafana(integrationId)
       .then((res) => {
         if (cancelled) return;
@@ -371,7 +371,7 @@ function EditDatasourcesDialog({
     setBusy(true);
     setError(null);
     try {
-      await api.integrations.updateGrafanaConfig(integrationId, {
+      await api.updateGrafanaConfig(integrationId, {
         dsUid: {
           prometheus: promUid,
           ...(lokiUid ? { loki: lokiUid } : {}),

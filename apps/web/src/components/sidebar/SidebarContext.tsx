@@ -11,7 +11,7 @@ import {
 } from "react";
 import { useLocation } from "react-router-dom";
 import { sectionFromPath, sectionHasTree, type SidebarSection } from "./sectionFromPath";
-import type { PageSection } from "@internal/shared-types";
+import type { PageSection } from "@feature/pages-shared";
 
 const PIN_STORAGE_KEY = "mep:sidebar-pinned";
 const HOVER_DELAY_MS = 150;

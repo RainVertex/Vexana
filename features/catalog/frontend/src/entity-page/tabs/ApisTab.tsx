@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
-import type { CatalogRelation, CatalogRelationsResponse } from "@internal/shared-types";
+import type { CatalogRelation, CatalogRelationsResponse } from "@feature/catalog-shared";
+import { useCatalogApi } from "../../client";
 import { useEntityContext } from "../outletContext";
 import { LifecycleBadge } from "../../catalog-table/cells";
 
@@ -10,14 +10,14 @@ const API_TYPES = new Set(["consumesApi", "providesApi", "apiConsumedBy", "apiPr
 
 export function ApisTab() {
   const { data } = useEntityContext();
-  const api = useApi();
+  const api = useCatalogApi();
   const { t } = useTranslation("catalog");
   const [rels, setRels] = useState<CatalogRelationsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    api.catalog
+    api
       .relations(data.entity.id)
       .then((res) => {
         if (!cancelled) setRels(res);

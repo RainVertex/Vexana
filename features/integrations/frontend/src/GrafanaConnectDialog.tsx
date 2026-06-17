@@ -1,8 +1,8 @@
 // Two-stage Grafana connect dialog: probe for datasources, then commit and show the one-time webhook secret.
 
 import { useState } from "react";
-import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
+import { useIntegrationsApi } from "./client";
 import { DatasourceSelect, pickDefaultUid, type DatasourceCandidate } from "./DatasourceSelect";
 
 export interface GrafanaConnectDialogProps {
@@ -29,7 +29,7 @@ interface ConnectResult {
 }
 
 export function GrafanaConnectDialog({ open, onClose, onConnected }: GrafanaConnectDialogProps) {
-  const api = useApi();
+  const api = useIntegrationsApi();
   const { t } = useTranslation("integrations");
   const [name, setName] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
@@ -53,7 +53,7 @@ export function GrafanaConnectDialog({ open, onClose, onConnected }: GrafanaConn
     setBusy(true);
     setError(null);
     try {
-      const res = await api.integrations.probeGrafana({
+      const res = await api.probeGrafana({
         baseUrl: baseUrl.trim(),
         apiToken: apiToken.trim(),
       });
@@ -75,7 +75,7 @@ export function GrafanaConnectDialog({ open, onClose, onConnected }: GrafanaConn
       const minutes = Number(suppressionMinutes);
       const suppressionMs =
         Number.isFinite(minutes) && minutes >= 0 ? Math.floor(minutes * 60_000) : undefined;
-      const res = await api.integrations.connectGrafana({
+      const res = await api.connectGrafana({
         name: name.trim() || `Grafana (${new URL(baseUrl.trim()).host})`,
         baseUrl: baseUrl.trim(),
         apiToken: apiToken.trim(),

@@ -1,5 +1,5 @@
 import { prisma } from "@internal/db";
-import type { SearchHit } from "@internal/shared-types";
+import type { SearchHit } from "@feature/search-shared";
 import type { SearchSource } from "./types";
 
 // Agents have no owner, they are global and visible to every authenticated user.

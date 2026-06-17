@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "@internal/i18n";
-import { useApi } from "@internal/api-client/react";
 import type {
   DocCommentRow,
   DocPageDetail,
   DocSearchHit,
   DocsTabResponse,
-} from "@internal/shared-types";
+} from "@feature/devdocs-shared";
+import { useDevdocsApi } from "./client";
 
 export interface UseDocsListResult {
   data: DocsTabResponse | null;
@@ -16,7 +16,7 @@ export interface UseDocsListResult {
 }
 
 export function useDocsList(entityId: string): UseDocsListResult {
-  const api = useApi();
+  const api = useDevdocsApi();
   const { t } = useTranslation("devdocs");
   const [data, setData] = useState<DocsTabResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +25,7 @@ export function useDocsList(entityId: string): UseDocsListResult {
   const load = useCallback(() => {
     let cancelled = false;
     setLoading(true);
-    api.devdocs
+    api
       .list(entityId)
       .then((res) => {
         if (cancelled) return;
@@ -56,7 +56,7 @@ export interface UseDocPageResult {
 }
 
 export function useDocPage(entityId: string, slug: string | null): UseDocPageResult {
-  const api = useApi();
+  const api = useDevdocsApi();
   const { t } = useTranslation("devdocs");
   const [page, setPage] = useState<DocPageDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +71,7 @@ export function useDocPage(entityId: string, slug: string | null): UseDocPageRes
     }
     let cancelled = false;
     setLoading(true);
-    api.devdocs
+    api
       .get(entityId, slug)
       .then((res) => {
         if (cancelled) return;
@@ -104,7 +104,7 @@ export interface UseCommentsResult {
 }
 
 export function useComments(pageId: string | null): UseCommentsResult {
-  const api = useApi();
+  const api = useDevdocsApi();
   const { t } = useTranslation("devdocs");
   const [items, setItems] = useState<DocCommentRow[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -116,7 +116,7 @@ export function useComments(pageId: string | null): UseCommentsResult {
       return;
     }
     setLoading(true);
-    api.devdocs
+    api
       .listComments(pageId)
       .then((res) => {
         setItems(res.items);
@@ -131,7 +131,7 @@ export function useComments(pageId: string | null): UseCommentsResult {
   const post = useCallback(
     async (body: string) => {
       if (!pageId) return;
-      const created = await api.devdocs.postComment(pageId, { body });
+      const created = await api.postComment(pageId, { body });
       setItems((current) => [...current, created]);
     },
     [api, pageId],
@@ -139,7 +139,7 @@ export function useComments(pageId: string | null): UseCommentsResult {
 
   const remove = useCallback(
     async (id: string) => {
-      await api.devdocs.deleteComment(id);
+      await api.deleteComment(id);
       setItems((current) => current.filter((c) => c.id !== id));
     },
     [api],
@@ -157,7 +157,7 @@ export interface UseDocsSearchResult {
 }
 
 export function useDocsSearch(entityId: string | undefined): UseDocsSearchResult {
-  const api = useApi();
+  const api = useDevdocsApi();
   const { t } = useTranslation("devdocs");
   const [hits, setHits] = useState<DocSearchHit[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -172,7 +172,7 @@ export function useDocsSearch(entityId: string | undefined): UseDocsSearchResult
       }
       setLoading(true);
       try {
-        const res = await api.devdocs.search(trimmed, { entityId, limit: 20 });
+        const res = await api.search(trimmed, { entityId, limit: 20 });
         setHits(res.hits);
         setError(null);
       } catch (err) {

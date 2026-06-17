@@ -1,0 +1,105 @@
+// Shared types for catalog entities, relations, and entity overviews.
+import type { CatalogEntityKind, ISODateString, NamedEntity } from "@internal/shared-types";
+import type { Team } from "@feature/teams-shared";
+import type { DoraMetricsSnapshot, ServiceHealthSample } from "@feature/observability-shared";
+import type { ScorecardSummary } from "@feature/scorecards-shared";
+
+export type { CatalogEntityKind };
+
+export type Lifecycle = "experimental" | "production" | "deprecated" | "development";
+
+export type CatalogEntitySource = "manual" | "scaffolder" | "discovery" | "agent" | "seed";
+
+export interface CatalogEntity extends NamedEntity {
+  kind: CatalogEntityKind;
+  lifecycle: Lifecycle;
+  /** GitHub org login the entity belongs to. */
+  accountLogin: string;
+  repoUrl?: string | null;
+  tags: string[];
+  source: CatalogEntitySource;
+  sourceRef: string | null;
+  lastSeenAt: ISODateString;
+  staleSince: ISODateString | null;
+  /** Restricted, like yamlSpec: present only when the viewer may see restricted fields. */
+  autoApply?: boolean;
+  /** Parsed catalog-info.yaml. */
+  yamlSpec?: unknown;
+  /** GitHub App auto-import bookkeeping. */
+  needsOnboarding: boolean;
+  unowned: boolean;
+  installationId: number | null;
+  githubRepoId: number | null;
+  /** Computed at list time: installationId no longer matches any live installation. */
+  orphaned: boolean;
+}
+
+export interface CatalogEntityWithOwners extends CatalogEntity {
+  ownerTeams: Team[];
+}
+
+/** Public projection of an entity in an org the viewer is not a member of. */
+export interface CatalogEntityLocked {
+  accessible: false;
+  id: string;
+  name: string;
+  kind: CatalogEntityKind;
+  lifecycle: Lifecycle;
+  description: string | null;
+  accountLogin: string;
+}
+
+export interface CatalogEntityAccessible extends CatalogEntityWithOwners {
+  accessible: true;
+}
+
+export type CatalogListItem = CatalogEntityAccessible | CatalogEntityLocked;
+
+export type CatalogRelationType =
+  | "dependsOn"
+  | "dependencyOf"
+  | "consumesApi"
+  | "apiConsumedBy"
+  | "providesApi"
+  | "apiProvidedBy"
+  | "partOf"
+  | "hasPart"
+  | "memberOf"
+  | "hasMember"
+  | "ownerOf"
+  | "ownedBy";
+
+export interface CatalogRelation {
+  type: CatalogRelationType | string;
+  /** Resolved target entity (null if YAML references something not in catalog yet). */
+  target: Pick<CatalogEntity, "id" | "name" | "kind" | "lifecycle"> | null;
+  /** Original raw reference from yamlSpec (e.g., "component:default/foo"). */
+  rawRef: string;
+}
+
+export interface CatalogRelationsResponse {
+  outgoing: CatalogRelation[];
+  incoming: CatalogRelation[];
+}
+
+export interface CatalogEntityLink {
+  url: string;
+  title: string;
+  icon?: string | null;
+}
+
+export interface CatalogEntityOverview {
+  accessible: true;
+  entity: CatalogEntityWithOwners;
+  dora: DoraMetricsSnapshot[];
+  health: ServiceHealthSample[];
+  scorecards: ScorecardSummary[];
+  links: CatalogEntityLink[];
+}
+
+export interface CatalogEntityOverviewLocked {
+  accessible: false;
+  entity: CatalogEntityLocked;
+}
+
+export type CatalogEntityOverviewResponse = CatalogEntityOverview | CatalogEntityOverviewLocked;

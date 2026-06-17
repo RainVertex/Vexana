@@ -1,7 +1,7 @@
 // Resolves a wizard array param marked with `x-platform-teams` into a multi-select of the platform
 // teams that belong to the currently selected GitHub org. The marker is stripped before the schema
 // reaches RJSF/AJV; the options are recomputed whenever the org selection changes.
-import type { TeamSummary } from "@internal/shared-types";
+import type { TeamSummary } from "@feature/teams-shared";
 
 const MARKER = "x-platform-teams";
 

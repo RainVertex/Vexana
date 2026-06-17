@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { PageLayout } from "@internal/shared-ui";
-import { useApi } from "@internal/api-client/react";
 import { useTranslation } from "@internal/i18n";
+import { useCatalogApi } from "./client";
 import { CatalogTable } from "./catalog-table/CatalogTable";
 import { Toolbar } from "./catalog-table/Toolbar";
 import type { CatalogRow } from "./catalog-table/columns";
@@ -9,7 +9,7 @@ import { useCatalogView } from "./catalog-table/useCatalogView";
 import { RegisterEntityDialog } from "./RegisterEntityDialog";
 
 export function CatalogPage() {
-  const api = useApi();
+  const api = useCatalogApi();
   const view = useCatalogView();
   const { t } = useTranslation("catalog");
   const [rows, setRows] = useState<CatalogRow[] | null>(null);
@@ -19,7 +19,7 @@ export function CatalogPage() {
 
   const load = useCallback(() => {
     let cancelled = false;
-    api.catalog
+    api
       .list()
       .then((res) => {
         if (cancelled) return;

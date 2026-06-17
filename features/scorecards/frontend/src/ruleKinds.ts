@@ -1,5 +1,5 @@
 // Data-driven descriptors for the rule builder: which config fields each rule kind needs.
-import type { ScorecardRuleKind, ScorecardTierStyle } from "@internal/shared-types";
+import type { ScorecardRuleKind, ScorecardTierStyle } from "@feature/scorecards-shared";
 
 export const ENTITY_KINDS = [
   "service",
