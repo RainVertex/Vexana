@@ -19,6 +19,7 @@ export {
 } from "./executor";
 export {
   catalogEnricherJob,
+  modelPricingSyncJob,
   getAgentJobs,
   type AgentJobDefinition,
   type AgentJobContext,

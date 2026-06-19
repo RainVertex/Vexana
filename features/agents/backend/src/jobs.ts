@@ -2,6 +2,7 @@
 import { prisma, Prisma } from "@internal/db";
 import { providerHasStoredKey } from "@internal/llm-core";
 import { runAgent } from "./executor";
+import { syncModelPricing } from "./services/pricing";
 
 export interface AgentJobLogger {
   info(o: unknown, msg?: string): void;
@@ -187,6 +188,19 @@ async function failTask(taskId: string, attempts: number, error: string): Promis
   });
 }
 
+// Daily refresh of model rates from OpenRouter so costPer1k* is not hand-maintained.
+export function modelPricingSyncJob(): AgentJobDefinition {
+  return {
+    name: "agents.modelPricingSync",
+    schedule: "0 5 * * *",
+    timeoutMs: 60_000,
+    handler: async ({ log, signal }) => {
+      const result = await syncModelPricing({ signal });
+      log.info(result, "Model pricing sync complete");
+    },
+  };
+}
+
 export function getAgentJobs(): AgentJobDefinition[] {
-  return [catalogEnricherJob(), catalogEnricherDrainJob()];
+  return [catalogEnricherJob(), catalogEnricherDrainJob(), modelPricingSyncJob()];
 }

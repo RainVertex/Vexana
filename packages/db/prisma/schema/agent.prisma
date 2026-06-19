@@ -45,12 +45,15 @@ model ProviderCredential {
 // A registered model an Agent can be pointed at. `modelName` is the wire
 // identifier sent to the upstream API (e.g. "qwen3:8b",
 // "claude-sonnet-4-6"). costPer1k* is null for self-hosted models.
+// openrouterId is the canonical OpenRouter slug used to refresh costPer1k*
+// from its public pricing list; null means the model is not price-synced.
 model LlmModel {
   id                String      @id @default(cuid())
   slug              String      @unique
   displayName       String
   providerId        String
   modelName         String
+  openrouterId      String?
   contextWindow     Int
   supportsTools     Boolean     @default(true)
   supportsVision    Boolean     @default(false)
