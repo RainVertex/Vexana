@@ -53,6 +53,7 @@ class OpenAICompatAdapter implements ProviderAdapter {
     const toolCallAccum: Map<number, { id?: string; name?: string; arguments: string }> = new Map();
     let usageInput = 0;
     let usageOutput = 0;
+    let usageCacheRead = 0;
 
     let inThinking = false;
     const openTag = (): void => {
@@ -103,6 +104,8 @@ class OpenAICompatAdapter implements ProviderAdapter {
       if (chunk.usage) {
         usageInput = chunk.usage.prompt_tokens ?? 0;
         usageOutput = chunk.usage.completion_tokens ?? 0;
+        // prompt_tokens already includes the cached subset; Ollama/vLLM omit the detail (stays 0).
+        usageCacheRead = chunk.usage.prompt_tokens_details?.cached_tokens ?? 0;
       }
     }
     closeTag();
@@ -127,7 +130,7 @@ class OpenAICompatAdapter implements ProviderAdapter {
     return {
       message,
       toolCalls,
-      usage: { input: usageInput, output: usageOutput },
+      usage: { input: usageInput, output: usageOutput, cacheRead: usageCacheRead, cacheWrite: 0 },
       finishReason,
       reasoning: reasoning || null,
     };

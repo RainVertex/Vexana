@@ -138,6 +138,8 @@ export async function runAgent(
   const steps: RunAgentStep[] = [];
   let tokensInput = 0;
   let tokensOutput = 0;
+  let tokensCacheRead = 0;
+  let tokensCacheWrite = 0;
   let finalText: string | null = null;
 
   const model = agent.llmModel as ResolvedModel;
@@ -163,6 +165,8 @@ export async function runAgent(
       });
       tokensInput += result.usage.input;
       tokensOutput += result.usage.output;
+      tokensCacheRead += result.usage.cacheRead;
+      tokensCacheWrite += result.usage.cacheWrite;
 
       if (agent.tokenBudget != null && tokensInput + tokensOutput > agent.tokenBudget) {
         throw new Error("token_budget_exhausted");
@@ -232,7 +236,12 @@ export async function runAgent(
       }
     }
 
-    const costUsd = computeCostUsd(model, { input: tokensInput, output: tokensOutput });
+    const costUsd = computeCostUsd(model, {
+      input: tokensInput,
+      output: tokensOutput,
+      cacheRead: tokensCacheRead,
+      cacheWrite: tokensCacheWrite,
+    });
     // The loop can exit cleanly just as a cancel lands; honor the abort so a stopped run is not
     // recorded as succeeded.
     if (runSignal.aborted) {
@@ -288,7 +297,12 @@ export async function runAgent(
       : err instanceof Error
         ? err.message
         : String(err);
-    const costUsd = computeCostUsd(model, { input: tokensInput, output: tokensOutput });
+    const costUsd = computeCostUsd(model, {
+      input: tokensInput,
+      output: tokensOutput,
+      cacheRead: tokensCacheRead,
+      cacheWrite: tokensCacheWrite,
+    });
     await prisma.agentRun.update({
       where: { id: run.id },
       data: {

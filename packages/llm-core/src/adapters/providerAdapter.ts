@@ -1,5 +1,5 @@
 import type OpenAI from "openai";
-import type { ResolvedModel } from "../client";
+import type { ResolvedModel, TokenUsage } from "../client";
 
 // Streaming chat-turn interface in OpenAI message/tool shape; native adapters convert internally.
 
@@ -17,7 +17,7 @@ export interface AdapterRequest {
 export interface AdapterResult {
   message: OpenAI.Chat.Completions.ChatCompletionMessage;
   toolCalls: OpenAI.Chat.Completions.ChatCompletionMessageFunctionToolCall[];
-  usage: { input: number; output: number };
+  usage: TokenUsage;
   finishReason: string | null;
   reasoning?: string | null;
 }

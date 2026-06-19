@@ -147,6 +147,8 @@ export async function streamAgent(args: StreamAgentArgs): Promise<StreamAgentRes
   const toolCallSummaries: ChatToolCallSummary[] = [];
   let tokensInput = 0;
   let tokensOutput = 0;
+  let tokensCacheRead = 0;
+  let tokensCacheWrite = 0;
   let finalText = "";
   let containsWrites = false;
 
@@ -212,6 +214,8 @@ export async function streamAgent(args: StreamAgentArgs): Promise<StreamAgentRes
 
       tokensInput += turn.usage.input;
       tokensOutput += turn.usage.output;
+      tokensCacheRead += turn.usage.cacheRead;
+      tokensCacheWrite += turn.usage.cacheWrite;
 
       if (turn.message.content && typeof turn.message.content === "string") {
         finalText = splitter.content;
@@ -269,7 +273,12 @@ export async function streamAgent(args: StreamAgentArgs): Promise<StreamAgentRes
     const reasoning = splitter.reasoning || null;
     const reasoningDurationMs = reasoning ? splitter.totalReasoningMs : null;
 
-    const costUsd = computeCostUsd(model, { input: tokensInput, output: tokensOutput });
+    const costUsd = computeCostUsd(model, {
+      input: tokensInput,
+      output: tokensOutput,
+      cacheRead: tokensCacheRead,
+      cacheWrite: tokensCacheWrite,
+    });
     await prisma.agentRun.update({
       where: { id: run.id },
       data: {
@@ -286,7 +295,12 @@ export async function streamAgent(args: StreamAgentArgs): Promise<StreamAgentRes
     return { agentRunId: run.id, containsWrites, finalText, reasoning, reasoningDurationMs };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    const costUsd = computeCostUsd(model, { input: tokensInput, output: tokensOutput });
+    const costUsd = computeCostUsd(model, {
+      input: tokensInput,
+      output: tokensOutput,
+      cacheRead: tokensCacheRead,
+      cacheWrite: tokensCacheWrite,
+    });
     await prisma.agentRun.update({
       where: { id: run.id },
       data: {

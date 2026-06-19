@@ -60,6 +60,8 @@ model LlmModel {
   supportsReasoning Boolean     @default(false)
   costPer1kIn       Decimal?    @db.Decimal(10, 6)
   costPer1kOut      Decimal?    @db.Decimal(10, 6)
+  costPer1kCacheRead  Decimal?  @db.Decimal(10, 6)
+  costPer1kCacheWrite Decimal?  @db.Decimal(10, 6)
   enabled           Boolean     @default(true)
   provider          LlmProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
   agents            Agent[]

@@ -46,6 +46,8 @@ class AnthropicAdapter implements ProviderAdapter {
     const toolUseAccum = new Map<number, { id: string; name: string; arguments: string }>();
     let usageInput = 0;
     let usageOutput = 0;
+    let usageCacheRead = 0;
+    let usageCacheWrite = 0;
     let stopReason: string | null = null;
 
     const maxTokens = Math.min(req.model.contextWindow, 8192);
@@ -96,13 +98,22 @@ class AnthropicAdapter implements ProviderAdapter {
           const usage = event.usage;
           if (usage?.input_tokens != null) usageInput = usage.input_tokens;
           if (usage?.output_tokens != null) usageOutput = usage.output_tokens;
+          if (usage?.cache_read_input_tokens != null)
+            usageCacheRead = usage.cache_read_input_tokens;
+          if (usage?.cache_creation_input_tokens != null)
+            usageCacheWrite = usage.cache_creation_input_tokens;
           if (event.delta.stop_reason) stopReason = event.delta.stop_reason;
           break;
         }
         case "message_start": {
           const usage = event.message.usage;
+          // Anthropic reports input_tokens as the fresh (uncached) count; the cached subsets are separate.
           if (usage?.input_tokens != null) usageInput = usage.input_tokens;
           if (usage?.output_tokens != null) usageOutput = usage.output_tokens;
+          if (usage?.cache_read_input_tokens != null)
+            usageCacheRead = usage.cache_read_input_tokens;
+          if (usage?.cache_creation_input_tokens != null)
+            usageCacheWrite = usage.cache_creation_input_tokens;
           break;
         }
         default:
@@ -130,7 +141,12 @@ class AnthropicAdapter implements ProviderAdapter {
     return {
       message,
       toolCalls,
-      usage: { input: usageInput, output: usageOutput },
+      usage: {
+        input: usageInput + usageCacheRead + usageCacheWrite,
+        output: usageOutput,
+        cacheRead: usageCacheRead,
+        cacheWrite: usageCacheWrite,
+      },
       finishReason: mapStopReasonToOpenAi(stopReason, toolCalls.length > 0),
       reasoning: reasoning || null,
     };

@@ -14,20 +14,41 @@ export interface ChatRequest {
   temperature?: number | null;
 }
 
+// `input` is the total input token count (cached tokens included); cacheRead/cacheWrite carry the
+// cached subset so cost can price them at the cheaper cache rates instead of the full input rate.
+export interface TokenUsage {
+  input: number;
+  output: number;
+  cacheRead: number;
+  cacheWrite: number;
+}
+
 export interface ChatResult {
   message: OpenAI.Chat.Completions.ChatCompletionMessage;
   toolCalls: OpenAI.Chat.Completions.ChatCompletionMessageFunctionToolCall[];
-  usage: { input: number; output: number };
+  usage: TokenUsage;
   finishReason: string | null;
   reasoning?: string | null;
 }
 
 export function computeCostUsd(
   model: ResolvedModel,
-  usage: { input: number; output: number },
+  usage: { input: number; output: number; cacheRead?: number; cacheWrite?: number },
 ): number | null {
   if (model.costPer1kIn == null || model.costPer1kOut == null) return null;
   const inRate = Number(model.costPer1kIn);
   const outRate = Number(model.costPer1kOut);
-  return (usage.input / 1000) * inRate + (usage.output / 1000) * outRate;
+  // Cache rates fall back to the base input rate when a model has none, so an unpriced cache never
+  // undercharges (it just costs the same as fresh input, which is what we billed before).
+  const readRate = model.costPer1kCacheRead != null ? Number(model.costPer1kCacheRead) : inRate;
+  const writeRate = model.costPer1kCacheWrite != null ? Number(model.costPer1kCacheWrite) : inRate;
+  const cacheRead = usage.cacheRead ?? 0;
+  const cacheWrite = usage.cacheWrite ?? 0;
+  const freshInput = Math.max(0, usage.input - cacheRead - cacheWrite);
+  return (
+    (freshInput / 1000) * inRate +
+    (cacheRead / 1000) * readRate +
+    (cacheWrite / 1000) * writeRate +
+    (usage.output / 1000) * outRate
+  );
 }

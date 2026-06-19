@@ -35,6 +35,7 @@ class GeminiAdapter implements ProviderAdapter {
     const toolCalls: OpenAI.Chat.Completions.ChatCompletionMessageFunctionToolCall[] = [];
     let usageInput = 0;
     let usageOutput = 0;
+    let usageCacheRead = 0;
     let finishReason: string | null = null;
 
     const stream = await client.models.generateContentStream({
@@ -74,9 +75,12 @@ class GeminiAdapter implements ProviderAdapter {
       }
       const usage = chunk.usageMetadata;
       if (usage) {
+        // promptTokenCount already includes the cached subset reported in cachedContentTokenCount.
         if (typeof usage.promptTokenCount === "number") usageInput = usage.promptTokenCount;
         if (typeof usage.candidatesTokenCount === "number")
           usageOutput = usage.candidatesTokenCount;
+        if (typeof usage.cachedContentTokenCount === "number")
+          usageCacheRead = usage.cachedContentTokenCount;
       }
     }
 
@@ -90,7 +94,7 @@ class GeminiAdapter implements ProviderAdapter {
     return {
       message,
       toolCalls,
-      usage: { input: usageInput, output: usageOutput },
+      usage: { input: usageInput, output: usageOutput, cacheRead: usageCacheRead, cacheWrite: 0 },
       finishReason: mapFinishReasonToOpenAi(finishReason, toolCalls.length > 0),
     };
   }

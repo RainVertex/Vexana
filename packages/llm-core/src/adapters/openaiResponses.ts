@@ -29,6 +29,7 @@ class OpenAIResponsesAdapter implements ProviderAdapter {
     let reasoning = "";
     let usageInput = 0;
     let usageOutput = 0;
+    let usageCacheRead = 0;
     let status: string | null = null;
     const toolCalls: OpenAI.Chat.Completions.ChatCompletionMessageFunctionToolCall[] = [];
 
@@ -109,6 +110,8 @@ class OpenAIResponsesAdapter implements ProviderAdapter {
           if (usage) {
             usageInput = usage.input_tokens ?? 0;
             usageOutput = usage.output_tokens ?? 0;
+            // input_tokens already includes the cached subset.
+            usageCacheRead = usage.input_tokens_details?.cached_tokens ?? 0;
           }
           break;
         }
@@ -139,7 +142,7 @@ class OpenAIResponsesAdapter implements ProviderAdapter {
     return {
       message,
       toolCalls,
-      usage: { input: usageInput, output: usageOutput },
+      usage: { input: usageInput, output: usageOutput, cacheRead: usageCacheRead, cacheWrite: 0 },
       finishReason,
       reasoning: reasoning || null,
     };

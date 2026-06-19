@@ -7,7 +7,12 @@ const DATE_SUFFIX = /-\d{8}$/;
 
 interface OpenRouterModel {
   id: string;
-  pricing?: { prompt?: string; completion?: string };
+  pricing?: {
+    prompt?: string;
+    completion?: string;
+    input_cache_read?: string;
+    input_cache_write?: string;
+  };
 }
 
 export interface PricingSyncResult {
@@ -75,9 +80,17 @@ export async function syncModelPricing(
       unmatched.push(m.slug);
       continue;
     }
+    // Cache rates are best-effort: a model without them resets to null and bills cache at the input rate.
+    const cacheReadPer1k = perTokenToPer1k(match?.pricing?.input_cache_read);
+    const cacheWritePer1k = perTokenToPer1k(match?.pricing?.input_cache_write);
     await agentDb.llmModel.update({
       where: { id: m.id },
-      data: { costPer1kIn: inPer1k, costPer1kOut: outPer1k },
+      data: {
+        costPer1kIn: inPer1k,
+        costPer1kOut: outPer1k,
+        costPer1kCacheRead: cacheReadPer1k,
+        costPer1kCacheWrite: cacheWritePer1k,
+      },
     });
     updated++;
   }
