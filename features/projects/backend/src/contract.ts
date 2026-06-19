@@ -6,3 +6,5 @@ export {
   archiveProjectByGithubRepoId,
   reconcileProjectMembersForInstallation,
 } from "./index";
+
+export { createSubtask, listSubtasks, getTask } from "./services/tasks";

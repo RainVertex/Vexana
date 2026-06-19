@@ -34,6 +34,7 @@ export interface TaskDto {
   id: string;
   projectId: string;
   bucketId: string | null;
+  parentTaskId: string | null;
   title: string;
   description: string | null;
   done: boolean;
@@ -49,6 +50,7 @@ export interface TaskDto {
   assignees: UserSummaryDto[];
   labels: LabelDto[];
   projectTitle?: string;
+  children?: TaskDto[];
 }
 
 export interface TaskCommentDto {

@@ -21,7 +21,7 @@ import { streamAgent } from "./streamExecutor";
 
 export const chatRouter: Router = Router();
 
-const PLATFORM_ASSISTANT_AGENT_ID = "seed-agent-assistant";
+const PLATFORM_ASSISTANT_AGENT_ID = "platform-assistant";
 const MAX_CONCURRENT_SSE_PER_USER = 2;
 
 // In-flight SSE connections keyed by conversationId; multi-instance deploys need sticky sessions on conversationId.

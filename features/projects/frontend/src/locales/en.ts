@@ -79,6 +79,7 @@ export const en = {
     assignees: "Assignees",
     labels: "Labels",
     comments: "Comments",
+    subtasks: "Subtasks",
     title: "Title",
     status: "Status",
     stage: "Stage",
@@ -96,6 +97,7 @@ export const en = {
     noComments: "No comments yet.",
     noAssignees: "No assignees yet.",
     noLabels: "No labels.",
+    noSubtasks: "No subtasks yet.",
     noTasksAssigned: "No tasks assigned to you.",
   },
   loading: {

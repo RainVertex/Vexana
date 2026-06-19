@@ -2,7 +2,7 @@ import { Router } from "express";
 import { projectsDb } from "@internal/db";
 import { addAssigneeSchema, attachLabelSchema, createTaskSchema, updateTaskSchema } from "../zod";
 import { meetsLevel, resolveAccess } from "../services/permissions";
-import { taskDto, userSummary } from "../services/dto";
+import { taskDto, userSummary, TASK_INCLUDE, TASK_INCLUDE_WITH_CHILDREN } from "../services/dto";
 import {
   notifyTaskAssigned,
   notifyTaskUnassigned,
@@ -14,12 +14,6 @@ import { triggerAgentRunForTask } from "../services/agentRuns";
 
 export const tasksRoutes: Router = Router();
 
-const TASK_INCLUDE = {
-  assignees: { include: { user: true } },
-  labels: { include: { label: true } },
-  project: { select: { title: true } },
-} as const;
-
 tasksRoutes.get("/projects/:id/tasks", async (req, res, next) => {
   try {
     const userId = req.user!.id;
@@ -29,7 +23,7 @@ tasksRoutes.get("/projects/:id/tasks", async (req, res, next) => {
       return;
     }
     const tasks = await projectsDb.task.findMany({
-      where: { projectId: req.params.id },
+      where: { projectId: req.params.id, parentTaskId: null },
       orderBy: [{ position: "asc" }, { createdAt: "asc" }],
       include: TASK_INCLUDE,
     });
@@ -88,7 +82,7 @@ tasksRoutes.get("/tasks/:id", async (req, res, next) => {
     const userId = req.user!.id;
     const task = await projectsDb.task.findUnique({
       where: { id: req.params.id },
-      include: TASK_INCLUDE,
+      include: TASK_INCLUDE_WITH_CHILDREN,
     });
     if (!task) {
       res.status(404).json({ error: "Task not found" });

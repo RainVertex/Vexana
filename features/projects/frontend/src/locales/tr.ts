@@ -81,6 +81,7 @@ export const tr: ProjectsResources = {
     assignees: "Atananlar",
     labels: "Etiketler",
     comments: "Yorumlar",
+    subtasks: "Alt Görevler",
     title: "Başlık",
     status: "Durum",
     stage: "Aşama",
@@ -98,6 +99,7 @@ export const tr: ProjectsResources = {
     noComments: "Henüz yorum yok.",
     noAssignees: "Henüz atanan yok.",
     noLabels: "Etiket yok.",
+    noSubtasks: "Henüz alt görev yok.",
     noTasksAssigned: "Size atanan görev yok.",
   },
   loading: {

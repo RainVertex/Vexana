@@ -21,7 +21,7 @@ export interface AgentJobDefinition {
   handler: (ctx: AgentJobContext) => Promise<void>;
 }
 
-const ENRICHER_AGENT_ID = "seed-agent-catalog-enricher";
+const ENRICHER_AGENT_ID = "catalog-enricher";
 const MAX_ATTEMPTS = 3;
 // Terminal tool-error codes: retrying won't help (the entity simply can't be filled via a repo PR).
 const SKIP_CODES = new Set(["no_repo", "no_installation", "not_github", "not_found"]);

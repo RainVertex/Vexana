@@ -39,6 +39,19 @@ async function runAgentForTask({
     select: { teamId: true },
   });
 
+  // The agent acts through its backing user. Grant that user WRITE on the project so its task tools
+  // (creating subtasks) pass the permission check. Create-only, so a manually set role is left alone.
+  await projectsDb.projectMember.upsert({
+    where: { projectId_userId: { projectId: task.project.id, userId: agentUserId } },
+    update: {},
+    create: {
+      projectId: task.project.id,
+      userId: agentUserId,
+      role: "WRITE",
+      addedByUserId: task.project.creatorUserId,
+    },
+  });
+
   const result = await runAgent(
     agent.id,
     {

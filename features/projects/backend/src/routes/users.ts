@@ -18,12 +18,20 @@ usersRoutes.get("/users/search", async (req, res, next) => {
     }
     const users = await projectsDb.user.findMany({
       where: {
-        // Agents are assignable like teammates (assigning one runs it on the task), so they surface here too.
-        userKind: { in: ["human", "agent"] },
+        // Humans plus only task-capable agents. The chat assistant and catalog enricher are not
+        // assignable to tasks, so the agent side filters on the backing agent's kind.
         OR: [
-          { displayName: { contains: q, mode: "insensitive" } },
-          { githubLogin: { contains: q, mode: "insensitive" } },
-          { email: { contains: q, mode: "insensitive" } },
+          { userKind: "human" },
+          { userKind: "agent", backedAgent: { kind: { in: ["task-planner"] } } },
+        ],
+        AND: [
+          {
+            OR: [
+              { displayName: { contains: q, mode: "insensitive" } },
+              { githubLogin: { contains: q, mode: "insensitive" } },
+              { email: { contains: q, mode: "insensitive" } },
+            ],
+          },
         ],
       },
       orderBy: { displayName: "asc" },

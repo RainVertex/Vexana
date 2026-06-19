@@ -334,6 +334,33 @@ export function TaskDetailPage() {
             className="w-full rounded-md border border-app-border bg-app-surface px-3 py-2 text-sm text-app-text placeholder:text-app-text-muted focus:outline-none focus:ring-2 focus:ring-app-primary disabled:opacity-70"
           />
 
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium text-app-text">{t("fields.subtasks")}</h3>
+            {(task?.children ?? []).length === 0 ? (
+              <p className="text-xs text-app-text-muted">{t("empty.noSubtasks")}</p>
+            ) : (
+              <ul className="space-y-1">
+                {(task?.children ?? []).map((child) => (
+                  <li key={child.id}>
+                    <Link
+                      to={`/tasks/${child.id}`}
+                      className="flex items-center gap-2 rounded-md border border-app-border bg-app-surface px-3 py-2 text-sm hover:bg-app-surface-hover"
+                    >
+                      <span className={child.done ? "text-green-400" : "text-app-text-muted"}>
+                        {child.done ? "✓" : "○"}
+                      </span>
+                      <span
+                        className={`text-app-text ${child.done ? "line-through opacity-70" : ""}`}
+                      >
+                        {child.title}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
           <div className="space-y-3">
             <h3 className="text-sm font-medium text-app-text">{t("fields.comments")}</h3>
             {comments.length === 0 && (

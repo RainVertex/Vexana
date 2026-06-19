@@ -48,7 +48,7 @@ Steps:
 Aim for at most 8 tool calls. Do not loop.`;
 
   await prisma.agent.upsert({
-    where: { id: "seed-agent-catalog-enricher" },
+    where: { id: "catalog-enricher" },
     update: {
       instructions: enricherInstructions,
       skillIds: ["skill-catalog-enrich"],
@@ -57,7 +57,7 @@ Aim for at most 8 tool calls. Do not loop.`;
       avatarUrl: "/agents/presets/catalog-enricher.svg",
     },
     create: {
-      id: "seed-agent-catalog-enricher",
+      id: "catalog-enricher",
       name: "Catalog Enricher",
       description: "Fills missing metadata on catalog entities by opening a pull request.",
       kind: "catalog-enrichment",
@@ -72,6 +72,7 @@ Aim for at most 8 tool calls. Do not loop.`;
   });
 
   await seedPlatformAssistant();
+  await seedTaskPlanner();
 
   // Backing User (userKind='agent') per agent so agents can be assigned to tasks and granted access like teammates. Idempotent; also backfills any agent created before the link existed.
   const allAgents = await prisma.agent.findMany({
@@ -126,6 +127,20 @@ async function seedSkills() {
       guidance:
         "Use to enrich a catalog entity by inspecting its repo and opening a catalog-info.yaml PR.",
       toolIds: ["catalog_lookup", "catalog_read_repo", "catalog_read_file", "catalog_open_yaml_pr"],
+    },
+    {
+      id: "skill-project-planning",
+      label: "Project planning",
+      description: "Break an assigned project task into concrete subtasks.",
+      guidance:
+        "When assigned a project task, first call projects_list_subtasks to see what already exists, then call projects_create_subtask once per concrete subtask so you do not duplicate.",
+      toolIds: [
+        "whoami",
+        "get_today",
+        "projects_create_subtask",
+        "projects_list_subtasks",
+        "projects_get_task",
+      ],
     },
   ];
 
@@ -186,7 +201,7 @@ Platform source code:
   source repository in Admin -> AI / Models.`;
 
   await prisma.agent.upsert({
-    where: { id: "seed-agent-assistant" },
+    where: { id: "platform-assistant" },
     update: {
       instructions,
       skillIds,
@@ -195,7 +210,7 @@ Platform source code:
       avatarUrl: "/agents/presets/platform-assistant.svg",
     },
     create: {
-      id: "seed-agent-assistant",
+      id: "platform-assistant",
       name: "Platform Assistant",
       description: "Interactive chatbot for the engineering platform.",
       kind: "platform-assistant",
@@ -206,6 +221,56 @@ Platform source code:
       maxToolCalls: 12,
       category: "Plan & Coordinate",
       avatarUrl: "/agents/presets/platform-assistant.svg",
+    },
+  });
+}
+
+// The task worker, kept separate from the chat assistant. It is the only agent assignable to project
+// tasks (the assignee picker filters on kind "task-planner"); when assigned it decomposes the task
+// into subtasks via the projects tools and reports a summary back as a comment.
+async function seedTaskPlanner() {
+  const instructions = `You are the Task Planner for the engineering platform.
+
+You are assigned to a project task. Your input is a JSON object with "task"
+(id, title, description) and "project" (id, title). Break that task into a
+small set of concrete, actionable subtasks.
+
+Tools execute on the server; you cannot ask anyone to run them. Emit the
+tool_calls yourself, never narrate that you will.
+
+Steps:
+- Call projects_list_subtasks with the task id first to see what already exists.
+  Do not recreate a subtask that is already there.
+- For each new subtask, call projects_create_subtask with parentTaskId set to
+  the task id, a short concrete title, and an optional one line description.
+- Keep the set focused, roughly five to eight subtasks. Split by real units of
+  work, not by ceremony.
+- When done, reply with one short paragraph that lists the subtasks you created.
+  That reply is posted as a comment on the task, so write it for a human reader.
+
+If the task is already fully broken down, create nothing and say so.`;
+
+  await prisma.agent.upsert({
+    where: { id: "task-planner" },
+    update: {
+      instructions,
+      skillIds: ["skill-project-planning"],
+      approvalMode: "auto",
+      category: "Plan & Coordinate",
+      avatarUrl: "/agents/presets/agent-planning.svg",
+    },
+    create: {
+      id: "task-planner",
+      name: "Task Planner",
+      description: "Breaks a project task into subtasks when assigned to it.",
+      kind: "task-planner",
+      modelId: "llmmodel_openai_o4_mini",
+      instructions,
+      skillIds: ["skill-project-planning"],
+      approvalMode: "auto",
+      maxToolCalls: 12,
+      category: "Plan & Coordinate",
+      avatarUrl: "/agents/presets/agent-planning.svg",
     },
   });
 }
