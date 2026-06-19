@@ -20,18 +20,18 @@ enum UserKind {
 }
 
 model User {
-  id                              String                  @id @default(cuid())
-  githubId                        String                  @unique
-  githubLogin                     String                  @unique
-  email                           String                  @unique
+  id                              String                   @id @default(cuid())
+  githubId                        String                   @unique
+  githubLogin                     String                   @unique
+  email                           String                   @unique
   displayName                     String
   avatarUrl                       String?
-  role                            UserRole                @default(member)
-  userKind                        UserKind                @default(human)
-  status                          String                  @default("active")
+  role                            UserRole                 @default(member)
+  userKind                        UserKind                 @default(human)
+  status                          String                   @default("active")
   lastLoginAt                     DateTime?
-  createdAt                       DateTime                @default(now())
-  updatedAt                       DateTime                @updatedAt
+  createdAt                       DateTime                 @default(now())
+  updatedAt                       DateTime                 @updatedAt
   sessions                        Session[]
   memberships                     TeamMembership[]
   auditEvents                     AuditEvent[]
@@ -44,28 +44,29 @@ model User {
   devDocStaleReports              DocStaleReport[]
   starredEntities                 StarredEntity[]
   notifications                   Notification[]
+  notificationPreferences         NotificationPreference[]
   webhookSubscriptions            WebhookSubscription[]
   pages                           Page[]
   onboardingTasks                 UserTask[]
   departmentMemberships           DepartmentMembership[]
-  templateAccessRequestsSubmitted TemplateAccessRequest[] @relation("TemplateAccessRequestRequester")
-  templateAccessRequestsReviewed  TemplateAccessRequest[] @relation("TemplateAccessRequestReviewer")
+  templateAccessRequestsSubmitted TemplateAccessRequest[]  @relation("TemplateAccessRequestRequester")
+  templateAccessRequestsReviewed  TemplateAccessRequest[]  @relation("TemplateAccessRequestReviewer")
   chatConversations               ChatConversation[]
   agentRuns                       AgentRun[]
   mcpOAuthTokens                  McpOAuthToken[]
   mcpOAuthFlows                   McpOAuthFlow[]
   jobRuns                         JobRun[]
-  backedAgent                     Agent?                  @relation("AgentBackingUser")
-  systemSettingsUpdated           SystemSetting[]         @relation("SystemSettingUpdatedBy")
-  providerCredentialsUpdated      ProviderCredential[]    @relation("ProviderCredentialUpdatedBy")
+  backedAgent                     Agent?                   @relation("AgentBackingUser")
+  systemSettingsUpdated           SystemSetting[]          @relation("SystemSettingUpdatedBy")
+  providerCredentialsUpdated      ProviderCredential[]     @relation("ProviderCredentialUpdatedBy")
   orgMemberships                  UserOrgMembership[]
-  createdProjects                 Project[]               @relation("ProjectCreator")
-  projectMemberships              ProjectMember[]         @relation("ProjectMemberUser")
-  projectMembershipsAdded         ProjectMember[]         @relation("ProjectMemberAddedBy")
-  createdTasks                    Task[]                  @relation("TaskCreator")
-  taskAssignments                 TaskAssignee[]          @relation("TaskAssigneeUser")
-  taskAssignmentsAdded            TaskAssignee[]          @relation("TaskAssigneeAddedBy")
-  taskComments                    TaskComment[]           @relation("TaskCommentAuthor")
+  createdProjects                 Project[]                @relation("ProjectCreator")
+  projectMemberships              ProjectMember[]          @relation("ProjectMemberUser")
+  projectMembershipsAdded         ProjectMember[]          @relation("ProjectMemberAddedBy")
+  createdTasks                    Task[]                   @relation("TaskCreator")
+  taskAssignments                 TaskAssignee[]           @relation("TaskAssigneeUser")
+  taskAssignmentsAdded            TaskAssignee[]           @relation("TaskAssigneeAddedBy")
+  taskComments                    TaskComment[]            @relation("TaskCommentAuthor")
 
   @@index([userKind])
 }

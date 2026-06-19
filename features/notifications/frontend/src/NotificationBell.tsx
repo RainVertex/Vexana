@@ -2,42 +2,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useNotificationsApi } from "./client";
+import { notificationHref, notificationSummary } from "./render";
 import { useTranslation } from "@internal/i18n";
 import type { NotificationDto } from "@feature/notifications-shared";
-import type { TFunction } from "i18next";
 
 const POLL_INTERVAL_MS = 30_000;
-
-function notificationHref(n: NotificationDto): string | null {
-  const p = n.payload as Record<string, unknown>;
-  if (typeof p.teamSlug === "string") return `/teams/${p.teamSlug}`;
-  if (n.kind.startsWith("projects.")) {
-    return typeof p.taskId === "string" ? `/tasks/${p.taskId}` : "/projects";
-  }
-  return null;
-}
-
-function notificationSummary(n: NotificationDto, t: TFunction): string {
-  switch (n.kind) {
-    case "team.member.added":
-      return t("bellSummary.memberAdded");
-    case "team.member.removed":
-      return t("bellSummary.memberRemoved");
-    case "projects.task.assigned": {
-      const p = n.payload as Record<string, unknown>;
-      const title = typeof p.taskTitle === "string" ? p.taskTitle : t("fallback.aTask");
-      return t("bellSummary.taskAssigned", { title });
-    }
-    case "projects.task.commentAdded": {
-      const p = n.payload as Record<string, unknown>;
-      const title = typeof p.taskTitle === "string" ? p.taskTitle : t("fallback.aTask");
-      const author = typeof p.authorName === "string" ? p.authorName : t("fallback.someone");
-      return t("bellSummary.taskCommented", { author, title });
-    }
-    default:
-      return n.kind;
-  }
-}
 
 function BellIcon({ className }: { className?: string }) {
   return (

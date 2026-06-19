@@ -5,8 +5,9 @@ import { PageLayout } from "@internal/shared-ui";
 import { useWebhooksApi } from "./client";
 import { useTranslation } from "@internal/i18n";
 import type { WebhookSubscriptionDto } from "@feature/webhooks-shared";
+import { NOTIFICATION_KINDS } from "@feature/notifications-shared";
 
-const KNOWN_EVENT_KINDS = ["team.member.added", "team.member.removed", "webhook.ping"];
+const KNOWN_EVENT_KINDS = [...NOTIFICATION_KINDS, "webhook.ping"];
 
 interface WebhookSettingsPageProps {
   scope?: "user" | "team";

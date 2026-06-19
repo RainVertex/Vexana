@@ -1,5 +1,12 @@
 export { projectsRouter } from "./router";
 export {
+  getProjectsJobs,
+  dueSoonReminderJob,
+  type ProjectsJobContext,
+  type ProjectsJobDefinition,
+  type ProjectsJobLogger,
+} from "./jobs";
+export {
   provisionProjectForEntity,
   provisionProjectsForInstallation,
   reconcileProjectMembersForInstallation,

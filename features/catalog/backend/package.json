@@ -19,6 +19,7 @@
     "@feature/devdocs-shared": "0.1.0",
     "@feature/dora-metrics-shared": "0.1.0",
     "@feature/integrations-backend": "0.1.0",
+    "@feature/notifications-backend": "0.1.0",
     "@feature/projects-backend": "0.1.0",
     "@feature/scorecards-shared": "0.1.0",
     "@feature/search-shared": "0.1.0",

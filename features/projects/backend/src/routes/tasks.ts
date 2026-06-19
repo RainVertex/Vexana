@@ -3,7 +3,13 @@ import { projectsDb } from "@internal/db";
 import { addAssigneeSchema, attachLabelSchema, createTaskSchema, updateTaskSchema } from "../zod";
 import { meetsLevel, resolveAccess } from "../services/permissions";
 import { taskDto, userSummary } from "../services/dto";
-import { notifyTaskAssigned } from "../services/notifications";
+import {
+  notifyTaskAssigned,
+  notifyTaskUnassigned,
+  notifyTaskUpdated,
+  taskNotificationRecipients,
+  type TaskChanges,
+} from "../services/notifications";
 import { triggerAgentRunForTask } from "../services/agentRuns";
 
 export const tasksRoutes: Router = Router();
@@ -104,7 +110,17 @@ tasksRoutes.patch("/tasks/:id", async (req, res, next) => {
     const userId = req.user!.id;
     const existing = await projectsDb.task.findUnique({
       where: { id: req.params.id },
-      select: { id: true, projectId: true },
+      select: {
+        id: true,
+        projectId: true,
+        title: true,
+        done: true,
+        priority: true,
+        dueDate: true,
+        bucketId: true,
+        assignees: { select: { userId: true } },
+        project: { select: { id: true, title: true, creatorUserId: true } },
+      },
     });
     if (!existing) {
       res.status(404).json({ error: "Task not found" });
@@ -130,28 +146,78 @@ tasksRoutes.patch("/tasks/:id", async (req, res, next) => {
         return;
       }
     }
-    const updated = await projectsDb.task.update({
-      where: { id: req.params.id },
-      data: {
-        ...(input.title !== undefined ? { title: input.title } : {}),
-        ...(input.description !== undefined ? { description: input.description } : {}),
-        ...(input.done !== undefined ? { done: input.done } : {}),
-        ...(input.priority !== undefined ? { priority: input.priority } : {}),
-        ...(input.dueDate !== undefined ? { dueDate: parseDate(input.dueDate) } : {}),
-        ...(input.startDate !== undefined ? { startDate: parseDate(input.startDate) } : {}),
-        ...(input.endDate !== undefined ? { endDate: parseDate(input.endDate) } : {}),
-        ...(input.percentDone !== undefined ? { percentDone: input.percentDone } : {}),
-        ...(input.isFavorite !== undefined ? { isFavorite: input.isFavorite } : {}),
-        ...(input.bucketId !== undefined ? { bucketId: input.bucketId } : {}),
-        ...(input.position !== undefined ? { position: input.position } : {}),
-      },
-      include: TASK_INCLUDE,
+
+    const changes = diffTaskChanges(existing, input);
+
+    const updated = await projectsDb.$transaction(async (tx) => {
+      const next = await tx.task.update({
+        where: { id: req.params.id },
+        data: {
+          ...(input.title !== undefined ? { title: input.title } : {}),
+          ...(input.description !== undefined ? { description: input.description } : {}),
+          ...(input.done !== undefined ? { done: input.done } : {}),
+          ...(input.priority !== undefined ? { priority: input.priority } : {}),
+          ...(input.dueDate !== undefined ? { dueDate: parseDate(input.dueDate) } : {}),
+          // A moved deadline re-arms the due-soon reminder.
+          ...(changes.dueDate ? { dueReminderSentAt: null } : {}),
+          ...(input.startDate !== undefined ? { startDate: parseDate(input.startDate) } : {}),
+          ...(input.endDate !== undefined ? { endDate: parseDate(input.endDate) } : {}),
+          ...(input.percentDone !== undefined ? { percentDone: input.percentDone } : {}),
+          ...(input.isFavorite !== undefined ? { isFavorite: input.isFavorite } : {}),
+          ...(input.bucketId !== undefined ? { bucketId: input.bucketId } : {}),
+          ...(input.position !== undefined ? { position: input.position } : {}),
+        },
+        include: TASK_INCLUDE,
+      });
+
+      const recipients = taskNotificationRecipients(existing, { excludeUserId: userId });
+      if (Object.keys(changes).length > 0 && recipients.length > 0) {
+        await notifyTaskUpdated(tx, {
+          taskId: next.id,
+          taskTitle: next.title,
+          projectId: existing.project.id,
+          projectTitle: existing.project.title,
+          changes,
+          recipientUserIds: recipients,
+        });
+      }
+      return next;
     });
     res.json(taskDto(updated));
   } catch (err) {
     next(err);
   }
 });
+
+interface TaskFieldSnapshot {
+  done: boolean;
+  priority: number;
+  dueDate: Date | null;
+  bucketId: string | null;
+}
+
+function diffTaskChanges(
+  before: TaskFieldSnapshot,
+  input: ReturnType<typeof updateTaskSchema.parse>,
+): TaskChanges {
+  const changes: TaskChanges = {};
+  if (input.done !== undefined && input.done !== before.done) {
+    changes.done = { from: before.done, to: input.done };
+  }
+  if (input.priority !== undefined && input.priority !== before.priority) {
+    changes.priority = { from: before.priority, to: input.priority };
+  }
+  if (input.bucketId !== undefined && input.bucketId !== before.bucketId) {
+    changes.bucket = { from: before.bucketId, to: input.bucketId };
+  }
+  if (input.dueDate !== undefined) {
+    const from = before.dueDate ? before.dueDate.toISOString() : null;
+    const parsed = parseDate(input.dueDate);
+    const to = parsed ? parsed.toISOString() : null;
+    if (from !== to) changes.dueDate = { from, to };
+  }
+  return changes;
+}
 
 tasksRoutes.delete("/tasks/:id", async (req, res, next) => {
   try {
@@ -244,7 +310,12 @@ tasksRoutes.delete("/tasks/:id/assignees/:userId", async (req, res, next) => {
     const actor = req.user!.id;
     const task = await projectsDb.task.findUnique({
       where: { id: req.params.id },
-      select: { id: true, projectId: true },
+      select: {
+        id: true,
+        projectId: true,
+        title: true,
+        project: { select: { id: true, title: true } },
+      },
     });
     if (!task) {
       res.status(404).json({ error: "Task not found" });
@@ -259,8 +330,19 @@ tasksRoutes.delete("/tasks/:id/assignees/:userId", async (req, res, next) => {
       res.status(403).json({ error: "Write permission required" });
       return;
     }
-    await projectsDb.taskAssignee.deleteMany({
-      where: { taskId: req.params.id, userId: req.params.userId },
+    await projectsDb.$transaction(async (tx) => {
+      const removed = await tx.taskAssignee.deleteMany({
+        where: { taskId: req.params.id, userId: req.params.userId },
+      });
+      if (removed.count > 0 && req.params.userId !== actor) {
+        await notifyTaskUnassigned(tx, {
+          taskId: task.id,
+          taskTitle: task.title,
+          projectId: task.project.id,
+          projectTitle: task.project.title,
+          recipientUserId: req.params.userId,
+        });
+      }
     });
     res.status(204).end();
   } catch (err) {

@@ -46,22 +46,22 @@ model ProviderCredential {
 // identifier sent to the upstream API (e.g. "qwen3:8b",
 // "claude-sonnet-4-6"). costPer1k* is null for self-hosted models.
 model LlmModel {
-  id             String      @id @default(cuid())
-  slug           String      @unique
-  displayName    String
-  providerId     String
-  modelName      String
-  contextWindow  Int
-  supportsTools  Boolean     @default(true)
-  supportsVision Boolean     @default(false)
-  supportsReasoning Boolean  @default(false)
-  costPer1kIn    Decimal?    @db.Decimal(10, 6)
-  costPer1kOut   Decimal?    @db.Decimal(10, 6)
-  enabled        Boolean     @default(true)
-  provider       LlmProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
-  agents         Agent[]
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
+  id                String      @id @default(cuid())
+  slug              String      @unique
+  displayName       String
+  providerId        String
+  modelName         String
+  contextWindow     Int
+  supportsTools     Boolean     @default(true)
+  supportsVision    Boolean     @default(false)
+  supportsReasoning Boolean     @default(false)
+  costPer1kIn       Decimal?    @db.Decimal(10, 6)
+  costPer1kOut      Decimal?    @db.Decimal(10, 6)
+  enabled           Boolean     @default(true)
+  provider          LlmProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  agents            Agent[]
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
 
   @@index([providerId])
 }
@@ -177,7 +177,7 @@ model McpOAuthFlow {
 }
 
 model AgentRun {
-  id             String            @id @default(cuid())
+  id             String      @id @default(cuid())
   agentId        String
   userId         String?
   trigger        String?
@@ -189,15 +189,15 @@ model AgentRun {
   error          String?
   tokensInput    Int?
   tokensOutput   Int?
-  costUsd        Decimal?          @db.Decimal(10, 6)
-  containsWrites Boolean           @default(false)
-  startedAt      DateTime          @default(now())
+  costUsd        Decimal?    @db.Decimal(10, 6)
+  containsWrites Boolean     @default(false)
+  startedAt      DateTime    @default(now())
   finishedAt     DateTime?
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  agent          Agent             @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  user           User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
-  task           Task?             @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  agent          Agent       @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  user           User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  task           Task?       @relation(fields: [taskId], references: [id], onDelete: SetNull)
 
   @@index([agentId])
   @@index([status])

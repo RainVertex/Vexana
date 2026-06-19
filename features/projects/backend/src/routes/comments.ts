@@ -3,7 +3,11 @@ import { projectsDb } from "@internal/db";
 import { createCommentSchema } from "../zod";
 import { meetsLevel, resolveAccess } from "../services/permissions";
 import { commentDto } from "../services/dto";
-import { notifyTaskCommented } from "../services/notifications";
+import {
+  notifyTaskCommented,
+  notifyTaskMentioned,
+  taskNotificationRecipients,
+} from "../services/notifications";
 
 export const commentsRoutes: Router = Router();
 
@@ -67,19 +71,24 @@ commentsRoutes.post("/tasks/:id/comments", async (req, res, next) => {
       include: { author: true },
     });
 
-    const recipientIds = new Set<string>([
-      ...(task.project.creatorUserId ? [task.project.creatorUserId] : []),
-      ...task.assignees.map((a) => a.userId),
-    ]);
-    await notifyTaskCommented({
+    const mentioned = await resolveMentions(input.body, task.projectId, userId);
+    const taskRef = {
       taskId: task.id,
       taskTitle: task.title,
       projectId: task.project.id,
       projectTitle: task.project.title,
-      authorUserId: userId,
       authorName: created.author?.displayName ?? "",
       bodySnippet: input.body.slice(0, 200),
-      recipientUserIds: Array.from(recipientIds),
+    };
+    // A mentioned user gets the mention, never also the generic comment notification.
+    const commentRecipients = taskNotificationRecipients(task, { excludeUserId: userId }).filter(
+      (id) => !mentioned.includes(id),
+    );
+    await notifyTaskMentioned({ ...taskRef, recipientUserIds: mentioned });
+    await notifyTaskCommented({
+      ...taskRef,
+      authorUserId: userId,
+      recipientUserIds: commentRecipients,
     });
 
     res.status(201).json(commentDto(created));
@@ -87,3 +96,21 @@ commentsRoutes.post("/tasks/:id/comments", async (req, res, next) => {
     next(err);
   }
 });
+
+// Resolves @login tokens to user ids, keeping only users who can actually see the project and never the author.
+async function resolveMentions(
+  body: string,
+  projectId: string,
+  authorUserId: string,
+): Promise<string[]> {
+  const logins = [...new Set([...body.matchAll(/@([a-zA-Z0-9-]+)/g)].map((m) => m[1]))];
+  if (logins.length === 0) return [];
+  const candidates = await projectsDb.user.findMany({
+    where: { githubLogin: { in: logins } },
+    select: { id: true },
+  });
+  const resolved = await Promise.all(
+    candidates.map(async (c) => ((await resolveAccess(c.id, projectId)) ? c.id : null)),
+  );
+  return resolved.filter((id): id is string => id !== null && id !== authorUserId);
+}

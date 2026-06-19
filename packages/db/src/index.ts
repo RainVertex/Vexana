@@ -104,7 +104,12 @@ export const scorecardDb = prisma as Pick<
 
 export const notificationsDb = prisma as Pick<
   PrismaClient,
-  CoreModel | "notification" | "webhookSubscription" | "webhookDelivery" | Ops
+  | CoreModel
+  | "notification"
+  | "notificationPreference"
+  | "webhookSubscription"
+  | "webhookDelivery"
+  | Ops
 >;
 
 export const pagesDb = prisma as Pick<PrismaClient, CoreModel | "page" | Ops>;

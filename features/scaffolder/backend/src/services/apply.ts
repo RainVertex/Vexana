@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { prisma } from "@internal/db";
+import { notify } from "@feature/notifications-backend/contract";
 import {
   acquireSandbox,
   createRedactor,
@@ -158,6 +159,24 @@ export async function applyPlan(input: ApplyInput): Promise<ApplyResult> {
   });
 
   if (callerSignal) callerSignal.removeEventListener("abort", onAbort);
+
+  // A dry run is a preview, not a real apply, so it never notifies.
+  if (!dryRun) {
+    const succeeded = result.status === "succeeded";
+    await prisma.$transaction((tx) =>
+      notify(tx, {
+        recipientUserId: triggeredByUserId,
+        kind: succeeded ? "scaffolder.run.succeeded" : "scaffolder.run.failed",
+        payload: {
+          taskId,
+          templateId: plan.templateId,
+          target: plan.target,
+          status: result.status,
+          error: result.error ?? null,
+        },
+      }),
+    );
+  }
 
   try {
     await lock.release();

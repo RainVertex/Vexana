@@ -7,6 +7,7 @@ import {
   type CatalogEntitySource,
   type Lifecycle,
 } from "@internal/db";
+import { notify } from "@feature/notifications-backend/contract";
 import { evaluateScorecardsForEntity } from "./scorecards/evaluator";
 import { syncDevDocsForEntity } from "./devdocs/sync";
 
@@ -151,11 +152,22 @@ export async function registerCatalogEntity(
     });
     if (input.ownerTeamIds !== undefined) {
       const desired = input.ownerTeamIds ?? [];
+      const before = existing.owners.map((o) => o.teamId);
+      const removed = before.filter((id) => !desired.includes(id));
+      const added = desired.filter((id) => !before.includes(id));
       await tx.catalogEntityOwner.deleteMany({ where: { entityId: existing.id } });
       if (desired.length > 0) {
         await tx.catalogEntityOwner.createMany({
           data: desired.map((teamId) => ({ entityId: existing.id, teamId })),
           skipDuplicates: true,
+        });
+      }
+      if (removed.length > 0 || added.length > 0) {
+        await notifyCatalogOwnershipChanged(tx, {
+          entityId: existing.id,
+          entityName: existing.name,
+          removedTeamIds: removed,
+          addedTeamIds: added,
         });
       }
     }
@@ -164,6 +176,32 @@ export async function registerCatalogEntity(
   fireScorecardEvaluation(existing.id);
   fireDevDocsSync(existing.id);
   return { entityId: existing.id, action: "updated", before: existing, after: updated };
+}
+
+// System event with no actor, so every member of a team gaining or losing ownership is notified.
+async function notifyCatalogOwnershipChanged(
+  tx: Prisma.TransactionClient,
+  args: { entityId: string; entityName: string; removedTeamIds: string[]; addedTeamIds: string[] },
+): Promise<void> {
+  const teamIds = [...new Set([...args.removedTeamIds, ...args.addedTeamIds])];
+  if (teamIds.length === 0) return;
+  const memberships = await tx.teamMembership.findMany({
+    where: { teamId: { in: teamIds } },
+    select: { userId: true },
+  });
+  const recipients = new Set(memberships.map((m) => m.userId));
+  for (const recipientUserId of recipients) {
+    await notify(tx, {
+      recipientUserId,
+      kind: "catalog.entity.ownershipChanged",
+      payload: {
+        entityId: args.entityId,
+        entityName: args.entityName,
+        removedTeamIds: args.removedTeamIds,
+        addedTeamIds: args.addedTeamIds,
+      },
+    });
+  }
 }
 
 async function findExisting(input: RegisterCatalogEntityInput, opts: RegisterCatalogEntityOptions) {

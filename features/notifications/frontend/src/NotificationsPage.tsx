@@ -1,33 +1,61 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { PageLayout } from "@internal/shared-ui";
 import { useNotificationsApi } from "./client";
+import { notificationHref, notificationSummary } from "./render";
 import { useTranslation } from "@internal/i18n";
-import type { NotificationDto } from "@feature/notifications-shared";
-import type { TFunction } from "i18next";
+import type { NotificationDto, NotificationPreferenceDto } from "@feature/notifications-shared";
 
-function summary(n: NotificationDto, t: TFunction): string {
-  switch (n.kind) {
-    case "team.member.added":
-      return t("summary.memberAdded");
-    case "team.member.removed":
-      return t("summary.memberRemoved");
-    case "projects.task.assigned": {
-      const p = n.payload as Record<string, unknown>;
-      const title = typeof p.taskTitle === "string" ? p.taskTitle : t("fallback.aTask");
-      const project = typeof p.projectTitle === "string" ? p.projectTitle : null;
-      return project
-        ? t("summary.taskAssignedInProject", { title, project })
-        : t("summary.taskAssigned", { title });
+function PreferenceCenter() {
+  const api = useNotificationsApi();
+  const { t } = useTranslation("notifications");
+  const [prefs, setPrefs] = useState<NotificationPreferenceDto[] | null>(null);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const res = await api.preferences();
+        setPrefs(res.items);
+      } catch {
+        setPrefs([]);
+      }
+    })();
+  }, [api]);
+
+  async function toggle(category: NotificationPreferenceDto["category"], muted: boolean) {
+    setPrefs((prev) => prev?.map((p) => (p.category === category ? { ...p, muted } : p)) ?? null);
+    try {
+      await api.setPreference(category, muted);
+    } catch {
+      setPrefs(
+        (prev) => prev?.map((p) => (p.category === category ? { ...p, muted: !muted } : p)) ?? null,
+      );
     }
-    case "projects.task.commentAdded": {
-      const p = n.payload as Record<string, unknown>;
-      const title = typeof p.taskTitle === "string" ? p.taskTitle : t("fallback.aTask");
-      const author = typeof p.authorName === "string" ? p.authorName : t("fallback.someone");
-      return t("summary.taskCommented", { author, title });
-    }
-    default:
-      return n.kind;
   }
+
+  if (!prefs) return null;
+
+  return (
+    <section className="mb-5 rounded-lg border border-app-border bg-app-surface p-4">
+      <h2 className="text-sm font-semibold text-app-text">{t("preferences.heading")}</h2>
+      <p className="mb-3 text-xs text-app-text-muted">{t("preferences.description")}</p>
+      <ul className="divide-y divide-app-border">
+        {prefs.map((p) => (
+          <li key={p.category} className="flex items-center justify-between gap-3 py-2">
+            <span className="text-sm text-app-text">{t(`category.${p.category}`)}</span>
+            <label className="inline-flex items-center gap-2 text-xs text-app-text-muted">
+              <input
+                type="checkbox"
+                checked={p.muted}
+                onChange={(e) => void toggle(p.category, e.target.checked)}
+              />
+              {t("preferences.mute")}
+            </label>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
 }
 
 export function NotificationsPage() {
@@ -74,6 +102,7 @@ export function NotificationsPage() {
         </button>
       }
     >
+      <PreferenceCenter />
       {error && <p className="mb-3 text-sm text-app-danger">{error}</p>}
       <label className="mb-3 inline-flex items-center gap-2 text-xs text-app-text-muted">
         <input
@@ -91,6 +120,18 @@ export function NotificationsPage() {
         <ul className="divide-y divide-app-border rounded-lg border border-app-border bg-app-surface">
           {items.map((n) => {
             const isUnread = !n.readAt;
+            const href = notificationHref(n);
+            const body = (
+              <div className="min-w-0">
+                <div className={isUnread ? "font-medium text-app-text" : "text-app-text-muted"}>
+                  {notificationSummary(n, t)}
+                  {isUnread && <span className="sr-only"> {t("page.unreadSrOnly")}</span>}
+                </div>
+                <div className="text-xs text-app-text-muted">
+                  {new Date(n.createdAt).toLocaleString()}
+                </div>
+              </div>
+            );
             return (
               <li
                 key={n.id}
@@ -105,18 +146,13 @@ export function NotificationsPage() {
                       isUnread ? "bg-app-primary" : "bg-transparent"
                     }`}
                   />
-                  <div className="min-w-0">
-                    <div className={isUnread ? "font-medium text-app-text" : "text-app-text-muted"}>
-                      {summary(n, t)}
-                      {isUnread && <span className="sr-only"> {t("page.unreadSrOnly")}</span>}
-                    </div>
-                    <div className="text-xs text-app-text-muted">
-                      {new Date(n.createdAt).toLocaleString()}
-                    </div>
-                    <pre className="mt-1 max-h-32 overflow-auto rounded bg-app-surface-hover p-2 text-[10px] text-app-text-muted">
-                      {JSON.stringify(n.payload, null, 2)}
-                    </pre>
-                  </div>
+                  {href ? (
+                    <Link to={href} className="min-w-0 hover:underline">
+                      {body}
+                    </Link>
+                  ) : (
+                    body
+                  )}
                 </div>
                 {isUnread && (
                   <button

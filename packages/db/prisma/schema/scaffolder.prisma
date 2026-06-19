@@ -21,27 +21,27 @@ enum ScaffoldDriftStatus {
 }
 
 model ScaffoldPlan {
-  id               String           @id @default(cuid())
-  templateId       String
-  templateVersion  String
-  templateHash     String
-  params           Json
-  paramsHash       String
-  mode             ScaffoldPlanMode
-  target           String           @default("worktree")
-  capabilities     String[]
-  irreversible     Boolean          @default(false)
-  bindingId        String?
-  artifact         Json
-  createdByUserId  String
-  actorKind        String           @default("human")
-  requestId        String?
-  createdAt        DateTime         @default(now())
-  expiresAt        DateTime
-  appliedTaskId    String?          @unique
-  binding          ScaffoldBinding? @relation(fields: [bindingId], references: [id], onDelete: SetNull)
-  task             ScaffoldTask?    @relation(name: "PlanApply", fields: [appliedTaskId], references: [id], onDelete: SetNull)
-  createdBy        User             @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+  id              String           @id @default(cuid())
+  templateId      String
+  templateVersion String
+  templateHash    String
+  params          Json
+  paramsHash      String
+  mode            ScaffoldPlanMode
+  target          String           @default("worktree")
+  capabilities    String[]
+  irreversible    Boolean          @default(false)
+  bindingId       String?
+  artifact        Json
+  createdByUserId String
+  actorKind       String           @default("human")
+  requestId       String?
+  createdAt       DateTime         @default(now())
+  expiresAt       DateTime
+  appliedTaskId   String?          @unique
+  binding         ScaffoldBinding? @relation(fields: [bindingId], references: [id], onDelete: SetNull)
+  task            ScaffoldTask?    @relation(name: "PlanApply", fields: [appliedTaskId], references: [id], onDelete: SetNull)
+  createdBy       User             @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
 
   @@index([templateId, createdAt])
   @@index([createdByUserId])

@@ -4,15 +4,15 @@ enum ScorecardTierStyle {
 }
 
 model Scorecard {
-  id          String              @id @default(cuid())
-  slug        String              @unique
+  id          String                    @id @default(cuid())
+  slug        String                    @unique
   name        String
   description String?
-  appliesTo   CatalogEntityKind[] @default([])
+  appliesTo   CatalogEntityKind[]       @default([])
   tierStyle   ScorecardTierStyle
-  enabled     Boolean             @default(true)
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
+  enabled     Boolean                   @default(true)
+  createdAt   DateTime                  @default(now())
+  updatedAt   DateTime                  @updatedAt
   rules       ScorecardRule[]
   results     ScorecardResult[]
   snapshots   ScorecardEntitySnapshot[]

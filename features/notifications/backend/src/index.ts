@@ -1,7 +1,12 @@
 // Notifications REST API plus the transactional notify() fan-out helper.
 import { Router } from "express";
 import { Prisma, prisma } from "@internal/db";
-import type { NotificationDto, NotificationKind } from "@feature/notifications-shared";
+import type {
+  NotificationCategory,
+  NotificationDto,
+  NotificationKind,
+} from "@feature/notifications-shared";
+import { NOTIFICATION_CATEGORIES, categoryForKind } from "@feature/notifications-shared";
 
 export const notificationsRouter: Router = Router();
 
@@ -95,6 +100,52 @@ notificationsRouter.post("/read-all", async (req, res, next) => {
   }
 });
 
+// Returns every category with its muted flag, defaulting an unset category to not-muted.
+notificationsRouter.get("/preferences", async (req, res, next) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: "Not authenticated" });
+      return;
+    }
+    const rows = await prisma.notificationPreference.findMany({
+      where: { userId: req.user.id },
+      select: { category: true, muted: true },
+    });
+    const muted = new Map(rows.map((r) => [r.category, r.muted]));
+    res.json({
+      items: NOTIFICATION_CATEGORIES.map((category) => ({
+        category,
+        muted: muted.get(category) ?? false,
+      })),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+notificationsRouter.put("/preferences", async (req, res, next) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: "Not authenticated" });
+      return;
+    }
+    const category = req.body?.category as NotificationCategory;
+    const muted = req.body?.muted;
+    if (!NOTIFICATION_CATEGORIES.includes(category) || typeof muted !== "boolean") {
+      res.status(400).json({ error: "Invalid category or muted flag" });
+      return;
+    }
+    await prisma.notificationPreference.upsert({
+      where: { userId_category: { userId: req.user.id, category } },
+      create: { userId: req.user.id, category, muted },
+      update: { muted },
+    });
+    res.json({ category, muted });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Creates a notification and fans out matching webhook deliveries; must run in a tx.
 export async function notify(
   tx: Prisma.TransactionClient,
@@ -106,13 +157,23 @@ export async function notify(
     teamId?: string | null;
   },
 ): Promise<void> {
-  await tx.notification.create({
-    data: {
-      recipientUserId: args.recipientUserId,
-      kind: args.kind,
-      payload: args.payload as Prisma.InputJsonValue,
+  // The in-app inbox row respects the recipient's mute. Webhook fan-out below does not, since a
+  // webhook subscription is an explicit integration contract, not the user's personal inbox.
+  const pref = await tx.notificationPreference.findUnique({
+    where: {
+      userId_category: { userId: args.recipientUserId, category: categoryForKind(args.kind) },
     },
+    select: { muted: true },
   });
+  if (!pref?.muted) {
+    await tx.notification.create({
+      data: {
+        recipientUserId: args.recipientUserId,
+        kind: args.kind,
+        payload: args.payload as Prisma.InputJsonValue,
+      },
+    });
+  }
 
   const subs = await tx.webhookSubscription.findMany({
     where: {

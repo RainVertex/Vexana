@@ -29,6 +29,23 @@ const slugSchema = z
   .max(64)
   .regex(/^[a-z0-9][a-z0-9-]*$/, "slug must be lowercase, digits and dashes");
 
+// Fans a team-scoped notification out to a set of members, skipping the actor and any duplicates.
+async function notifyTeamMembers(
+  tx: Prisma.TransactionClient,
+  recipientUserIds: Iterable<string>,
+  excludeUserId: string | undefined,
+  kind: Parameters<typeof notify>[1]["kind"],
+  payload: Record<string, unknown>,
+  teamId: string,
+): Promise<void> {
+  const seen = new Set<string>();
+  for (const id of recipientUserIds) {
+    if (id === excludeUserId || seen.has(id)) continue;
+    seen.add(id);
+    await notify(tx, { recipientUserId: id, kind, payload, teamId });
+  }
+}
+
 teamsRouter.get("/", async (req, res, next) => {
   try {
     const includeDeleted = req.query.includeDeleted === "true" && req.user?.role === "admin";
@@ -197,6 +214,14 @@ teamsRouter.patch("/:slug", async (req, res, next) => {
           },
           { kind: "team", id: team.id },
         );
+        await notifyTeamMembers(
+          tx,
+          team.memberships.map((m) => m.userId),
+          req.user?.id,
+          "team.updated",
+          { teamId: team.id, teamSlug: updated.slug, teamName: updated.name },
+          team.id,
+        );
       });
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
@@ -247,6 +272,15 @@ teamsRouter.delete("/:slug", async (req, res, next) => {
         "team.soft_deleted",
         { teamId: team.id, slug: team.slug },
         { kind: "team", id: team.id },
+      );
+      // Members were loaded before the soft-delete, so the audience is captured.
+      await notifyTeamMembers(
+        tx,
+        team.memberships.map((m) => m.userId),
+        req.user?.id,
+        "team.deleted",
+        { teamId: team.id, teamSlug: team.slug, teamName: team.name },
+        team.id,
       );
     });
     res.status(204).end();
@@ -343,6 +377,19 @@ teamsRouter.post("/:slug/transfer-ownership", async (req, res, next) => {
           entityCount: fromOwnerships.length,
         },
         { kind: "team", id: fromTeam.id },
+      );
+      await notifyTeamMembers(
+        tx,
+        [...fromTeam.memberships, ...toTeam.memberships].map((m) => m.userId),
+        req.user?.id,
+        "team.ownershipTransferred",
+        {
+          teamSlug: toTeam.slug,
+          fromTeamName: fromTeam.name,
+          toTeamName: toTeam.name,
+          entityCount: fromOwnerships.length,
+        },
+        toTeam.id,
       );
 
       return { entityCount: fromOwnerships.length };
@@ -492,6 +539,19 @@ teamsRouter.patch("/:slug/members/:userId", async (req, res, next) => {
         },
         { kind: "team", id: team.id },
       );
+      if (req.params.userId !== req.user?.id) {
+        await notify(tx, {
+          recipientUserId: req.params.userId,
+          kind: "team.member.roleChanged",
+          payload: {
+            teamId: team.id,
+            teamSlug: team.slug,
+            before: member.role,
+            after: parsed.data.role,
+          },
+          teamId: team.id,
+        });
+      }
     });
 
     const fresh = await loadTeamBySlug(team.slug);

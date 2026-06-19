@@ -9,6 +9,11 @@ import {
 import { meetsLevel, numericToRole, resolveAccess, roleToNumeric } from "../services/permissions";
 import { projectDto, shareDto } from "../services/dto";
 import { createDefaultBuckets } from "../services/seed";
+import {
+  notifyProjectMemberAdded,
+  notifyProjectMemberPermissionChanged,
+  notifyProjectMemberRemoved,
+} from "../services/notifications";
 
 export const projectsRoutes: Router = Router();
 
@@ -191,16 +196,30 @@ projectsRoutes.post("/projects/:id/shares", async (req, res, next) => {
       return;
     }
     const role = numericToRole(input.right ?? 1);
-    const upserted = await projectsDb.projectMember.upsert({
-      where: { projectId_userId: { projectId: req.params.id, userId: target.id } },
-      create: {
-        projectId: req.params.id,
-        userId: target.id,
-        role,
-        addedByUserId: userId,
-      },
-      update: { role },
-      include: { user: { select: { id: true, githubLogin: true, displayName: true } } },
+    const upserted = await projectsDb.$transaction(async (tx) => {
+      const member = await tx.projectMember.upsert({
+        where: { projectId_userId: { projectId: req.params.id, userId: target.id } },
+        create: {
+          projectId: req.params.id,
+          userId: target.id,
+          role,
+          addedByUserId: userId,
+        },
+        update: { role },
+        include: {
+          user: { select: { id: true, githubLogin: true, displayName: true } },
+          project: { select: { title: true } },
+        },
+      });
+      if (target.id !== userId) {
+        await notifyProjectMemberAdded(tx, {
+          projectId: req.params.id,
+          projectTitle: member.project.title,
+          recipientUserId: target.id,
+          role,
+        });
+      }
+      return member;
     });
     res.status(201).json(shareDto(upserted));
   } catch (err) {
@@ -228,10 +247,24 @@ projectsRoutes.patch("/projects/:id/shares/:username", async (req, res, next) =>
       res.status(404).json({ error: "User not found" });
       return;
     }
-    const updated = await projectsDb.projectMember.update({
-      where: { projectId_userId: { projectId: req.params.id, userId: target.id } },
-      data: { role: numericToRole(input.right) },
-      include: { user: { select: { id: true, githubLogin: true, displayName: true } } },
+    const updated = await projectsDb.$transaction(async (tx) => {
+      const member = await tx.projectMember.update({
+        where: { projectId_userId: { projectId: req.params.id, userId: target.id } },
+        data: { role: numericToRole(input.right) },
+        include: {
+          user: { select: { id: true, githubLogin: true, displayName: true } },
+          project: { select: { title: true } },
+        },
+      });
+      if (target.id !== userId) {
+        await notifyProjectMemberPermissionChanged(tx, {
+          projectId: req.params.id,
+          projectTitle: member.project.title,
+          recipientUserId: target.id,
+          role: member.role,
+        });
+      }
+      return member;
     });
     res.json(shareDto(updated));
   } catch (err) {
@@ -258,8 +291,21 @@ projectsRoutes.delete("/projects/:id/shares/:username", async (req, res, next) =
       res.status(404).json({ error: "User not found" });
       return;
     }
-    await projectsDb.projectMember.deleteMany({
-      where: { projectId: req.params.id, userId: target.id },
+    const project = await projectsDb.project.findUnique({
+      where: { id: req.params.id },
+      select: { title: true },
+    });
+    await projectsDb.$transaction(async (tx) => {
+      const removed = await tx.projectMember.deleteMany({
+        where: { projectId: req.params.id, userId: target.id },
+      });
+      if (removed.count > 0 && target.id !== userId && project) {
+        await notifyProjectMemberRemoved(tx, {
+          projectId: req.params.id,
+          projectTitle: project.title,
+          recipientUserId: target.id,
+        });
+      }
     });
     res.status(204).end();
   } catch (err) {

@@ -3,6 +3,7 @@ import { getScaffolderJobs } from "@feature/scaffolder-backend";
 import { getAgentJobs } from "@feature/agents-backend";
 import { getCatalogJobs } from "@feature/catalog-backend";
 import { getObservabilityJobs } from "@feature/observability-backend";
+import { getProjectsJobs } from "@feature/projects-backend";
 import { getTeamJobs } from "@feature/teams-backend";
 import { getWebhookJobs } from "@feature/webhooks-backend";
 import { registerJob } from "./registry";
@@ -24,6 +25,9 @@ export function registerAllJobs(): void {
     registerJob(def);
   }
   for (const def of getObservabilityJobs()) {
+    registerJob(def);
+  }
+  for (const def of getProjectsJobs()) {
     registerJob(def);
   }
   for (const def of getTeamJobs()) {

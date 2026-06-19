@@ -69,32 +69,33 @@ model Label {
 }
 
 model Task {
-  id              String         @id @default(cuid())
-  projectId       String
-  bucketId        String?
-  title           String
-  description     String?
-  done            Boolean        @default(false)
-  priority        Int            @default(0)
-  dueDate         DateTime?
-  startDate       DateTime?
-  endDate         DateTime?
-  percentDone     Float          @default(0)
-  isFavorite      Boolean        @default(false)
-  position        Float          @default(0)
-  parentTaskId    String?
-  createdByUserId String
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  project         Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  bucket          Bucket?        @relation(fields: [bucketId], references: [id], onDelete: SetNull)
-  parent          Task?          @relation("TaskSubtasks", fields: [parentTaskId], references: [id], onDelete: SetNull)
-  children        Task[]         @relation("TaskSubtasks")
-  creator         User           @relation("TaskCreator", fields: [createdByUserId], references: [id], onDelete: Cascade)
-  assignees       TaskAssignee[]
-  labels          TaskLabel[]
-  comments        TaskComment[]
-  agentRuns       AgentRun[]
+  id                String         @id @default(cuid())
+  projectId         String
+  bucketId          String?
+  title             String
+  description       String?
+  done              Boolean        @default(false)
+  priority          Int            @default(0)
+  dueDate           DateTime?
+  dueReminderSentAt DateTime?
+  startDate         DateTime?
+  endDate           DateTime?
+  percentDone       Float          @default(0)
+  isFavorite        Boolean        @default(false)
+  position          Float          @default(0)
+  parentTaskId      String?
+  createdByUserId   String
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  project           Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  bucket            Bucket?        @relation(fields: [bucketId], references: [id], onDelete: SetNull)
+  parent            Task?          @relation("TaskSubtasks", fields: [parentTaskId], references: [id], onDelete: SetNull)
+  children          Task[]         @relation("TaskSubtasks")
+  creator           User           @relation("TaskCreator", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  assignees         TaskAssignee[]
+  labels            TaskLabel[]
+  comments          TaskComment[]
+  agentRuns         AgentRun[]
 
   @@index([projectId, done])
   @@index([projectId, bucketId, position])
