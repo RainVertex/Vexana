@@ -19,6 +19,24 @@ export function ChatRoute() {
       .catch(() => setConfig({ ready: true, reason: null, visionReady: false }));
   }, [api]);
 
+  if (config && !config.ready && config.reason === "daily_cap_reached") {
+    return (
+      <PageLayout title="Assistant">
+        <div className="mx-auto max-w-md rounded-lg border border-app-border bg-app-surface p-6 text-center">
+          <p className="mb-2 text-sm font-medium text-app-text">
+            The assistant has reached its daily token cap.
+          </p>
+          <p className="text-sm text-app-text-muted">
+            The limit resets at 00:00 UTC.
+            {me.role === "admin"
+              ? " You can raise or remove the cap for its model in Admin -> AI / Models."
+              : " Please try again after it resets."}
+          </p>
+        </div>
+      </PageLayout>
+    );
+  }
+
   if (config && !config.ready) {
     return (
       <PageLayout title="Assistant">

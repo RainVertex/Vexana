@@ -45,6 +45,19 @@ export function AdminAiModelsPage() {
     }
   }
 
+  async function saveDailyCap(model: AdminAiModelRow, cap: number | null) {
+    setBusy(`cap:${model.id}`);
+    setError(null);
+    try {
+      await client.setModelDailyCap(model.id, cap);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save cap");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function saveKey(slug: string, apiKey: string) {
     setBusy(`key:${slug}`);
     setError(null);
@@ -101,6 +114,7 @@ export function AdminAiModelsPage() {
               provider={p}
               busy={busy}
               onToggle={toggleEnabled}
+              onSaveCap={saveDailyCap}
               onSaveKey={saveKey}
               onRemoveKey={removeKey}
             />
@@ -108,6 +122,48 @@ export function AdminAiModelsPage() {
         </div>
       )}
     </PageLayout>
+  );
+}
+
+// Per-model daily token cap (input+output, per UTC day). Empty input means no cap.
+function ModelCapEditor({
+  model,
+  busy,
+  onSave,
+}: {
+  model: AdminAiModelRow;
+  busy: boolean;
+  onSave: (cap: number | null) => void;
+}) {
+  const stored = model.dailyTokenCap?.toString() ?? "";
+  const [value, setValue] = useState(stored);
+  const trimmed = value.trim();
+  const parsed = trimmed === "" ? null : Number(trimmed);
+  const valid = parsed === null || (Number.isInteger(parsed) && parsed > 0);
+  const dirty = trimmed !== stored;
+
+  return (
+    <div className="flex items-center gap-1">
+      <input
+        type="number"
+        min={1}
+        step={1000}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder="no cap"
+        title="Daily token cap (input + output, per UTC day). Leave empty for no cap."
+        className="w-28 rounded-md border border-app-border bg-app-bg-sunken px-2 py-1 text-xs text-app-text focus:outline-none focus:ring-2 focus:ring-app-primary"
+      />
+      <span className="text-[10px] text-app-text-muted">tok/day</span>
+      <button
+        type="button"
+        disabled={!dirty || !valid || busy}
+        onClick={() => onSave(parsed)}
+        className="rounded-md border border-app-border bg-app-surface px-2 py-1 text-xs text-app-text hover:bg-app-surface-hover disabled:opacity-50"
+      >
+        Save
+      </button>
+    </div>
   );
 }
 
@@ -272,12 +328,14 @@ function ProviderCard({
   provider,
   busy,
   onToggle,
+  onSaveCap,
   onSaveKey,
   onRemoveKey,
 }: {
   provider: AdminAiProviderGroup;
   busy: string | null;
   onToggle: (m: AdminAiModelRow) => void;
+  onSaveCap: (m: AdminAiModelRow, cap: number | null) => void;
   onSaveKey: (slug: string, apiKey: string) => void;
   onRemoveKey: (slug: string) => void;
 }) {
@@ -334,6 +392,11 @@ function ProviderCard({
                 <div className="font-mono text-[11px] text-app-text-muted">{m.modelName}</div>
               </div>
               <div className="flex shrink-0 items-center gap-2">
+                <ModelCapEditor
+                  model={m}
+                  busy={busy === `cap:${m.id}`}
+                  onSave={(cap) => onSaveCap(m, cap)}
+                />
                 <button
                   type="button"
                   disabled={busy === m.id}

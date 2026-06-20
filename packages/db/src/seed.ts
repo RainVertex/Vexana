@@ -345,6 +345,7 @@ async function seedLlmProviders() {
     supportsReasoning: boolean;
     costPer1kIn: string | null;
     costPer1kOut: string | null;
+    dailyTokenCap?: number | null;
   }> = [
     {
       id: "llmmodel_qwen3_8b_local",
@@ -429,6 +430,7 @@ async function seedLlmProviders() {
       supportsReasoning: false,
       costPer1kIn: "0.0025",
       costPer1kOut: "0.01",
+      dailyTokenCap: 250_000,
     },
     {
       id: "llmmodel_openai_gpt_4o_mini",
@@ -443,6 +445,7 @@ async function seedLlmProviders() {
       supportsReasoning: false,
       costPer1kIn: "0.00015",
       costPer1kOut: "0.0006",
+      dailyTokenCap: 2_500_000,
     },
     {
       id: "llmmodel_openai_gpt_5_5",
@@ -471,6 +474,7 @@ async function seedLlmProviders() {
       supportsReasoning: true,
       costPer1kIn: "0.0025",
       costPer1kOut: "0.015",
+      dailyTokenCap: 250_000,
     },
     {
       id: "llmmodel_openai_gpt_5_4_mini",
@@ -485,6 +489,7 @@ async function seedLlmProviders() {
       supportsReasoning: true,
       costPer1kIn: "0.00075",
       costPer1kOut: "0.0045",
+      dailyTokenCap: 2_500_000,
     },
     {
       id: "llmmodel_openai_gpt_5_4_nano",
@@ -499,6 +504,7 @@ async function seedLlmProviders() {
       supportsReasoning: true,
       costPer1kIn: "0.0002",
       costPer1kOut: "0.00125",
+      dailyTokenCap: 2_500_000,
     },
     {
       id: "llmmodel_openai_o3",
@@ -513,6 +519,7 @@ async function seedLlmProviders() {
       supportsReasoning: true,
       costPer1kIn: "0.002",
       costPer1kOut: "0.008",
+      dailyTokenCap: 250_000,
     },
     {
       id: "llmmodel_openai_o4_mini",
@@ -527,6 +534,7 @@ async function seedLlmProviders() {
       supportsReasoning: true,
       costPer1kIn: "0.00055",
       costPer1kOut: "0.0022",
+      dailyTokenCap: 2_500_000,
     },
     {
       id: "llmmodel_openai_gpt_4_1",
@@ -541,6 +549,7 @@ async function seedLlmProviders() {
       supportsReasoning: false,
       costPer1kIn: "0.002",
       costPer1kOut: "0.008",
+      dailyTokenCap: 250_000,
     },
     {
       id: "llmmodel_openai_gpt_4_1_mini",
@@ -555,6 +564,7 @@ async function seedLlmProviders() {
       supportsReasoning: false,
       costPer1kIn: "0.0004",
       costPer1kOut: "0.0016",
+      dailyTokenCap: 2_500_000,
     },
     {
       id: "llmmodel_openai_gpt_4_1_nano",
@@ -569,6 +579,7 @@ async function seedLlmProviders() {
       supportsReasoning: false,
       costPer1kIn: "0.0001",
       costPer1kOut: "0.0004",
+      dailyTokenCap: 2_500_000,
     },
     {
       id: "llmmodel_google_gemini_3_1_pro",
@@ -612,6 +623,7 @@ async function seedLlmProviders() {
         supportsTools: m.supportsTools,
         supportsVision: m.supportsVision,
         supportsReasoning: m.supportsReasoning,
+        dailyTokenCap: m.dailyTokenCap ?? null,
       },
       create: m,
     });

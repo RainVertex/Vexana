@@ -17,6 +17,7 @@ import {
   providerHasStoredKey,
   assistantNotConfiguredMessage,
 } from "@internal/llm-core";
+import { isModelOverDailyCap } from "@feature/agents-backend/contract";
 import { streamAgent } from "./streamExecutor";
 
 export const chatRouter: Router = Router();
@@ -128,6 +129,9 @@ async function resolveChatReadiness(): Promise<{
   const hasStoredKey = await providerHasStoredKey(model.provider.id);
   if (!isProviderReady(model.provider, hasStoredKey)) {
     return { ready: false, reason: "model_unavailable", visionReady: false };
+  }
+  if (await isModelOverDailyCap(PLATFORM_ASSISTANT_AGENT_ID)) {
+    return { ready: false, reason: "daily_cap_reached", visionReady: model.supportsVision };
   }
   return { ready: true, reason: null, visionReady: model.supportsVision };
 }
@@ -267,9 +271,18 @@ chatRouter.post("/conversations/:id/messages", async (req, res) => {
     return;
   }
 
-  // Block before opening the SSE so an unconfigured assistant returns a clean JSON 409, not an SSE error frame.
+  // Block before opening the SSE so a blocked assistant returns a clean JSON status, not an SSE error frame.
   const readiness = await resolveChatReadiness();
   if (!readiness.ready) {
+    if (readiness.reason === "daily_cap_reached") {
+      res.status(429).json({
+        error:
+          "The assistant's model has reached its daily token cap. It resets at 00:00 UTC, try again after that.",
+        code: "daily_cap_reached",
+        reason: readiness.reason,
+      });
+      return;
+    }
     res.status(409).json({
       error: assistantNotConfiguredMessage(user.role === "admin"),
       code: "not_configured",

@@ -44,7 +44,8 @@ export interface ChatConversationDetailDto extends ChatConversationSummaryDto {
   messages: ChatMessageDto[];
 }
 
-// reason is "model_unavailable" when the assistant agent's model is disabled, missing, or its provider lost its key.
+// reason is "model_unavailable" when the assistant agent's model is disabled, missing, or its provider lost its key,
+// or "daily_cap_reached" when that model is over its daily token cap (resets at 00:00 UTC).
 // visionReady is true when the assistant's model is multimodal, gating image attachments.
 export interface ChatConfigDto {
   ready: boolean;

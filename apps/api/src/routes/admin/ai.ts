@@ -49,6 +49,7 @@ adminAiRouter.get("/models", async (_req, res, next) => {
         supportsTools: m.supportsTools,
         supportsVision: m.supportsVision,
         supportsReasoning: m.supportsReasoning,
+        dailyTokenCap: m.dailyTokenCap,
         enabled: m.enabled,
       })),
     }));
@@ -59,7 +60,14 @@ adminAiRouter.get("/models", async (_req, res, next) => {
   }
 });
 
-const patchModelSchema = z.object({ enabled: z.boolean() });
+// dailyTokenCap: a positive integer to cap a model's input+output tokens per UTC day, or null to
+// remove the cap. Omitting a field leaves it unchanged.
+const patchModelSchema = z
+  .object({
+    enabled: z.boolean().optional(),
+    dailyTokenCap: z.number().int().positive().nullable().optional(),
+  })
+  .refine((b) => b.enabled !== undefined || b.dailyTokenCap !== undefined, "No fields to update");
 
 adminAiRouter.patch("/models/:id", async (req, res, next) => {
   try {
@@ -74,7 +82,10 @@ adminAiRouter.patch("/models/:id", async (req, res, next) => {
       res.status(404).json({ error: "Model not found" });
       return;
     }
-    await prisma.llmModel.update({ where: { id }, data: { enabled: parsed.data.enabled } });
+    const data: { enabled?: boolean; dailyTokenCap?: number | null } = {};
+    if (parsed.data.enabled !== undefined) data.enabled = parsed.data.enabled;
+    if (parsed.data.dailyTokenCap !== undefined) data.dailyTokenCap = parsed.data.dailyTokenCap;
+    await prisma.llmModel.update({ where: { id }, data });
     res.status(204).end();
   } catch (err) {
     next(err);

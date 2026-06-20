@@ -8,6 +8,7 @@ import {
   failTask as failAgentTask,
 } from "./services/agentTasks";
 import { getAgentTaskHandler, defaultInterpret } from "./services/agentTaskHandlers";
+import { isModelOverDailyCap, msUntilDailyCapReset } from "./services/dailyCap";
 
 export interface AgentJobLogger {
   info(o: unknown, msg?: string): void;
@@ -66,6 +67,17 @@ async function drainAgentTasks(ctx: AgentJobContext, maxTasks: number): Promise<
         log.info({ taskId: task.id, kind: task.kind, reason: pre.reason }, "Deferred agent task");
         continue;
       }
+    }
+
+    // Defer work on a model that is over its daily token cap until the UTC window resets.
+    if (await isModelOverDailyCap(task.agentId)) {
+      deferred++;
+      await deferTask(task.id, task.attempts, msUntilDailyCapReset(), "daily token cap reached");
+      log.info(
+        { taskId: task.id, kind: task.kind },
+        "Deferred agent task: daily token cap reached",
+      );
+      continue;
     }
 
     try {

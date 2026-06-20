@@ -71,6 +71,8 @@ model LlmModel {
   costPer1kOut      Decimal?    @db.Decimal(10, 6)
   costPer1kCacheRead  Decimal?  @db.Decimal(10, 6)
   costPer1kCacheWrite Decimal?  @db.Decimal(10, 6)
+  // Cap on input+output tokens per UTC day. Null means uncapped, autonomous runs defer once over it.
+  dailyTokenCap     Int?
   enabled           Boolean     @default(true)
   provider          LlmProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
   agents            Agent[]

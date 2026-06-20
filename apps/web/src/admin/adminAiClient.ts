@@ -12,6 +12,11 @@ export function createAdminAiClient(core: ApiCore) {
         method: "PATCH",
         body: JSON.stringify({ enabled }),
       }),
+    setModelDailyCap: (id: string, dailyTokenCap: number | null) =>
+      core.request<void>(`/api/admin/ai/models/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        body: JSON.stringify({ dailyTokenCap }),
+      }),
     setProviderKey: (slug: string, apiKey: string) =>
       core.request<void>(`/api/admin/ai/providers/${encodeURIComponent(slug)}/key`, {
         method: "PUT",

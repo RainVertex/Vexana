@@ -22,8 +22,9 @@ export interface LlmModelSummary {
   supportsReasoning: boolean;
   costPer1kIn: number | null;
   costPer1kOut: number | null;
+  // Cap on input+output tokens per UTC day. Null means the model is uncapped.
+  dailyTokenCap: number | null;
   provider: LlmProviderSummary;
-  // False when the model's provider has no usable API key, so the model cannot actually run yet.
   providerReady: boolean;
 }
 
@@ -182,6 +183,7 @@ export interface AdminAiModelRow {
   supportsTools: boolean;
   supportsVision: boolean;
   supportsReasoning: boolean;
+  dailyTokenCap: number | null;
   enabled: boolean;
 }
 

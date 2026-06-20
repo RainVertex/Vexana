@@ -13,6 +13,7 @@ export function toModelDto(m: ModelListItem, providerReady: boolean) {
     supportsReasoning: m.supportsReasoning,
     costPer1kIn: m.costPer1kIn ? Number(m.costPer1kIn) : null,
     costPer1kOut: m.costPer1kOut ? Number(m.costPer1kOut) : null,
+    dailyTokenCap: m.dailyTokenCap,
     provider: { slug: m.provider.slug, displayName: m.provider.displayName, kind: m.provider.kind },
     providerReady,
   };
