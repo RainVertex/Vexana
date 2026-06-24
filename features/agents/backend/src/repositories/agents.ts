@@ -70,9 +70,11 @@ export const agentRepository: AgentRepository = {
       where: { id },
       include: {
         llmModel: { include: { provider: true } },
-        // Runs carry user content (chat turns persist as AgentRun), so non-admins only see their own.
+        // Chat turns persist as AgentRun under the human, so a non-admin sees their own runs plus the agent's autonomous and task runs (its backing user or unowned), never another human's chat content.
         runs: {
-          where: scopeUserId ? { userId: scopeUserId } : undefined,
+          where: scopeUserId
+            ? { OR: [{ userId: scopeUserId }, { userId: null }, { user: { userKind: "agent" } }] }
+            : undefined,
           orderBy: { startedAt: "desc" },
           take: 20,
           select: {

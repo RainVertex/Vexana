@@ -1,7 +1,10 @@
 import { prisma, Prisma } from "@internal/db";
 
 export type AgentRunDetail = Prisma.AgentRunGetPayload<{
-  include: { agent: { select: { name: true; avatarUrl: true } } };
+  include: {
+    agent: { select: { name: true; avatarUrl: true } };
+    user: { select: { userKind: true } };
+  };
 }>;
 
 export interface AgentRunRepository {
@@ -13,7 +16,10 @@ export const runRepository: AgentRunRepository = {
   findById(runId) {
     return prisma.agentRun.findUnique({
       where: { id: runId },
-      include: { agent: { select: { name: true, avatarUrl: true } } },
+      include: {
+        agent: { select: { name: true, avatarUrl: true } },
+        user: { select: { userKind: true } },
+      },
     });
   },
   async markCancelled(runId) {

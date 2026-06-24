@@ -107,17 +107,27 @@ export async function deleteAgent(id: string) {
   if (existing.userId) await agentRepository.deleteBackingUser(existing.userId);
 }
 
+// A non-admin may view their own runs plus the agent's autonomous and task runs (owned by its backing
+// user or unowned), which carry no private chat content. Other humans' runs stay hidden.
+function canViewRun(
+  run: { userId: string | null; user: { userKind: string } | null },
+  caller: CallerContext,
+): boolean {
+  if (caller.isAdmin || run.userId === caller.id) return true;
+  return run.userId == null || run.user?.userKind === "agent";
+}
+
 export async function getRun(agentId: string, runId: string, caller: CallerContext) {
   const run = await runRepository.findById(runId);
   if (!run || run.agentId !== agentId) throw new NotFoundError("Run not found");
-  if (!caller.isAdmin && run.userId !== caller.id) throw new NotFoundError("Run not found");
+  if (!canViewRun(run, caller)) throw new NotFoundError("Run not found");
   return run;
 }
 
 export async function cancelRun(agentId: string, runId: string, caller: CallerContext) {
   const run = await runRepository.findById(runId);
   if (!run || run.agentId !== agentId) throw new NotFoundError("Run not found");
-  if (!caller.isAdmin && run.userId !== caller.id) throw new NotFoundError("Run not found");
+  if (!canViewRun(run, caller)) throw new NotFoundError("Run not found");
   if (run.status !== "running") throw new ConflictError("Run is not running");
   // Graceful abort if the run is live here, otherwise it is orphaned (a prior process died mid-run),
   // so mark it failed directly. Single-process deployment, so "no live handle" means "not running".
