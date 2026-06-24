@@ -1,6 +1,5 @@
-import { prisma } from "@internal/db";
-import { providerHasStoredKey, isProviderReady } from "@internal/llm-core";
 import { registerAgentTaskHandler, type AgentTaskHandler } from "./agentTaskHandlers";
+import { isAgentProviderReady } from "./providerReadiness";
 
 // Task handlers for the platform's built-in agents. The catalog enricher is owned here (it is a
 // seeded, protected agent), the catalog feature only enqueues "catalog-enrich" work.
@@ -15,16 +14,7 @@ function asRecord(v: unknown): Record<string, unknown> {
 
 const catalogEnrichHandler: AgentTaskHandler = {
   // Defer (rather than burn attempts) until the enricher's provider has a usable key.
-  async precheck() {
-    const agent = await prisma.agent.findUnique({
-      where: { id: ENRICHER_AGENT_ID },
-      include: { llmModel: { include: { provider: true } } },
-    });
-    if (!agent) return { ready: false, reason: "enricher agent not seeded" };
-    const hasKey = await providerHasStoredKey(agent.llmModel.provider.id);
-    const ready = agent.llmModel.enabled && isProviderReady(agent.llmModel.provider, hasKey);
-    return ready ? { ready: true } : { ready: false, reason: "enricher provider not configured" };
-  },
+  precheck: () => isAgentProviderReady(ENRICHER_AGENT_ID),
 
   buildRunInput: (payload) => ({ entityId: payload.entityId }),
 

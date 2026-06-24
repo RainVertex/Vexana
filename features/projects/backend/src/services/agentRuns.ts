@@ -2,6 +2,7 @@
 import { prisma, projectsDb } from "@internal/db";
 import {
   enqueueAgentTask,
+  isAgentProviderReady,
   registerAgentTaskHandler,
   type AgentTaskHandler,
 } from "@feature/agents-backend/contract";
@@ -59,6 +60,16 @@ async function enqueueProjectTask({
 }
 
 const projectTaskHandler: AgentTaskHandler = {
+  // Defer (rather than burn attempts) until the agent's model provider has a usable key.
+  async precheck(payload) {
+    const agent = await prisma.agent.findUnique({
+      where: { userId: String(payload.agentUserId) },
+      select: { id: true },
+    });
+    if (!agent) return { ready: false, reason: "agent not found" };
+    return isAgentProviderReady(agent.id);
+  },
+
   async buildRunInput(payload) {
     const taskId = String(payload.taskId);
     const task = await projectsDb.task.findUnique({

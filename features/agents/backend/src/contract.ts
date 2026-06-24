@@ -8,6 +8,9 @@ export { runAgent } from "./index";
 // queue enforces (e.g. chat blocks before opening its stream when the assistant model is over cap).
 export { isModelOverDailyCap } from "./services/dailyCap";
 
+// Provider readiness: a task precheck can defer its work until the agent's model provider has a key.
+export { isAgentProviderReady, type AgentProviderReadiness } from "./services/providerReadiness";
+
 // Generic agent task queue: features enqueue work and register a handler for their kind.
 export { enqueueAgentTask, type EnqueueAgentTaskInput } from "./services/agentTasks";
 export {
