@@ -83,10 +83,12 @@ model LlmModel {
 }
 
 // A task-specific agent configured through the UI. Lean by design: an agent
-// is its model + system prompt + tool set + a simple approval mode. Agents
-// act on behalf of the invoking user (per-user isolation flows through
-// ToolContext.userId in the executor), they have no standalone identity,
-// team ownership, or encrypted secret of their own.
+// is its model + system prompt + tool set + a simple approval mode. Every agent
+// has a backing User (userKind='agent', linked via userId) so it can be assigned
+// work, hold team and project memberships, and be audited like a human teammate.
+// The acting identity in ToolContext.userId is the invoking user for interactive
+// runs (the agent acts on their behalf) or the agent's own backing user for
+// autonomous runs.
 model Agent {
   id           String            @id @default(cuid())
   name         String
