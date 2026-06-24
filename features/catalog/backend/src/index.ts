@@ -116,20 +116,35 @@ const patchInput = z.object({
   autoApply: z.boolean().optional(),
 });
 
-const ENTITY_INCLUDE = { owners: { include: { team: true } } } as const;
+const ENTITY_INCLUDE = {
+  owners: { include: { team: true } },
+  teamGrants: { include: { team: true } },
+} as const;
+
+type OwnerTeam = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
 
 type EntityWithOwners = CatalogEntity & {
-  owners: Array<{
-    team: {
-      id: string;
-      slug: string;
-      name: string;
-      description: string | null;
-      createdAt: Date;
-      updatedAt: Date;
-    };
-  }>;
+  owners: Array<{ team: OwnerTeam }>;
+  teamGrants: Array<{ permission: string; team: OwnerTeam }>;
 };
+
+// Curated catalog-info.yaml owners take precedence; otherwise the GitHub teams with admin or maintain
+// access to the repo are the effective owners.
+const OWNER_GRANT_PERMISSIONS = new Set(["admin", "maintain"]);
+function effectiveOwnerTeams(
+  owners: Array<{ team: OwnerTeam }>,
+  teamGrants: Array<{ permission: string; team: OwnerTeam }>,
+): OwnerTeam[] {
+  if (owners.length > 0) return owners.map((o) => o.team);
+  return teamGrants.filter((g) => OWNER_GRANT_PERMISSIONS.has(g.permission)).map((g) => g.team);
+}
 
 function shapeEntity(
   row: EntityWithOwners | null,
@@ -137,8 +152,17 @@ function shapeEntity(
   liveInstallationIds: ReadonlySet<number> = EMPTY_SET,
 ): CatalogEntityWithOwners | null {
   if (!row) return null;
-  const { owners, yamlSpec, autoApply, createdAt, updatedAt, lastSeenAt, staleSince, ...rest } =
-    row;
+  const {
+    owners,
+    teamGrants,
+    yamlSpec,
+    autoApply,
+    createdAt,
+    updatedAt,
+    lastSeenAt,
+    staleSince,
+    ...rest
+  } = row;
   const orphaned = rest.installationId != null && !liveInstallationIds.has(rest.installationId);
   const base: CatalogEntityWithOwners = {
     ...rest,
@@ -147,10 +171,10 @@ function shapeEntity(
     lastSeenAt: lastSeenAt.toISOString(),
     staleSince: staleSince ? staleSince.toISOString() : null,
     orphaned,
-    ownerTeams: owners.map((o) => ({
-      ...o.team,
-      createdAt: o.team.createdAt.toISOString(),
-      updatedAt: o.team.updatedAt.toISOString(),
+    ownerTeams: effectiveOwnerTeams(owners, teamGrants).map((team) => ({
+      ...team,
+      createdAt: team.createdAt.toISOString(),
+      updatedAt: team.updatedAt.toISOString(),
     })),
   };
   // yamlSpec and autoApply are restricted: only included when the viewer is allowed to see them.
@@ -304,7 +328,8 @@ catalogRouter.get("/:id/overview", async (req, res) => {
   if (!(await canViewEntityDetails(req.user, entity.accountLogin))) {
     return res.json({ accessible: false, entity: shapeLockedEntity(entity) });
   }
-  const ownerTeamIds = (entity as EntityWithOwners).owners.map((o) => o.team.id);
+  const owned = entity as EntityWithOwners;
+  const ownerTeamIds = effectiveOwnerTeams(owned.owners, owned.teamGrants).map((t) => t.id);
   const canViewRestricted = await isOwningTeamMember(req.user, ownerTeamIds);
 
   const [dora, health, scorecards] = await Promise.all([
@@ -397,9 +422,10 @@ catalogRouter.get("/:id", requireEntityOrgAccess(), async (req, res) => {
   });
   if (!entity) return res.status(404).json({ error: "Catalog entity not found" });
   if (req.user) {
-    const ownerTeamIds = (entity as EntityWithOwners).owners.map((o) => o.team.id);
+    const owned = entity as EntityWithOwners;
+    const ownerTeamIds = effectiveOwnerTeams(owned.owners, owned.teamGrants).map((t) => t.id);
     const canViewRestricted = await isOwningTeamMember(req.user, ownerTeamIds);
-    return res.json(shapeEntity(entity as EntityWithOwners, canViewRestricted));
+    return res.json(shapeEntity(owned, canViewRestricted));
   }
   res.json(shapeEntity(entity as EntityWithOwners, false));
 });

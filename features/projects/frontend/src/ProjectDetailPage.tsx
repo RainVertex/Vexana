@@ -108,7 +108,7 @@ export function ProjectDetailPage() {
   const [newTaskBucketId, setNewTaskBucketId] = useState<string>("");
   const [showShares, setShowShares] = useState(false);
   const [shareUsername, setShareUsername] = useState("");
-  const [sharePermission, setSharePermission] = useState(1);
+  const [sharePermission, setSharePermission] = useState(2);
   const {
     shares,
     loading: sharesLoading,
@@ -200,8 +200,8 @@ export function ProjectDetailPage() {
   }
 
   const isOwner = !!project?.owner?.id && project.owner.id === me?.id;
-  const canEdit = !project || isOwner || (project.maxPermission ?? 0) >= 1;
-  const isAdmin = !project || isOwner || (project.maxPermission ?? 0) >= 2;
+  const canEdit = !project || isOwner || (project.maxPermission ?? 0) >= 2;
+  const isAdmin = !project || isOwner || (project.maxPermission ?? 0) >= 3;
 
   return (
     <PageLayout
@@ -299,8 +299,10 @@ export function ProjectDetailPage() {
               className="rounded-md border border-app-border bg-app-surface px-2 py-1.5 text-sm text-app-text disabled:opacity-60"
             >
               <option value={0}>{t("permissions.read")}</option>
-              <option value={1}>{t("permissions.readWrite")}</option>
-              <option value={2}>{t("permissions.admin")}</option>
+              <option value={1}>{t("permissions.triage")}</option>
+              <option value={2}>{t("permissions.write")}</option>
+              <option value={3}>{t("permissions.maintain")}</option>
+              <option value={4}>{t("permissions.admin")}</option>
             </select>
             <button
               type="submit"
@@ -338,8 +340,10 @@ export function ProjectDetailPage() {
                         aria-label={t("permissions.permissionAriaLabel", { username: s.username })}
                       >
                         <option value={0}>{t("permissions.read")}</option>
-                        <option value={1}>{t("permissions.readWrite")}</option>
-                        <option value={2}>{t("permissions.admin")}</option>
+                        <option value={1}>{t("permissions.triage")}</option>
+                        <option value={2}>{t("permissions.write")}</option>
+                        <option value={3}>{t("permissions.maintain")}</option>
+                        <option value={4}>{t("permissions.admin")}</option>
                       </select>
                       {!project?.isAutoProvisioned && (
                         <button

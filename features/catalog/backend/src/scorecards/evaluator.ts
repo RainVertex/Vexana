@@ -79,7 +79,7 @@ async function recordSnapshot(
 export async function evaluateScorecardsForEntity(entityId: string): Promise<void> {
   const entity = await prisma.catalogEntity.findUnique({
     where: { id: entityId },
-    include: { owners: true },
+    include: { owners: true, teamGrants: true },
   });
   if (!entity) return;
 
@@ -94,11 +94,14 @@ export async function evaluateScorecardsForEntity(entityId: string): Promise<voi
     orderBy: { periodEnd: "desc" },
     take: 50,
   });
-  const ctx: RuleContext = {
-    entity,
-    ownerTeamIds: entity.owners.map((o) => o.teamId),
-    dora,
-  };
+  // Curated owners win; otherwise GitHub teams with admin/maintain access are the effective owners.
+  const ownerTeamIds =
+    entity.owners.length > 0
+      ? entity.owners.map((o) => o.teamId)
+      : entity.teamGrants
+          .filter((g) => g.permission === "admin" || g.permission === "maintain")
+          .map((g) => g.teamId);
+  const ctx: RuleContext = { entity, ownerTeamIds, dora };
 
   for (const sc of scorecards) {
     if (!appliesToKind(sc.appliesTo, entity.kind)) continue;

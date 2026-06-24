@@ -5,6 +5,7 @@ import { prisma } from "@internal/db";
 import type { User } from "@internal/db";
 import type { CurrentUser } from "@internal/shared-types";
 import { resolvePendingForUser } from "@feature/catalog-backend";
+import { reconcileProjectMembersForInstallation } from "@feature/projects-backend";
 import { logger } from "../logger/logger";
 import { loadEnv } from "../config/env";
 import {
@@ -164,6 +165,12 @@ authRouter.get("/github/callback", authCallbackLimiter, async (req, res, next) =
           { userId: user.id, githubId: user.githubId, ...drained },
           "Resolved pending GitHub team memberships",
         );
+      }
+      // Joining a team can grant project access, so recompute project membership for those installations.
+      for (const installationId of drained.installationIds) {
+        void reconcileProjectMembersForInstallation(installationId).catch((err) => {
+          logger.error({ err, installationId }, "Project member reconcile after sign-in failed");
+        });
       }
     } catch (err) {
       logger.error(

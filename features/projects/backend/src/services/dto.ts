@@ -38,7 +38,7 @@ export function userSummary(
 
 export function projectDto(
   project: Project & { creator?: User | null; _count?: { tasks: number } | null },
-  maxPermission: 0 | 1 | 2,
+  maxPermission: 0 | 1 | 2 | 3 | 4,
 ): ProjectDto {
   return {
     id: project.id,

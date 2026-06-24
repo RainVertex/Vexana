@@ -56,7 +56,7 @@ export function TaskDetailPage() {
   const { add: addLabel, remove: removeLabel } = useTaskLabels(id);
   const { me } = useCurrentProjectsUser();
   const isOwner = !!project?.owner?.id && project.owner.id === me?.id;
-  const canEdit = !project || isOwner || (project.maxPermission ?? 0) >= 1;
+  const canEdit = !project || isOwner || (project.maxPermission ?? 0) >= 2;
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");

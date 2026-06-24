@@ -11,7 +11,7 @@ export interface ProjectDto {
   createdAt: string;
   updatedAt: string;
   taskCount: number;
-  maxPermission: 0 | 1 | 2;
+  maxPermission: 0 | 1 | 2 | 3 | 4;
   owner: UserSummaryDto | null;
 }
 
@@ -66,5 +66,5 @@ export interface ProjectShareDto {
   id: string;
   username: string;
   name: string;
-  permission: 0 | 1 | 2;
+  permission: 0 | 1 | 2 | 3 | 4;
 }

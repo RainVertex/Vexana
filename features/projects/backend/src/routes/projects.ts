@@ -46,7 +46,7 @@ projectsRoutes.get("/projects", async (req, res, next) => {
 
     res.json(
       projects.map((p) =>
-        projectDto(p, p.creatorUserId === userId ? 2 : roleToNumeric(memberMap.get(p.id)!)),
+        projectDto(p, p.creatorUserId === userId ? 4 : roleToNumeric(memberMap.get(p.id)!)),
       ),
     );
   } catch (err) {
@@ -76,7 +76,7 @@ projectsRoutes.post("/projects", async (req, res, next) => {
       return created;
     });
 
-    res.status(201).json(projectDto(project, 2));
+    res.status(201).json(projectDto(project, 4));
   } catch (err) {
     next(err);
   }
@@ -195,7 +195,7 @@ projectsRoutes.post("/projects/:id/shares", async (req, res, next) => {
       res.status(409).json({ error: "Creator already has admin access" });
       return;
     }
-    const role = numericToRole(input.right ?? 1);
+    const role = numericToRole(input.right ?? 2);
     const upserted = await projectsDb.$transaction(async (tx) => {
       const member = await tx.projectMember.upsert({
         where: { projectId_userId: { projectId: req.params.id, userId: target.id } },

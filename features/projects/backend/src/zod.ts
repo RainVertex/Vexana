@@ -71,9 +71,9 @@ export const addAssigneeSchema = z.object({
 
 export const addShareSchema = z.object({
   username: z.string().min(1),
-  right: z.number().int().min(0).max(2).optional(),
+  right: z.number().int().min(0).max(4).optional(),
 });
 
 export const updateShareSchema = z.object({
-  right: z.number().int().min(0).max(2),
+  right: z.number().int().min(0).max(4),
 });

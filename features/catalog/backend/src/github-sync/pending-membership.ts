@@ -4,6 +4,8 @@ import { prisma } from "@internal/db";
 export interface PendingResolutionResult {
   resolved: number;
   skippedExpired: number;
+  // Installations whose teams the user just joined, so the caller can re-reconcile project membership.
+  installationIds: number[];
 }
 
 /** Drain non-expired pending rows into TeamMembership for a user who just signed in. */
@@ -18,13 +20,14 @@ export async function resolvePendingForUser(
   });
 
   if (candidates.length === 0) {
-    return { resolved: 0, skippedExpired: 0 };
+    return { resolved: 0, skippedExpired: 0, installationIds: [] };
   }
 
   const live = candidates.filter((c) => c.expiresAt > now);
   const expired = candidates.filter((c) => c.expiresAt <= now);
 
   let resolved = 0;
+  let installationIds: number[] = [];
   if (live.length > 0) {
     await prisma.$transaction(async (tx) => {
       const inserted = await tx.teamMembership.createMany({
@@ -40,6 +43,12 @@ export async function resolvePendingForUser(
         where: { id: { in: live.map((c) => c.id) } },
       });
     });
+    const teams = await prisma.team.findMany({
+      where: { id: { in: live.map((c) => c.teamId) }, installationId: { not: null } },
+      select: { installationId: true },
+      distinct: ["installationId"],
+    });
+    installationIds = teams.flatMap((t) => (t.installationId == null ? [] : [t.installationId]));
   }
 
   // Clean up expired rows for this githubId on the same pass.
@@ -49,7 +58,7 @@ export async function resolvePendingForUser(
     });
   }
 
-  return { resolved, skippedExpired: expired.length };
+  return { resolved, skippedExpired: expired.length, installationIds };
 }
 
 /** Drop all pending rows past their expiresAt. */

@@ -52,7 +52,9 @@ export const en = {
   },
   permissions: {
     read: "Read",
-    readWrite: "Read & Write",
+    triage: "Triage",
+    write: "Write",
+    maintain: "Maintain",
     admin: "Admin",
     permissionAriaLabel: "Permission for {{username}}",
   },

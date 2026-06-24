@@ -8,14 +8,23 @@ export interface ProvisionResult {
 }
 
 function rolePower(role: ProjectRole): number {
-  return role === "ADMIN" ? 2 : role === "WRITE" ? 1 : 0;
+  return role === "ADMIN"
+    ? 4
+    : role === "MAINTAIN"
+      ? 3
+      : role === "WRITE"
+        ? 2
+        : role === "TRIAGE"
+          ? 1
+          : 0;
 }
 
-// GitHub repo permission to project role: admin/maintain administer the repo,
-// push can write, triage/pull are read-only.
+// GitHub repo permission maps 1:1 to the project role of the same name.
 function permissionToRole(permission: string): ProjectRole {
-  if (permission === "admin" || permission === "maintain") return "ADMIN";
+  if (permission === "admin") return "ADMIN";
+  if (permission === "maintain") return "MAINTAIN";
   if (permission === "push") return "WRITE";
+  if (permission === "triage") return "TRIAGE";
   return "READ";
 }
 

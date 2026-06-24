@@ -54,7 +54,9 @@ export const tr: ProjectsResources = {
   },
   permissions: {
     read: "Okuma",
-    readWrite: "Okuma ve Yazma",
+    triage: "Triyaj",
+    write: "Yazma",
+    maintain: "Bakım",
     admin: "Yönetici",
     permissionAriaLabel: "{{username}} için izin",
   },

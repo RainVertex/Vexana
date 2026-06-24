@@ -1,6 +1,8 @@
 enum ProjectRole {
   READ
+  TRIAGE
   WRITE
+  MAINTAIN
   ADMIN
 }
 
