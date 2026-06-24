@@ -91,7 +91,7 @@ model Task {
   updatedAt         DateTime       @updatedAt
   project           Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
   bucket            Bucket?        @relation(fields: [bucketId], references: [id], onDelete: SetNull)
-  parent            Task?          @relation("TaskSubtasks", fields: [parentTaskId], references: [id], onDelete: SetNull)
+  parent            Task?          @relation("TaskSubtasks", fields: [parentTaskId], references: [id], onDelete: Cascade)
   children          Task[]         @relation("TaskSubtasks")
   creator           User           @relation("TaskCreator", fields: [createdByUserId], references: [id], onDelete: Cascade)
   assignees         TaskAssignee[]
