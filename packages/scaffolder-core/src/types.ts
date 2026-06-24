@@ -74,6 +74,12 @@ export type Mutation =
       base: string;
       title: string;
     }
+  | {
+      kind: "github.grantTeam";
+      repo: string;
+      teamSlugs: string[];
+      permission: string;
+    }
   | { kind: "debug.log"; message: string };
 
 export interface CatalogEntityDraft {

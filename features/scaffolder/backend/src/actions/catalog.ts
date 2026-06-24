@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { prisma } from "@internal/db";
 import { registerCatalogEntity } from "@feature/catalog-backend/contract";
+import { installationIdForLogin } from "@feature/integrations-backend/contract";
 import type { Action, ReadCtx, WriteCtx } from "@internal/scaffolder-core";
 
 const catalogRegisterInput = z.object({
@@ -79,6 +80,9 @@ export const catalogRegisterAction: Action<CatalogRegisterInput, { entityId: str
     }
     const { accountLogin: accountLoginInput, githubRepoId, ...entity } = input;
     const accountLogin = accountLoginInput ?? accountLoginFromRepoUrl(input.repoUrl);
+    // Bind the entity to its installation so project provisioning, which is scoped by installationId,
+    // picks it up instead of leaving it stranded until a full repo re-sync.
+    const installationId = accountLogin ? await installationIdForLogin(accountLogin) : null;
     const result = await registerCatalogEntity(
       {
         ...entity,
@@ -89,6 +93,7 @@ export const catalogRegisterAction: Action<CatalogRegisterInput, { entityId: str
         sourceRef: `scaffolder:user/${ctx.actor.userId}`,
         // Scaffolder registration carries intent, the entity is onboarded from the start.
         needsOnboarding: false,
+        installationId,
         githubRepoId: githubRepoId ?? null,
       },
     );

@@ -50,6 +50,7 @@ export const tr: ScaffolderResources = {
     mutationGithubCreateRepo: "github.createRepo {{org}}/{{name}} ({{visibility}})",
     mutationGithubPush: "github.push hedef {{remoteUrl}} · {{branch}} · {{fileCount}} dosya",
     mutationGithubOpenPr: "github.openPr {{repo}} · {{branch}} → {{base}} · {{title}}",
+    mutationGithubGrantTeam: "github.grantTeam {{teams}} → {{permission}} ({{repo}})",
     mutationDebugLog: "log: {{message}}",
     irreversibleWarning: "geri alınamaz",
     noMutations: "Mutasyon yok.",

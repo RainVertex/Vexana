@@ -16,6 +16,7 @@ import { fetchRemoteTemplateAction } from "../actions/fetch-remote-template";
 import { bindingWriteAction } from "../actions/binding";
 import { publishGithubAction } from "../actions/publish-github";
 import { publishGithubPrAction } from "../actions/publish-github-pr";
+import { grantTeamAccessAction } from "../actions/grant-team-access";
 import { validateTemplateSource } from "./template-defs";
 
 let actionsCache: ActionRegistry | null = null;
@@ -40,6 +41,7 @@ export function getActionRegistry(): ActionRegistry {
     bindingWriteAction,
     publishGithubAction,
     publishGithubPrAction,
+    grantTeamAccessAction,
   ]);
   actionsCache = actions;
   return actions;

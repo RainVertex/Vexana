@@ -67,6 +67,7 @@ export {
   octokitForLogin,
   octokitForToken,
   octokitAsApp,
+  installationIdForLogin,
   GitHubAppNotConfiguredError,
 } from "./github-app/octokit";
 export {

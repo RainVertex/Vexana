@@ -90,6 +90,14 @@ spec:
         description: \${{ parameters.description }}
         visibility: \${{ parameters.visibility }}
         defaultBranch: main
+    - id: grant
+      name: Grant owner teams repository access
+      action: github:grant-team-access
+      input:
+        org: \${{ parameters.org }}
+        repo: \${{ parameters.name }}
+        teamIds: \${{ parameters.owners }}
+        permission: maintain
     - id: register
       name: Register in catalog
       action: catalog:register

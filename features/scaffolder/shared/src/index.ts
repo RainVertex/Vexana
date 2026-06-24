@@ -95,6 +95,7 @@ export type ScaffolderMutation =
     }
   | { kind: "github.push"; remoteUrl: string; branch: string; fileCount: number }
   | { kind: "github.openPr"; repo: string; branch: string; base: string; title: string }
+  | { kind: "github.grantTeam"; repo: string; teamSlugs: string[]; permission: string }
   | { kind: "debug.log"; message: string };
 
 export interface ScaffolderPlanStep {

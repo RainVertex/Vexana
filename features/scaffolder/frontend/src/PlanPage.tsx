@@ -248,6 +248,16 @@ function MutationView({ mutation }: { mutation: ScaffolderMutation }) {
           })}
         </div>
       );
+    case "github.grantTeam":
+      return (
+        <div className="rounded-md border border-app-border bg-app-surface-hover p-2 text-xs">
+          {t("plan.mutationGithubGrantTeam", {
+            teams: mutation.teamSlugs.join(", "),
+            permission: mutation.permission,
+            repo: mutation.repo,
+          })}
+        </div>
+      );
     case "debug.log":
       return (
         <div className="rounded-md border border-app-border bg-app-surface-hover p-2 text-xs font-mono">

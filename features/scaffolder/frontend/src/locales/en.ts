@@ -48,6 +48,7 @@ export const en = {
     mutationGithubCreateRepo: "github.createRepo {{org}}/{{name}} ({{visibility}})",
     mutationGithubPush: "github.push to {{remoteUrl}} · {{branch}} · {{fileCount}} files",
     mutationGithubOpenPr: "github.openPr {{repo}} · {{branch}} → {{base}} · {{title}}",
+    mutationGithubGrantTeam: "github.grantTeam {{teams}} → {{permission}} on {{repo}}",
     mutationDebugLog: "log: {{message}}",
     irreversibleWarning: "irreversible",
     noMutations: "No mutations.",
